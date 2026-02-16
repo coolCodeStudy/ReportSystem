@@ -50,7 +50,31 @@ jobs:
           sleep 5
           
           # Start the new application
-          echo "Starting application..."
-          nohup java -jar /opt/report-system-0.0.1-SNAPSHOT.jar > /opt/app.log 2>&1 &
-          echo "Application started in background."
-          exit 0
+          # Create systemd service file
+          echo "Creating systemd service file..."
+          cat <<EOF > report-system.service
+          [Unit]
+          Description=Report System
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/bin/java -jar /opt/report-system-0.0.1-SNAPSHOT.jar
+          WorkingDirectory=/opt
+          Restart=on-failure
+          User=root
+
+          [Install]
+          WantedBy=multi-user.target
+          EOF
+          
+          # Move service file to systemd directory
+          mv report-system.service /etc/systemd/system/
+          
+          # Reload systemd and restart service
+          echo "Reloading systemd and restarting service..."
+          systemctl daemon-reload
+          systemctl enable report-system
+          systemctl restart report-system
+          
+          echo "Deployment complete. Application restarted via systemd."
