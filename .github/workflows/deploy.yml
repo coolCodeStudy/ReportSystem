@@ -50,7 +50,7 @@ jobs:
           sleep 5
           
           # Start the new application
-          # Using nohup to keep it running after SSH disconnects
+          echo "Starting application..."
           nohup java -jar /opt/report-system-0.0.1-SNAPSHOT.jar > /opt/app.log 2>&1 &
-          
-          echo "Deployment complete. Application started."
+          echo "Application started in background."
+          exit 0
