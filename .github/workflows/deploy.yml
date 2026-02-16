@@ -32,7 +32,8 @@ jobs:
         username: ${{ secrets.ECS_USERNAME }}
         password: ${{ secrets.ECS_PASSWORD }}
         source: "build/libs/report-system-0.0.1-SNAPSHOT.jar"
-        target: "/opt/"
+        # Upload to tmp first to avoid permission issues
+        target: "/tmp/"
         strip_components: 2
 
     - name: Restart Application via SSH
@@ -41,25 +42,22 @@ jobs:
         host: ${{ secrets.ECS_HOST }}
         username: ${{ secrets.ECS_USERNAME }}
         password: ${{ secrets.ECS_PASSWORD }}
-        command_timeout: 30m
+        command_timeout: 5m
         script: |
-          # Stop the existing application (ignore error if not running)
-          pkill -f report-system || true
-          
-          # Wait a moment
-          sleep 5
-          
-          # Start the new application
-          # Create systemd service file
-          echo "Creating systemd service file..."
-          cat <<EOF > report-system.service
+          # 1. Move file to target location
+          sudo mv /tmp/report-system-0.0.1-SNAPSHOT.jar /opt/
+          sudo chown root:root /opt/report-system-0.0.1-SNAPSHOT.jar
+
+          # 2. Check and Create Service File (overwrite with sudo to handle permissions)
+          sudo tee /etc/systemd/system/report-system.service > /dev/null <<EOF
           [Unit]
           Description=Report System
           After=network.target
 
           [Service]
           Type=simple
-          ExecStart=/usr/bin/java -jar /opt/report-system-0.0.1-SNAPSHOT.jar
+          # Full path to java with memory limits
+          ExecStart=/usr/bin/java -Xmx512M -Xms512M -jar /opt/report-system-0.0.1-SNAPSHOT.jar
           WorkingDirectory=/opt
           Restart=on-failure
           User=root
@@ -67,14 +65,13 @@ jobs:
           [Install]
           WantedBy=multi-user.target
           EOF
-          
-          # Move service file to systemd directory
-          mv report-system.service /etc/systemd/system/
-          
-          # Reload systemd and restart service
+
+          # 3. Reload and Restart
           echo "Reloading systemd and restarting service..."
-          systemctl daemon-reload
-          systemctl enable report-system
-          systemctl restart report-system
+          sudo systemctl daemon-reload
+          sudo systemctl enable report-system
+          sudo systemctl restart report-system
           
-          echo "Deployment complete. Application restarted via systemd."
+          # 4. Verify Service Status
+          sleep 3
+          systemctl is-active report-system
