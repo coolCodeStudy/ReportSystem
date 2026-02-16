@@ -1,7 +1,7 @@
 # How to Run ReportSystem
 
 ## Prerequisites
-- **Java 11**: The project is configured for compatibility with Java 11.
+- **Java 17**: The project is configured for compatibility with Java 17.
 - **Gradle**: A local compatible version of Gradle (7.6.4) has been downloaded to the project directory to ensure compatibility.
 
 ## Running the Application
