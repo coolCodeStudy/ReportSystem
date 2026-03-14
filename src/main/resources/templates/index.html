@@ -254,6 +254,13 @@
                                     <option value="G10">G10</option>
                                 </select>
                             </div>
+                            <div class="col-md-6">
+                                <label for="assessmentDate" class="form-label">
+                                    测评日期
+                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(不填则默认为今日)</span>
+                                </label>
+                                <input type="date" class="form-control" id="assessmentDate" name="assessmentDate">
+                            </div>
                             <div class="col-12">
                                 <label for="studyGoal" class="form-label">近期学习目标 / 教学重点</label>
                                 <textarea class="form-control" id="studyGoal" name="studyGoal" rows="2"
@@ -302,15 +309,10 @@
                                             name="assessmentType" value="MAP">
                                         <label class="form-check-label" for="evalMap">MAP</label>
                                     </div>
-                                    <div class="form-check form-check-inline m-0">
-                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalOther"
-                                            name="assessmentType" value="其他">
-                                        <label class="form-check-label" for="evalOther">其他</label>
-                                    </div>
                                 </div>
-                                <div class="mt-3" id="otherAssessmentDiv" style="display: none;">
+                                <div class="mt-3">
                                     <input type="text" class="form-control" id="otherAssessmentInput"
-                                        name="otherAssessment" placeholder="填写其他定制类型...">
+                                        name="otherAssessment" placeholder="其他定制体系 (如需填写请直接输入)...">
                                 </div>
                             </div>
                         </div>
@@ -369,8 +371,8 @@
                                     placeholder="例如：育才小学">
                             </div>
                             <div class="col-md-6">
-                                <label for="targetGrade" class="form-label">目标年级</label>
-                                <select class="form-select" id="targetGrade" name="grade">
+                                <label for="sgrade" class="form-label">目标年级</label>
+                                <select class="form-select" id="sgrade" name="grade">
                                     <option value="" selected disabled>请选择...</option>
                                     <option value="K">K</option>
                                     <option value="G1">G1</option>
@@ -384,13 +386,6 @@
                                     <option value="G9">G9</option>
                                     <option value="G10">G10</option>
                                 </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="assessmentDate" class="form-label">
-                                    测评日期
-                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(不填则默认为今日)</span>
-                                </label>
-                                <input type="date" class="form-control" id="assessmentDate" name="assessmentDate">
                             </div>
                             <div class="col-12 mt-4">
                                 <hr class="my-2 border-secondary opacity-25">
@@ -470,19 +465,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const otherCheckbox = document.getElementById('evalOther');
-            const otherDiv = document.getElementById('otherAssessmentDiv');
-            const otherInput = document.getElementById('otherAssessmentInput');
-
-            otherCheckbox.addEventListener('change', function () {
-                if (this.checked) {
-                    otherDiv.style.display = 'block';
-                } else {
-                    otherDiv.style.display = 'none';
-                    otherInput.value = '';
-                }
-            });
-
             // To close modal upon submission and simulate a clean state for the user
             const downloadForm = document.querySelector('#downloadFormModal form');
             const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('downloadFormModal'));
@@ -491,7 +473,6 @@
                 setTimeout(() => {
                     modal.hide();
                     downloadForm.reset();
-                    otherDiv.style.display = 'none';
                 }, 800);
             });
 
