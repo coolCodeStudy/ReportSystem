@@ -1,6 +1,7 @@
 package com.example.reportsystem.controller
 
 import com.example.reportsystem.service.PdfService
+import com.example.reportsystem.service.StudentArchiveService
 import org.springframework.core.io.ClassPathResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -12,7 +13,10 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.ByteArrayOutputStream
 
 @Controller
-class HomeController(private val pdfService: PdfService) {
+class HomeController(
+    private val pdfService: PdfService,
+    private val studentArchiveService: StudentArchiveService
+) {
 
     @GetMapping("/")
     fun home(): String {
@@ -37,6 +41,12 @@ class HomeController(private val pdfService: PdfService) {
         val document = XWPFDocument(resource.inputStream)
 
         if (form != null) {
+            try {
+                studentArchiveService.saveOrUpdateArchive(form)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             val targetLevel = form.lingolandLevel
             val targetGrade = form.grade
 

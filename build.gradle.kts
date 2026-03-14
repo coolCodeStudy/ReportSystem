@@ -22,11 +22,17 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.poi:poi-ooxml:5.2.3")
     implementation("com.github.librepdf:openpdf:1.3.30")
+    
+    // Database dependencies
+    implementation("org.postgresql:postgresql")
+    implementation("com.vladmihalcea:hibernate-types-55:2.21.1")
+    
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
