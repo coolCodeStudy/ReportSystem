@@ -24,7 +24,7 @@ data class StudentForm(
     val gender: String? = null,
     val school: String? = null,
     val grade: String? = null,
-    val studentType: String? = null
+    val studentType: com.example.reportsystem.entity.StudentType? = null
 )
 
 data class AssessmentHistoryDto(
@@ -111,7 +111,16 @@ class StudentController(
         val record = recordOpt.get()
         
         // Use the saved params to regenerate the docx
-        val modifiedBytes = docxGeneratorService.generateDocx(record.lingolandLevel, record.targetGrade)
+        val assessmentTypeList = record.assessmentType
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+        val modifiedBytes = docxGeneratorService.generateDocx(
+            record.lingolandLevel,
+            record.targetGrade,
+            record.student?.studentType,
+            assessmentTypeList
+        )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     

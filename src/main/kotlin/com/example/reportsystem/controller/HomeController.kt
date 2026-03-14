@@ -57,7 +57,7 @@ class HomeController(
                 grade = student.grade,
                 genderAgeInfo = if (genderStr.isEmpty() && ageStr.isEmpty()) "" else "$genderStr $ageStr".trim(),
                 schoolOrTarget = schoolStr,
-                studentType = student.studentType ?: "normal",
+                studentType = student.studentType?.description ?: "未定",
                 latestAssessmentDate = dateStr,
                 latestStudyGoal = goalStr,
                 latestLevel = levelStr
@@ -93,7 +93,12 @@ class HomeController(
             targetGrade = form.grade
         }
 
-        val modifiedBytes = docxGeneratorService.generateDocx(targetLevel, targetGrade)
+        val modifiedBytes = docxGeneratorService.generateDocx(
+            targetLevel,
+            targetGrade,
+            form?.studentType,
+            form?.assessmentType
+        )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     
@@ -127,7 +132,7 @@ data class UserReportForm(
     val gender: String? = null,
     val school: String? = null,
     val grade: String? = null,
-    val studentType: String? = null,
+    val studentType: com.example.reportsystem.entity.StudentType? = null,
     val lingolandLevel: String? = null,
     val studyGoal: String? = null,
     val assessmentType: List<String>? = null,

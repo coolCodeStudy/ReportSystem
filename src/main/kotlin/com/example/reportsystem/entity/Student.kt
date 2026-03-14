@@ -24,7 +24,8 @@ class Student {
     var grade: String? = null
 
     @Column(name = "student_type")
-    var studentType: String? = null
+    @Convert(converter = StudentTypeConverter::class)
+    var studentType: StudentType? = null
 
     @Column(name = "created_at")
     var createdAt: LocalDateTime = LocalDateTime.now()

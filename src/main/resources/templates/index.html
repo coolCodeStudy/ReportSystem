@@ -394,9 +394,11 @@
                                 <label for="sstudentType" class="form-label">学生类型 (体制倾向)</label>
                                 <select class="form-select" id="sstudentType" name="studentType">
                                     <option value="" selected disabled>请选择...</option>
-                                    <option value="体制内">体制内</option>
-                                    <option value="体制内转国际">体制内转国际</option>
-                                    <option value="国际">国际</option>
+                                    <option value="INTL">国际学校</option>
+                                    <option value="TRANSITION_INTL">体制内转国际</option>
+                                    <option value="TRANSITION_HKDSE">体制内转HKDSE</option>
+                                    <option value="TRANSITION_HANGZHOU_INTL">体制内转杭州国际学校</option>
+                                    <option value="DOMESTIC">体制内</option>
                                 </select>
                             </div>
                         </div>
@@ -514,7 +516,15 @@
                     if (grade && grade !== 'null') gradeSelect.value = grade; else gradeSelect.selectedIndex = 0;
 
                     const studentTypeSelect = document.getElementById('sstudentType');
-                    if (studentType && studentType !== 'null') studentTypeSelect.value = studentType; else studentTypeSelect.selectedIndex = 0;
+                    const studentTypeMap = {
+                        '国际学校': 'INTL',
+                        '体制内转国际': 'TRANSITION_INTL',
+                        '体制内转HKDSE': 'TRANSITION_HKDSE',
+                        '体制内转杭州国际学校': 'TRANSITION_HANGZHOU_INTL',
+                        '体制内': 'DOMESTIC'
+                    };
+                    const mappedType = studentTypeMap[studentType] || studentType;
+                    if (mappedType && mappedType !== 'null' && mappedType !== '未定') studentTypeSelect.value = mappedType; else studentTypeSelect.selectedIndex = 0;
 
                     document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>编辑学生基础档案';
 
