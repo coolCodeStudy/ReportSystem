@@ -1,5 +1,8 @@
 package com.example.reportsystem.controller
 
+import com.example.reportsystem.dto.StudentDto
+import com.example.reportsystem.repository.AssessmentRecordRepository
+import com.example.reportsystem.repository.StudentRepository
 import com.example.reportsystem.service.PdfService
 import com.example.reportsystem.service.StudentArchiveService
 import org.springframework.core.io.ClassPathResource
@@ -7,19 +10,59 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Controller
+import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.apache.poi.xwpf.usermodel.XWPFDocument
 import java.io.ByteArrayOutputStream
+import java.time.format.DateTimeFormatter
 
 @Controller
 class HomeController(
     private val pdfService: PdfService,
-    private val studentArchiveService: StudentArchiveService
+    private val studentArchiveService: StudentArchiveService,
+    private val studentRepository: StudentRepository,
+    private val assessmentRecordRepository: AssessmentRecordRepository
 ) {
 
     @GetMapping("/")
-    fun home(): String {
+    fun home(model: Model): String {
+        val students = studentRepository.findAllByOrderByUpdatedAtDesc()
+        val dtos = students.map { student ->
+            val records = student.id?.let { assessmentRecordRepository.findByStudentId(it) } ?: emptyList()
+            val latestRecord = records.maxByOrNull { it.createdAt }
+
+            val genderStr = student.gender ?: "未知"
+            val ageStr = student.age?.let { "${it}岁" } ?: ""
+            val genderAgeInfo = if (ageStr.isNotEmpty()) "$genderStr | $ageStr" else genderStr
+
+            val schoolStr = student.school ?: latestRecord?.targetGrade ?: "未填写"
+
+            val dateStr = latestRecord?.assessmentDate?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                ?: latestRecord?.createdAt?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                ?: student.updatedAt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                
+            val goalStr = latestRecord?.studyGoal ?: "-"
+            val levelStr = latestRecord?.lingolandLevel ?: "-"
+
+            StudentDto(
+                id = student.id,
+                name = student.name,
+                phone = student.phone,
+                age = student.age,
+                gender = student.gender,
+                school = student.school,
+                grade = student.grade,
+                genderAgeInfo = if (genderStr.isEmpty() && ageStr.isEmpty()) "" else "$genderStr $ageStr".trim(),
+                schoolOrTarget = schoolStr,
+                studentType = student.studentType ?: "normal",
+                latestAssessmentDate = dateStr,
+                latestStudyGoal = goalStr,
+                latestLevel = levelStr
+            )
+        }
+        
+        model.addAttribute("students", dtos)
         return "index"
     }
 
@@ -201,6 +244,7 @@ class HomeController(
 
 data class UserReportForm(
     val name: String? = null,
+    val phone: String? = null,
     val age: Int? = null,
     val gender: String? = null,
     val school: String? = null,
@@ -209,5 +253,6 @@ data class UserReportForm(
     val lingolandLevel: String? = null,
     val studyGoal: String? = null,
     val assessmentType: List<String>? = null,
-    val otherAssessment: String? = null
+    val otherAssessment: String? = null,
+    val assessmentDate: String? = null
 )

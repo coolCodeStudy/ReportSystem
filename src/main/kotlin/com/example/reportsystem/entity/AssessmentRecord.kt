@@ -3,6 +3,7 @@ package com.example.reportsystem.entity
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.TypeDef
+import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.*
 
@@ -39,6 +40,9 @@ class AssessmentRecord {
 
     @Column(name = "created_at")
     var createdAt: LocalDateTime = LocalDateTime.now()
+
+    @Column(name = "assessment_date")
+    var assessmentDate: LocalDate? = null
 
     @PrePersist
     fun prePersist() {

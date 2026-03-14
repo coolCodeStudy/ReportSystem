@@ -13,6 +13,8 @@ class Student {
     @Column(nullable = false)
     var name: String = ""
 
+    var phone: String? = null
+
     var age: Int? = null
 
     var gender: String? = null

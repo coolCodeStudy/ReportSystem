@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface StudentRepository : JpaRepository<Student, Long> {
     fun findFirstByNameAndSchool(name: String, school: String?): Student?
     fun findFirstByName(name: String): Student?
+    fun findAllByOrderByUpdatedAtDesc(): List<Student>
 }

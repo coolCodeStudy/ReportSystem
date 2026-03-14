@@ -4,164 +4,241 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>测评报告系统</title>
-    <!-- Bootstrap CSS -->
+    <title>学生档案管理系统</title>
+
+    <!-- Bootstrap CSS & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f8f9fa;
-        }
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 60px 0;
-            text-align: center;
-        }
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-        .container {
-            margin-top: 40px;
-            margin-bottom: 40px;
-        }
-
-        .card {
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-        }
-
-        .footer {
-            background-color: #343a40;
-            color: white;
-            padding: 30px 0;
-            text-align: center;
-            margin-top: 60px;
-        }
-    </style>
+    <!-- Custom Styles -->
+    <link href="/css/style.css" rel="stylesheet">
 </head>
 
 <body>
-    <!-- Header Section -->
-    <div class="header">
-        <div class="container">
-            <h1 class="display-4">测评报告系统</h1>
-            <p class="lead">专业的测评报告管理与展示平台</p>
-        </div>
-    </div>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="/images/lingoland_logo.jpg" alt="Lingoland Logo">
+                <span style="font-size: 1.1rem; letter-spacing: 0.5px;">语陆教育学生管理系统</span>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" title="系统设置"><i class="bi bi-gear"></i></button>
+                <button class="icon-btn" title="退出登录"><i class="bi bi-power"></i></button>
+            </div>
+        </header>
 
-    <!-- Main Content -->
-    <div class="container">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <div class="card">
-                    <div class="card-body">
-                        <h2 class="card-title text-center mb-4">系统简介</h2>
-                        <p class="card-text">
-                            测评报告系统是一个专注于管理和展示各类测评报告的平台。系统提供直观的界面，方便用户查看和管理测评结果，为决策提供数据支持。
-                        </p>
-                        <div class="text-center mt-4">
-                            <a href="#" class="btn btn-primary btn-lg">开始使用</a>
-                            <button type="button" class="btn btn-success btn-lg ms-3" data-bs-toggle="modal"
-                                data-bs-target="#downloadFormModal">下载报告PDF</button>
+        <div class="app-body">
+            <!-- Sidebar -->
+            <aside class="app-sidebar">
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">快速搜索</h6>
+                    <form class="quick-search-form">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="输入学生姓名">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="输入学校名称">
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="button"
+                                class="btn btn-primary btn-sm flex-grow-1 sidebar-btn shadow-sm">搜索</button>
+                            <button type="reset" class="btn btn-light btn-sm flex-grow-1 sidebar-btn">重置</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">教务管理</h6>
+                    <ul class="nav flex-column sidebar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#"><i class="bi bi-people"></i> 档案总览</a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="sidebar-section border-0">
+                    <h6 class="sidebar-heading">报告管理</h6>
+                    <ul class="nav flex-column sidebar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#downloadFormModal">
+                                <i class="bi bi-file-earmark-plus"></i> 生成并录入新报告
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="app-main">
+                <div class="main-header d-flex justify-content-between align-items-center mb-4">
+                    <div class="breadcrumb-area">
+                        <i class="bi bi-house-door-fill text-primary me-2"></i>
+                        <span class="fs-6 fw-bold text-secondary text-uppercase"
+                            style="letter-spacing: 0.5px;">主页仪表盘</span>
+                    </div>
+                    <div class="action-buttons d-flex gap-3">
+                        <button class="btn btn-primary btn-action" data-bs-toggle="modal"
+                            data-bs-target="#studentRecordModal"
+                            style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); line-height: 1;">
+                            新建学生档案
+                        </button>
+                        <button class="btn btn-action" data-bs-toggle="modal" data-bs-target="#downloadFormModal"
+                            style="background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%); line-height: 1;">
+                            录入报告信息
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Features/Stat Cards Row -->
+                <div class="row g-4 mb-4 top-cards-row">
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-blue-light"><i class="bi bi-search"></i></div>
+                            <div class="stat-content text-center flex-grow-1 pe-4">
+                                <h5 class="text-primary mb-0">高级条件检索</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card active-card">
+                            <div class="stat-icon bg-purple-light"><i class="bi bi-journal-bookmark-fill"></i></div>
+                            <div class="stat-content text-center flex-grow-1 pe-4">
+                                <h5 class="mb-0">档案基础信息概览</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-green-light"><i class="bi bi-printer"></i></div>
+                            <div class="stat-content text-center flex-grow-1 pe-4">
+                                <h5 class="text-primary mb-0" style="color:var(--primary)!important;">报表批量导出</h5>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Features Section -->
-        <div class="row mt-8">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="card-title">专业报告</h3>
-                        <p class="card-text">生成专业、详细的测评报告，包含数据图表和分析结论。</p>
+                <!-- Data Table (Static Mockup for layout preview) -->
+                <div class="table-card card border-0 shadow-sm mt-2">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0 custom-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th scope="col" class="ps-4" style="width: 40px;">
+                                            <div class="form-check"><input class="form-check-input" type="checkbox">
+                                            </div>
+                                        </th>
+                                        <th scope="col">就读学校 / 目标年级</th>
+                                        <th scope="col">学生姓名</th>
+                                        <th scope="col">学生类型</th>
+                                        <th scope="col">性别 | 年龄</th>
+                                        <th scope="col">联系电话</th>
+                                        <th scope="col">最新录入时间</th>
+                                        <th scope="col">课程目标</th>
+                                        <th scope="col">能力级别</th>
+                                        <th scope="col" class="text-end pe-4">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="student, stat : ${students}"
+                                        th:classappend="${stat.index == 0} ? 'table-active-row' : ''">
+                                        <td class="ps-4">
+                                            <div class="form-check"><input class="form-check-input" type="checkbox"
+                                                    th:checked="${stat.index == 0}"></div>
+                                        </td>
+                                        <td>
+                                            <span class="text-muted" th:text="${stat.count}">1</span>
+                                            <span th:text="${student.schoolOrTarget}">School</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="fw-medium"
+                                                    th:classappend="${stat.index == 0} ? 'text-primary' : ''"
+                                                    th:text="${student.name}">Name</span>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span
+                                                th:classappend="${student.studentType == 'drop out'} ? 'fw-bold fs-6' : ''"
+                                                th:text="${student.studentType}">normal</span>
+                                        </td>
+                                        <td th:text="${student.genderAgeInfo}">Gender Age</td>
+                                        <td th:text="${student.phone ?: '-'}">Phone</td>
+                                        <td th:text="${student.latestAssessmentDate}">Date</td>
+                                        <td><span class="text-truncate d-inline-block" style="max-width: 150px;"
+                                                th:text="${student.latestStudyGoal}">Goal</span></td>
+                                        <td th:text="${student.latestLevel}">Level</td>
+                                        <td class="text-end pe-4 text-nowrap">
+                                            <button class="btn btn-icon btn-sm text-secondary me-1 view-history-btn"
+                                                title="查看测评历史"
+                                                th:attr="data-id=${student.id}, data-name=${student.name}">
+                                                <i class="bi bi-clock-history"></i>
+                                            </button>
+                                            <button class="btn btn-icon btn-sm text-primary edit-student-btn"
+                                                title="编辑档案" th:attr="data-id=${student.id},
+                                                         data-name=${student.name},
+                                                         data-phone=${student.phone},
+                                                         data-age=${student.age},
+                                                         data-gender=${student.gender},
+                                                         data-school=${student.school},
+                                                         data-grade=${student.grade},
+                                                         data-studentType=${student.studentType}">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr th:if="${#lists.isEmpty(students)}">
+                                        <td colspan="9" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                                            暂无任何档案数据。请点击右上方或左侧的 "生成并录入新报告" 创建您的第一条学生记录。
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="card-title">数据可视化</h3>
-                        <p class="card-text">通过图表直观展示测评数据，帮助用户快速理解结果。</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h3 class="card-title">易于管理</h3>
-                        <p class="card-text">简洁的界面设计，方便用户管理和查找测评报告。</p>
-                    </div>
-                </div>
-            </div>
+
+            </main>
         </div>
     </div>
 
-    <!-- Download Form Modal -->
+    <!-- Download Form Modal (For new assessment / Generate report) -->
     <div class="modal fade" id="downloadFormModal" tabindex="-1" aria-labelledby="downloadFormModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <form action="/report/docx" method="POST">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="downloadFormModalLabel">请填写信息以获取报告</h5>
+                        <h5 class="modal-title" id="downloadFormModalLabel"><i
+                                class="bi bi-file-earmark-plus me-2"></i>创建测评档案并生成报告</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label for="name" class="form-label">姓名</label>
-                                <input type="text" class="form-control" id="name" name="name">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="age" class="form-label">年龄</label>
-                                <input type="number" class="form-control" id="age" name="age">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="gender" class="form-label">性别</label>
-                                <select class="form-select" id="gender" name="gender">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="男">男</option>
-                                    <option value="女">女</option>
+                                <label for="name" class="form-label">学生姓名</label>
+                                <select class="form-select fw-medium text-primary" id="name" name="name" required>
+                                    <option value="" selected disabled>-- 请选择已有学生 --</option>
+                                    <th:block th:each="student : ${students}">
+                                        <option th:value="${student.name}" th:text="${student.name}"
+                                            th:attr="data-grade=${student.grade}"></option>
+                                    </th:block>
                                 </select>
                             </div>
                             <div class="col-md-6">
-                                <label for="school" class="form-label">学校</label>
-                                <input type="text" class="form-control" id="school" name="school">
+                                <label for="grade" class="form-label">
+                                    所在年级
+                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(由系统自动获取带入)</span>
+                                </label>
+                                <input type="text" class="form-control bg-light text-muted" id="grade" name="grade"
+                                    readonly tabindex="-1" placeholder="选择姓名后自动显示">
                             </div>
                             <div class="col-md-6">
-                                <label for="grade" class="form-label">所在年级</label>
-                                <select class="form-select" id="grade" name="grade">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="K">K</option>
-                                    <option value="G1">G1</option>
-                                    <option value="G2">G2</option>
-                                    <option value="G3">G3</option>
-                                    <option value="G4">G4</option>
-                                    <option value="G5">G5</option>
-                                    <option value="G6">G6</option>
-                                    <option value="G7">G7</option>
-                                    <option value="G8">G8</option>
-                                    <option value="G9">G9</option>
-                                    <option value="G10">G10</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="studentType" class="form-label">学生类型</label>
-                                <select class="form-select" id="studentType" name="studentType">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="体制内">体制内</option>
-                                    <option value="体制内转国际">体制内转国际</option>
-                                    <option value="国际">国际</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="lingolandLevel" class="form-label">目前level</label>
+                                <label for="lingolandLevel" class="form-label">当前测评 Level</label>
                                 <select class="form-select" id="lingolandLevel" name="lingolandLevel">
                                     <option value="" selected disabled>请选择...</option>
                                     <option value="K">K</option>
@@ -178,76 +255,210 @@
                                 </select>
                             </div>
                             <div class="col-12">
-                                <label for="studyGoal" class="form-label">学习目标</label>
-                                <textarea class="form-control" id="studyGoal" name="studyGoal" rows="2"></textarea>
+                                <label for="studyGoal" class="form-label">近期学习目标 / 教学重点</label>
+                                <textarea class="form-control" id="studyGoal" name="studyGoal" rows="2"
+                                    placeholder="填写重点..."></textarea>
                             </div>
                             <div class="col-12">
-                                <label class="form-label d-block">测评类型</label>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalStarters"
-                                        name="assessmentType" value="starters">
-                                    <label class="form-check-label" for="evalStarters">starters</label>
+                                <label class="form-label d-block">参考测评体系</label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalStarters"
+                                            name="assessmentType" value="starters">
+                                        <label class="form-check-label" for="evalStarters">Starters</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalMovers"
+                                            name="assessmentType" value="movers">
+                                        <label class="form-check-label" for="evalMovers">Movers</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalFlyers"
+                                            name="assessmentType" value="flyers">
+                                        <label class="form-check-label" for="evalFlyers">Flyers</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalKet"
+                                            name="assessmentType" value="ket">
+                                        <label class="form-check-label" for="evalKet">KET</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalPet"
+                                            name="assessmentType" value="pet">
+                                        <label class="form-check-label" for="evalPet">PET</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalIelts"
+                                            name="assessmentType" value="雅思">
+                                        <label class="form-check-label" for="evalIelts">IELTS</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalToeflJr"
+                                            name="assessmentType" value="小托福">
+                                        <label class="form-check-label" for="evalToeflJr">TOEFL Junior</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalMap"
+                                            name="assessmentType" value="MAP">
+                                        <label class="form-check-label" for="evalMap">MAP</label>
+                                    </div>
+                                    <div class="form-check form-check-inline m-0">
+                                        <input class="form-check-input shadow-sm" type="checkbox" id="evalOther"
+                                            name="assessmentType" value="其他">
+                                        <label class="form-check-label" for="evalOther">其他</label>
+                                    </div>
                                 </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalMovers"
-                                        name="assessmentType" value="movers">
-                                    <label class="form-check-label" for="evalMovers">movers</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalFlyers"
-                                        name="assessmentType" value="flyers">
-                                    <label class="form-check-label" for="evalFlyers">flyers</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalKet" name="assessmentType"
-                                        value="ket">
-                                    <label class="form-check-label" for="evalKet">ket</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalPet" name="assessmentType"
-                                        value="pet">
-                                    <label class="form-check-label" for="evalPet">pet</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalIelts" name="assessmentType"
-                                        value="雅思">
-                                    <label class="form-check-label" for="evalIelts">雅思</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalToeflJr"
-                                        name="assessmentType" value="小托福">
-                                    <label class="form-check-label" for="evalToeflJr">小托福</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalMap" name="assessmentType"
-                                        value="MAP">
-                                    <label class="form-check-label" for="evalMap">MAP</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="checkbox" id="evalOther" name="assessmentType"
-                                        value="其他">
-                                    <label class="form-check-label" for="evalOther">其他</label>
-                                </div>
-                                <div class="mt-2" id="otherAssessmentDiv" style="display: none;">
+                                <div class="mt-3" id="otherAssessmentDiv" style="display: none;">
                                     <input type="text" class="form-control" id="otherAssessmentInput"
-                                        name="otherAssessment" placeholder="请输入其他测评类型">
+                                        name="otherAssessment" placeholder="填写其他定制类型...">
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                        <button type="submit" class="btn btn-success">提交并下载</button>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">暂不保存</button>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"
+                            style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
+                            创建档案并导出学习方案
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <div class="container">
-            <p>&copy; 2026 测评报告系统 - 专业的测评报告管理平台</p>
+    <!-- Student Record Modal (For standalone student CRUD) -->
+    <div class="modal fade" id="studentRecordModal" tabindex="-1" aria-labelledby="studentRecordModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <form action="/student/save" method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="studentRecordModalLabel"><i class="bi bi-person-plus me-2"></i>新建 /
+                            编辑学生基础档案</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="sid" name="id">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="sname" class="form-label">学生姓名</label>
+                                <input type="text" class="form-control" id="sname" name="name" placeholder="例如：张三"
+                                    required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sage" class="form-label">年龄</label>
+                                <input type="number" class="form-control" id="sage" name="age" placeholder="例如：12">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sphone" class="form-label">联系电话</label>
+                                <input type="tel" class="form-control" id="sphone" name="phone"
+                                    placeholder="例如：13812345678">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sgender" class="form-label">性别</label>
+                                <select class="form-select" id="sgender" name="gender">
+                                    <option value="" selected disabled>请选择...</option>
+                                    <option value="男">男</option>
+                                    <option value="女">女</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sschool" class="form-label">所在学校</label>
+                                <input type="text" class="form-control" id="sschool" name="school"
+                                    placeholder="例如：育才小学">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="targetGrade" class="form-label">目标年级</label>
+                                <select class="form-select" id="targetGrade" name="grade">
+                                    <option value="" selected disabled>请选择...</option>
+                                    <option value="K">K</option>
+                                    <option value="G1">G1</option>
+                                    <option value="G2">G2</option>
+                                    <option value="G3">G3</option>
+                                    <option value="G4">G4</option>
+                                    <option value="G5">G5</option>
+                                    <option value="G6">G6</option>
+                                    <option value="G7">G7</option>
+                                    <option value="G8">G8</option>
+                                    <option value="G9">G9</option>
+                                    <option value="G10">G10</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="assessmentDate" class="form-label">
+                                    测评日期
+                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(不填则默认为今日)</span>
+                                </label>
+                                <input type="date" class="form-control" id="assessmentDate" name="assessmentDate">
+                            </div>
+                            <div class="col-12 mt-4">
+                                <hr class="my-2 border-secondary opacity-25">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="sstudentType" class="form-label">学生类型 (体制倾向)</label>
+                                <select class="form-select" id="sstudentType" name="studentType">
+                                    <option value="" selected disabled>请选择...</option>
+                                    <option value="体制内">体制内</option>
+                                    <option value="体制内转国际">体制内转国际</option>
+                                    <option value="国际">国际</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-outline-secondary px-4 rounded-pill"
+                            data-bs-dismiss="modal">取消</button>
+                        <button type="submit" class="btn btn-primary px-4 rounded-pill"
+                            style="background: var(--primary); border: none;">保存建档</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment History Modal -->
+    <div class="modal fade" id="assessmentHistoryModal" tabindex="-1" aria-labelledby="assessmentHistoryModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title" id="assessmentHistoryModalLabel">
+                        <i class="bi bi-clock-history me-2 text-primary"></i>
+                        <span id="historyStudentName" class="fw-bold">学生姓名</span> 的测评履历
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <div id="historyLoading" class="text-center p-5 text-muted">
+                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>正在读取数据...
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 d-none" id="historyTable" style="font-size: 0.95rem;">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th scope="col" class="ps-4">测评日期</th>
+                                    <th scope="col">测评类型</th>
+                                    <th scope="col">Level / 级别</th>
+                                    <th scope="col">当前/目标年级</th>
+                                    <th scope="col" style="max-width: 200px;">学习重点/目标</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <!-- Data will be injected here by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-primary btn-action px-4 shadow-sm"
+                        style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border:none;"
+                        onclick="triggerNewReport()">
+                        <i class="bi bi-plus-circle me-1"></i> 为TA录入新测评
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -263,10 +474,8 @@
             otherCheckbox.addEventListener('change', function () {
                 if (this.checked) {
                     otherDiv.style.display = 'block';
-                    // otherInput.required = true;
                 } else {
                     otherDiv.style.display = 'none';
-                    // otherInput.required = false;
                     otherInput.value = '';
                 }
             });
@@ -280,8 +489,149 @@
                     modal.hide();
                     downloadForm.reset();
                     otherDiv.style.display = 'none';
-                }, 500);
+                }, 800);
             });
+
+            // Functionality to open Student form modal for New
+            const newStudentBtn = document.querySelector('[data-bs-target="#studentRecordModal"]');
+            if (newStudentBtn) {
+                newStudentBtn.addEventListener('click', function () {
+                    const form = document.querySelector('#studentRecordModal form');
+                    form.reset();
+                    document.getElementById('sid').value = '';
+                    document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>新建学生基础档案';
+                });
+            }
+
+            // Functionality to open Student form modal for Edit
+            const editBtns = document.querySelectorAll('.edit-student-btn');
+            editBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = this.getAttribute('data-id');
+                    const name = this.getAttribute('data-name');
+                    const phone = this.getAttribute('data-phone');
+                    const age = this.getAttribute('data-age');
+                    const gender = this.getAttribute('data-gender');
+                    const school = this.getAttribute('data-school');
+                    const grade = this.getAttribute('data-grade');
+                    const studentType = this.getAttribute('data-studentType');
+
+                    document.getElementById('sid').value = id || '';
+                    document.getElementById('sname').value = name || '';
+                    document.getElementById('sphone').value = phone || '';
+                    document.getElementById('sage').value = age || '';
+
+                    const genderSelect = document.getElementById('sgender');
+                    if (gender && gender !== 'null') genderSelect.value = gender; else genderSelect.selectedIndex = 0;
+
+                    document.getElementById('sschool').value = school || '';
+
+                    const gradeSelect = document.getElementById('sgrade');
+                    if (grade && grade !== 'null') gradeSelect.value = grade; else gradeSelect.selectedIndex = 0;
+
+                    const studentTypeSelect = document.getElementById('sstudentType');
+                    if (studentType && studentType !== 'null') studentTypeSelect.value = studentType; else studentTypeSelect.selectedIndex = 0;
+
+                    document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>编辑学生基础档案';
+
+                    var myModal = new bootstrap.Modal(document.getElementById('studentRecordModal'));
+                    myModal.show();
+                });
+            });
+
+            // Functionality to View Assessment History
+            let currentSelectedHistoryStudentName = '';
+
+            const historyBtns = document.querySelectorAll('.view-history-btn');
+            historyBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const studentId = this.getAttribute('data-id');
+                    const studentName = this.getAttribute('data-name');
+                    currentSelectedHistoryStudentName = studentName;
+
+                    document.getElementById('historyStudentName').textContent = studentName;
+
+                    const loadingIndicator = document.getElementById('historyLoading');
+                    const historyTable = document.getElementById('historyTable');
+                    const tbody = document.getElementById('historyTableBody');
+
+                    loadingIndicator.classList.remove('d-none');
+                    historyTable.classList.add('d-none');
+                    tbody.innerHTML = '';
+
+                    var myModal = new bootstrap.Modal(document.getElementById('assessmentHistoryModal'));
+                    myModal.show();
+
+                    fetch(`/student/${studentId}/history`)
+                        .then(response => response.json())
+                        .then(data => {
+                            loadingIndicator.classList.add('d-none');
+                            historyTable.classList.remove('d-none');
+
+                            if (data.length === 0) {
+                                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无任何测评历史数据</td></tr>';
+                                return;
+                            }
+
+                            data.forEach(item => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td class="ps-4 fw-medium text-secondary">${item.date}</td>
+                                    <td><span class="badge bg-light text-dark border">${item.type}</span></td>
+                                    <td><span class="text-primary fw-medium">${item.level}</span></td>
+                                    <td><span class="text-muted">${item.targetGrade}</span></td>
+                                    <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.goal}">${item.goal}</span></td>
+                                `;
+                                tbody.appendChild(tr);
+                            });
+                        })
+                        .catch(err => {
+                            console.error('Failed to fetch history', err);
+                            loadingIndicator.innerHTML = '<span class="text-danger"><i class="bi bi-exclamation-triangle me-2"></i>加载失败，请稍后重试</span>';
+                        });
+                });
+            });
+
+            // Make triggerNewReport globally available
+            window.triggerNewReport = function () {
+                var historyModal = bootstrap.Modal.getInstance(document.getElementById('assessmentHistoryModal'));
+                if (historyModal) { historyModal.hide(); }
+
+                var downloadModal = new bootstrap.Modal(document.getElementById('downloadFormModal'));
+
+                // Pre-fill name if accessed from History Panel
+                const nameSelect = document.getElementById('name');
+                if (nameSelect && currentSelectedHistoryStudentName) {
+                    // Try to find the matching option
+                    for (let i = 0; i < nameSelect.options.length; i++) {
+                        if (nameSelect.options[i].value === currentSelectedHistoryStudentName) {
+                            nameSelect.selectedIndex = i;
+                            // Trigger change event to auto-fill grade
+                            nameSelect.dispatchEvent(new Event('change'));
+                            break;
+                        }
+                    }
+                }
+
+                downloadModal.show();
+            };
+
+            // Handle automatic Grade filling when Name is selected
+            const nameSelectInput = document.getElementById('name');
+            const gradeReadOnlyInput = document.getElementById('grade');
+
+            if (nameSelectInput && gradeReadOnlyInput) {
+                nameSelectInput.addEventListener('change', function () {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const gradeVal = selectedOption.getAttribute('data-grade');
+
+                    if (gradeVal && gradeVal !== 'null' && gradeVal.trim() !== '') {
+                        gradeReadOnlyInput.value = gradeVal;
+                    } else {
+                        gradeReadOnlyInput.value = '暂无记录';
+                    }
+                });
+            }
         });
     </script>
 </body>
