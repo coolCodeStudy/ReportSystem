@@ -211,10 +211,10 @@
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
-                <form action="/report/docx" method="POST">
+                <form action="/report/save" method="POST">
                     <div class="modal-header">
                         <h5 class="modal-title" id="downloadFormModalLabel"><i
-                                class="bi bi-file-earmark-plus me-2"></i>创建测评档案并生成报告</h5>
+                                class="bi bi-file-earmark-plus me-2"></i>创建测评档案</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -319,7 +319,7 @@
                         <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">暂不保存</button>
                         <button type="submit" class="btn btn-primary px-4 shadow-sm"
                             style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
-                            创建档案并导出学习方案
+                            创建档案
                         </button>
                     </div>
                 </form>
@@ -421,13 +421,15 @@
     <div class="modal fade" id="assessmentHistoryModal" tabindex="-1" aria-labelledby="assessmentHistoryModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
+            <div class="modal-content border-0 overflow-hidden">
+                <div class="modal-header text-white"
+                    style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
                     <h5 class="modal-title" id="assessmentHistoryModalLabel">
-                        <i class="bi bi-clock-history me-2 text-primary"></i>
+                        <i class="bi bi-clock-history me-2 text-white-50"></i>
                         <span id="historyStudentName" class="fw-bold">学生姓名</span> 的测评履历
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
                     <div id="historyLoading" class="text-center p-5 text-muted">
@@ -442,6 +444,7 @@
                                     <th scope="col">Level / 级别</th>
                                     <th scope="col">当前/目标年级</th>
                                     <th scope="col" style="max-width: 200px;">学习重点/目标</th>
+                                    <th scope="col" class="text-end pe-4">导出</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
@@ -569,18 +572,25 @@
                             historyTable.classList.remove('d-none');
 
                             if (data.length === 0) {
-                                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无任何测评历史数据</td></tr>';
+                                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">暂无任何测评历史数据</td></tr>';
                                 return;
                             }
 
                             data.forEach(item => {
                                 const tr = document.createElement('tr');
+                                const exportBtnHtml = `<a href="/student/history/${item.id}/export" class="btn btn-sm btn-outline-primary shadow-sm" title="实时原样导出这篇文档">
+                                         <i class="bi bi-file-earmark-word"></i> 导出报告
+                                       </a>`;
+
                                 tr.innerHTML = `
-                                    <td class="ps-4 fw-medium text-secondary">${item.date}</td>
-                                    <td><span class="badge bg-light text-dark border">${item.type}</span></td>
-                                    <td><span class="text-primary fw-medium">${item.level}</span></td>
-                                    <td><span class="text-muted">${item.targetGrade}</span></td>
-                                    <td><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.goal}">${item.goal}</span></td>
+                                    <td class="ps-4 fw-medium text-secondary align-middle">${item.date}</td>
+                                    <td class="align-middle"><span class="badge bg-light text-dark border">${item.type}</span></td>
+                                    <td class="align-middle"><span class="text-primary fw-medium">${item.level}</span></td>
+                                    <td class="align-middle"><span class="text-muted">${item.targetGrade}</span></td>
+                                    <td class="align-middle"><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.goal}">${item.goal}</span></td>
+                                    <td class="text-end pe-4 align-middle">
+                                        ${exportBtnHtml}
+                                    </td>
                                 `;
                                 tbody.appendChild(tr);
                             });

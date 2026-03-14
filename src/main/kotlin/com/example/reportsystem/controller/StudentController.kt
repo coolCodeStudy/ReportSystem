@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
 import com.example.reportsystem.repository.AssessmentRecordRepository
+import com.example.reportsystem.service.DocxGeneratorService
 import java.time.format.DateTimeFormatter
 
 data class StudentForm(
@@ -37,7 +40,8 @@ data class AssessmentHistoryDto(
 @RequestMapping("/student")
 class StudentController(
     private val studentRepository: StudentRepository,
-    private val assessmentRecordRepository: AssessmentRecordRepository
+    private val assessmentRecordRepository: AssessmentRecordRepository,
+    private val docxGeneratorService: DocxGeneratorService
 ) {
 
     @PostMapping("/save")
@@ -95,5 +99,29 @@ class StudentController(
             )
         }
         return ResponseEntity.ok(dtos)
+    }
+
+    @GetMapping("/history/{recordId}/export")
+    fun exportHistoricReport(@PathVariable recordId: Long): ResponseEntity<ByteArray> {
+        val recordOpt = assessmentRecordRepository.findById(recordId)
+        if (!recordOpt.isPresent) {
+            return ResponseEntity.notFound().build()
+        }
+
+        val record = recordOpt.get()
+        
+        // Use the saved params to regenerate the docx
+        val modifiedBytes = docxGeneratorService.generateDocx(record.lingolandLevel, record.targetGrade)
+
+        val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+    
+        val headers = HttpHeaders()
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${java.net.URLEncoder.encode("${record.student?.name ?: "Student"}_历史记录测评报告.docx", "UTF-8")}")
+
+        return ResponseEntity.ok()
+            .headers(headers)
+            .header(HttpHeaders.CONTENT_LENGTH, modifiedBytes.size.toString())
+            .contentType(mediaType)
+            .body(modifiedBytes)
     }
 }
