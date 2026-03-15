@@ -146,7 +146,7 @@
                                         <th scope="col">性别 | 年龄</th>
                                         <th scope="col">联系电话</th>
                                         <th scope="col">最新录入时间</th>
-                                        <th scope="col">课程目标</th>
+                                        <!-- <th scope="col">课程目标</th> -->
                                         <th scope="col">能力级别</th>
                                         <th scope="col" class="text-end pe-4">操作</th>
                                     </tr>
@@ -177,8 +177,8 @@
                                         <td th:text="${student.genderAgeInfo}">Gender Age</td>
                                         <td th:text="${student.phone ?: '-'}">Phone</td>
                                         <td th:text="${student.latestAssessmentDate}">Date</td>
-                                        <td><span class="text-truncate d-inline-block" style="max-width: 150px;"
-                                                th:text="${student.latestStudyGoal}">Goal</span></td>
+                                        <!-- <td><span class="text-truncate d-inline-block" style="max-width: 150px;"
+                                                th:text="${student.latestStudyGoal}">Goal</span></td> -->
                                         <td th:text="${student.latestLevel}">Level</td>
                                         <td class="text-end pe-4 text-nowrap">
                                             <button class="btn btn-icon btn-sm text-secondary me-1 view-history-btn"
