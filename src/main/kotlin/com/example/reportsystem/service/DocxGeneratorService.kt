@@ -17,6 +17,23 @@ class DocxGeneratorService(
     private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository
 ) {
 
+    private val DEFAULT_CSV = """
+Lingoland,CEFR,蓝思值,词汇量,剑桥系考试,TOEFL Junior,托福,雅思
+K,Pre-A1,BR-180L,200-400,,,,
+G1,A1.1,190L-300L,400-800,,,,
+G2,A1.2,310L-410L,800-1200,,,,
+G3,A2.1,420L-600L,1200-1500,YLE Movers,,,
+G4,A2.2,610L-740L,1500-2000,YLE Flyers,,,
+G5,B1.1,750L-850L,2000-2500,KET(120-139),,少儿托福 STEP 1,
+G6,B1.2,860L-920L,2500-3500,PET(140-152),600-750,少儿托福 STEP 2,
+G7,B2.1,930L-1010L,3500-4500,FCE(160-172),760-840,40-60,4.5-5.0
+G8,B2.2,1020L-1090L,4500-6000,CAE(180-192),850-900,60-80,5.5-6.0
+G9,C1.1,1100L-1200L,6000-8000,CPE(200-210),,80-100,6.5-7.0
+G10,C1.2,1210L-1300L,8000-10000,,,100-110,7.0-7.5
+G11,C2,1300L+,10000+,,,110+,7.5+
+    """.trimIndent()
+
+
     fun generateDocx(
         targetLevel: String?,
         targetGrade: String?,
@@ -66,6 +83,13 @@ class DocxGeneratorService(
                     dataRows = allCsvRows.drop(1).map { it.toList() }
                 }
             }
+        }
+        
+        if (headers.isEmpty() || dataRows.isEmpty()) {
+            val parser = CSVParser(StringReader(DEFAULT_CSV), CSVFormat.DEFAULT)
+            val allCsvRows = parser.records
+            headers = allCsvRows.first().toList()
+            dataRows = allCsvRows.drop(1).map { it.toList() }
         }
 
         val showKRow = assessmentTypes?.any { it.trim().lowercase() in LOW_AGE_TYPES } ?: false

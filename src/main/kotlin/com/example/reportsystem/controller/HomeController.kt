@@ -86,10 +86,14 @@ class HomeController(
     fun downloadDocx(form: UserReportForm?): ResponseEntity<ByteArray> {
         var targetLevel: String? = null
         var targetGrade: String? = null
+        var finalStudentType = form?.studentType
 
         if (form != null) {
             try {
-                studentArchiveService.saveOrUpdateArchive(form)
+                val student = studentArchiveService.saveOrUpdateArchive(form)
+                if (student != null) {
+                    finalStudentType = student.studentType
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -100,7 +104,7 @@ class HomeController(
         val modifiedBytes = docxGeneratorService.generateDocx(
             targetLevel,
             targetGrade,
-            form?.studentType,
+            finalStudentType,
             form?.assessmentType
         )
 

@@ -11,12 +11,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Custom Styles -->
     <link href="/css/style.css" rel="stylesheet">
-    <style>
         .type-list-item.active { background-color: #e9ecef; border-left: 4px solid var(--primary); }
         .type-list-item:hover { background-color: #f8f9fa; cursor: pointer; }
         .field-card { border-left: 4px solid var(--purple); margin-bottom: 10px; }
         .field-card-header { display: flex; justify-content: space-between; align-items: center; }
-    </style>
+        .matrix-textarea { font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; }
 </head>
 <body>
     <div class="app-container">
@@ -78,10 +77,20 @@
                             <div class="card-body bg-light" id="fieldsContainer" style="overflow-y: auto; max-height: 600px;">
                                 <div class="text-center py-5 text-muted" id="fieldEmptyState">
                                     <i class="bi bi-arrow-left-circle fs-1 text-light mb-3 block"></i>
-                                    <p>请点击左板块中的某个具体类型，来配置其专属表单字段。</p>
+                                    <p>请点击左板块中的某个具体类型，来配置其专属表单字段和能力矩阵。</p>
                                 </div>
                                 <div id="fieldsList">
                                     <!-- Fields injected here via JS -->
+                                </div>
+
+                                <!-- CSV Matrix Section -->
+                                <div id="matrixSection" class="mt-4 d-none">
+                                    <h6 class="fw-bold mb-3 border-top pt-4">3. 升学梯队能力对照表 (CSV矩阵)</h6>
+                                    <div class="mb-2 text-muted small">修改此处的CSV即可直接改变Word报告中生成的表格列和行数据。</div>
+                                    <textarea id="matrixTextarea" class="form-control matrix-textarea" rows="12"></textarea>
+                                    <div class="mt-3 text-end">
+                                        <button class="btn btn-primary btn-sm" onclick="saveMatrix()">保存对照表</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -238,6 +247,7 @@
                         currentSelectedType = null;
                         document.getElementById('fieldEmptyState').style.display = 'block';
                         document.getElementById('fieldsList').innerHTML = '';
+                        document.getElementById('matrixSection').classList.add('d-none');
                         document.getElementById('addFieldBtn').disabled = true;
                         document.getElementById('currentConfigTitle').innerText = '2. 专属字段配置面板';
                     }
@@ -253,9 +263,10 @@
             document.getElementById('addFieldBtn').disabled = false;
             document.getElementById('fieldTargetTypeCode').value = typeCode;
             
-            // Re-render styles
+            // Re-render styles and load content
             renderTypes(adminTypes);
             loadFields(typeCode);
+            loadMatrix(typeCode);
         }
 
         function loadFields(typeCode) {
@@ -344,6 +355,29 @@
                     loadFields(currentSelectedType);
                 });
             }
+        }
+
+        // 3. Matrix Logic
+        function loadMatrix(typeCode) {
+            const typeInfo = adminTypes.find(t => t.typeCode === typeCode);
+            if(typeInfo) {
+                document.getElementById('matrixSection').classList.remove('d-none');
+                document.getElementById('matrixTextarea').value = typeInfo.capabilityMatrixCsv || '';
+            }
+        }
+
+        function saveMatrix() {
+            const typeInfo = adminTypes.find(t => t.typeCode === currentSelectedType);
+            if(!typeInfo) return;
+            const newCsv = document.getElementById('matrixTextarea').value;
+            fetch(`/admin/api/types/${typeInfo.id}/matrix`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ csv: newCsv })
+            }).then(() => {
+                alert('能力矩阵已保存！');
+                loadTypes(); // reload to refresh memory state
+            });
         }
     </script>
 </body>

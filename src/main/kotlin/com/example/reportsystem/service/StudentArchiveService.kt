@@ -17,10 +17,10 @@ class StudentArchiveService(
     private val assessmentRecordRepository: AssessmentRecordRepository
 ) {
     @Transactional
-    fun saveOrUpdateArchive(form: UserReportForm) {
+    fun saveOrUpdateArchive(form: UserReportForm): Student? {
         val name = form.name?.trim()
         if (name.isNullOrEmpty()) {
-            return
+            return null
         }
 
         var student = studentRepository.findFirstByNameAndSchool(name, form.school)
@@ -73,6 +73,7 @@ class StudentArchiveService(
             this.assessmentDate = parsedDate
         }
         assessmentRecordRepository.save(record)
+        return student
     }
 
     @Transactional

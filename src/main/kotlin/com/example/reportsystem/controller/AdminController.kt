@@ -32,6 +32,16 @@ class AdminController(
         return ResponseEntity.ok(dictService.saveStudentType(type))
     }
 
+    @PostMapping("/api/types/{id}/matrix")
+    @ResponseBody
+    fun updateMatrix(@PathVariable id: Long, @RequestBody body: Map<String, String>): ResponseEntity<Void> {
+        val types = dictService.getAllStudentTypes()
+        val type = types.find { it.id == id } ?: return ResponseEntity.notFound().build()
+        type.capabilityMatrixCsv = body["csv"]
+        dictService.saveStudentType(type)
+        return ResponseEntity.ok().build()
+    }
+
     @DeleteMapping("/api/types/{id}")
     @ResponseBody
     fun deleteType(@PathVariable id: Long): ResponseEntity<Void> {
