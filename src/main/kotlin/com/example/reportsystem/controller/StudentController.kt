@@ -26,7 +26,8 @@ data class StudentForm(
     val gender: String? = null,
     val school: String? = null,
     val grade: String? = null,
-    val studentType: com.example.reportsystem.entity.StudentType? = null
+    val studentType: String? = null,
+    val dynamicData: String? = null
 )
 
 data class AssessmentHistoryDto(
@@ -93,6 +94,7 @@ class StudentController(
                 this.school = form.school
                 this.grade = form.grade
                 this.studentType = form.studentType
+                this.dynamicData = form.dynamicData
             }
         } else {
             if (form.phone != null) student.phone = form.phone
@@ -101,6 +103,7 @@ class StudentController(
             if (form.school != null) student.school = form.school
             if (form.grade != null) student.grade = form.grade
             if (form.studentType != null) student.studentType = form.studentType
+            if (form.dynamicData != null) student.dynamicData = form.dynamicData
         }
         
         studentRepository.save(student)

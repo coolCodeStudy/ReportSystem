@@ -27,8 +27,7 @@ class Student {
     var grade: String? = null
 
     @Column(name = "student_type")
-    @Convert(converter = StudentTypeConverter::class)
-    var studentType: StudentType? = null
+    var studentType: String? = null
 
     @Column(name = "created_at")
     var createdAt: LocalDateTime = LocalDateTime.now()
@@ -38,6 +37,9 @@ class Student {
 
     @Column(name = "is_deleted")
     var isDeleted: Boolean = false
+
+    @Column(name = "dynamic_data", columnDefinition = "TEXT")
+    var dynamicData: String? = null
 
     @PrePersist
     fun prePersist() {

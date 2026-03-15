@@ -13,5 +13,6 @@ data class StudentDto(
     val studentType: String,
     val latestAssessmentDate: String,
     val latestStudyGoal: String,
-    val latestLevel: String
+    val latestLevel: String,
+    val dynamicData: String?
 )

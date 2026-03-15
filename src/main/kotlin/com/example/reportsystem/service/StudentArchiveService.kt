@@ -35,6 +35,7 @@ class StudentArchiveService(
                 this.school = form.school
                 this.grade = form.grade
                 this.studentType = form.studentType
+                this.dynamicData = form.dynamicData
             }
             student = studentRepository.save(student)
         } else {
@@ -45,6 +46,7 @@ class StudentArchiveService(
             if (form.school != null && student.school != form.school) { student.school = form.school; updated = true }
             if (form.grade != null && student.grade != form.grade) { student.grade = form.grade; updated = true }
             if (form.studentType != null && student.studentType != form.studentType) { student.studentType = form.studentType; updated = true }
+            if (form.dynamicData != null && student.dynamicData != form.dynamicData) { student.dynamicData = form.dynamicData; updated = true }
             if (updated) {
                 student = studentRepository.save(student)
             }

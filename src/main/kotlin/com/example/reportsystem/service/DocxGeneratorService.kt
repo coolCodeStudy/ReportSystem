@@ -111,7 +111,7 @@ class DocxGeneratorService {
     fun generateDocx(
         targetLevel: String?,
         targetGrade: String?,
-        studentType: com.example.reportsystem.entity.StudentType? = null,
+        studentType: String? = null,
         assessmentTypes: List<String>? = null
     ): ByteArray {
         val resource = ClassPathResource("static/Lingoland学习方案.docx")
@@ -136,7 +136,7 @@ class DocxGeneratorService {
         document: XWPFDocument,
         targetLevel: String?,
         targetGrade: String?,
-        studentType: com.example.reportsystem.entity.StudentType?,
+        studentType: String?,
         assessmentTypes: List<String>?
     ) {
         val table = document.tables[0]
@@ -145,10 +145,10 @@ class DocxGeneratorService {
 
         // ── Step 2: Determine columns and rows ─────────────────────────────
         val dynamicCols: List<ColConfig> = when (studentType) {
-            com.example.reportsystem.entity.StudentType.INTL, com.example.reportsystem.entity.StudentType.TRANSITION_INTL -> INT_COLS
-            com.example.reportsystem.entity.StudentType.TRANSITION_HKDSE       -> HKDSE_COLS
-            com.example.reportsystem.entity.StudentType.TRANSITION_HANGZHOU_INTL -> HZ_INT_COLS
-            com.example.reportsystem.entity.StudentType.DOMESTIC              -> DOMESTIC_COLS
+            "INTL", "TRANSITION_INTL" -> INT_COLS
+            "TRANSITION_HKDSE"       -> HKDSE_COLS
+            "TRANSITION_HANGZHOU_INTL" -> HZ_INT_COLS
+            "DOMESTIC"              -> DOMESTIC_COLS
             else                  -> emptyList()
         }
         val allCols = FIXED_COLS + dynamicCols

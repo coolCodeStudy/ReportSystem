@@ -55,7 +55,18 @@
                     <h6 class="sidebar-heading">教务管理</h6>
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
-                            <a class="nav-link active" href="#"><i class="bi bi-people"></i> 档案总览</a>
+                            <a class="nav-link active" href="/"><i class="bi bi-people"></i> 档案总览</a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="sidebar-section border-0">
+                    <h6 class="sidebar-heading">系统及设置</h6>
+                    <ul class="nav flex-column sidebar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link text-secondary" href="/admin/templates">
+                                <i class="bi bi-gear-wide-connected"></i> 测评及表单引擎配置
+                            </a>
                         </li>
                     </ul>
                 </div>
@@ -356,6 +367,7 @@
                     </div>
                     <div class="modal-body">
                         <input type="hidden" id="sid" name="id">
+                        <input type="hidden" id="sdynamicData" name="dynamicData">
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label for="sname" class="form-label">学生姓名</label>
@@ -404,16 +416,22 @@
                             <div class="col-12 mt-4">
                                 <hr class="my-2 border-secondary opacity-25">
                             </div>
-                            <div class="col-md-6">
-                                <label for="sstudentType" class="form-label">学生类型 (体制倾向)</label>
-                                <select class="form-select" id="sstudentType" name="studentType">
+                            <div class="col-md-12">
+                                <label for="sstudentType" class="form-label">学生类型 (选择体系以加载专属档案表单)</label>
+                                <select class="form-select" id="sstudentType" name="studentType" onchange="loadDynamicFields(this.value)">
                                     <option value="" selected disabled>请选择...</option>
-                                    <option value="INTL">国际学校</option>
-                                    <option value="TRANSITION_INTL">体制内转国际</option>
-                                    <option value="TRANSITION_HKDSE">体制内转HKDSE</option>
-                                    <option value="TRANSITION_HANGZHOU_INTL">体制内转杭州国际学校</option>
-                                    <option value="DOMESTIC">体制内</option>
+                                    <th:block th:each="type : ${activeStudentTypes}">
+                                        <option th:value="${type.typeCode}" th:text="${type.typeName}"></option>
+                                    </th:block>
                                 </select>
+                            </div>
+                            <div class="col-12 mt-3" id="dynamicFieldsContainer" style="display:none;">
+                                <div class="p-3 bg-light rounded border">
+                                    <h6 class="text-primary mb-3 fw-bold"><i class="bi bi-ui-checks-grid me-2"></i>该体系专属档案信息</h6>
+                                    <div class="row g-3" id="dynamicFieldsBody">
+                                        <!-- Fields injected via JS -->
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -499,6 +517,9 @@
                     const form = document.querySelector('#studentRecordModal form');
                     form.reset();
                     document.getElementById('sid').value = '';
+                    document.getElementById('sdynamicData').value = '';
+                    document.getElementById('dynamicFieldsContainer').style.display = 'none';
+                    document.getElementById('dynamicFieldsBody').innerHTML = '';
                     document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>新建学生基础档案';
                 });
             }
@@ -515,6 +536,7 @@
                     const school = this.getAttribute('data-school');
                     const grade = this.getAttribute('data-grade');
                     const studentType = this.getAttribute('data-studentType');
+                    const dynamicDataStr = this.getAttribute('data-dynamicData');
 
                     document.getElementById('sid').value = id || '';
                     document.getElementById('sname').value = name || '';
@@ -530,15 +552,14 @@
                     if (grade && grade !== 'null') gradeSelect.value = grade; else gradeSelect.selectedIndex = 0;
 
                     const studentTypeSelect = document.getElementById('sstudentType');
-                    const studentTypeMap = {
-                        '国际学校': 'INTL',
-                        '体制内转国际': 'TRANSITION_INTL',
-                        '体制内转HKDSE': 'TRANSITION_HKDSE',
-                        '体制内转杭州国际学校': 'TRANSITION_HANGZHOU_INTL',
-                        '体制内': 'DOMESTIC'
-                    };
-                    const mappedType = studentTypeMap[studentType] || studentType;
-                    if (mappedType && mappedType !== 'null' && mappedType !== '未定') studentTypeSelect.value = mappedType; else studentTypeSelect.selectedIndex = 0;
+                    if (studentType && studentType !== 'null' && studentType !== '未定') {
+                        studentTypeSelect.value = studentType;
+                        loadDynamicFields(studentType, dynamicDataStr);
+                    } else {
+                        studentTypeSelect.selectedIndex = 0;
+                        document.getElementById('dynamicFieldsContainer').style.display = 'none';
+                        document.getElementById('dynamicFieldsBody').innerHTML = '';
+                    }
 
                     document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>编辑学生基础档案';
 
@@ -695,6 +716,87 @@
                     }
                 });
             });
+            // Load Dynamic Fields
+            window.loadDynamicFields = function(typeCode, prefillDataStr) {
+                const container = document.getElementById('dynamicFieldsContainer');
+                const body = document.getElementById('dynamicFieldsBody');
+                
+                if (!typeCode) {
+                    container.style.display = 'none';
+                    body.innerHTML = '';
+                    return;
+                }
+
+                // Try parse prefill
+                let prefill = {};
+                if (prefillDataStr) {
+                    try { prefill = JSON.parse(prefillDataStr); } catch (e) {}
+                }
+
+                fetch(`/admin/api/fields/${typeCode}`)
+                    .then(res => res.json())
+                    .then(fields => {
+                        if (fields.length === 0) {
+                            container.style.display = 'none';
+                            body.innerHTML = '';
+                            return;
+                        }
+                        
+                        container.style.display = 'block';
+                        body.innerHTML = '';
+                        
+                        fields.forEach(f => {
+                            const val = prefill[f.fieldKey] || '';
+                            const requiredAttr = f.isRequired ? 'required' : '';
+                            const reqStar = f.isRequired ? '<span class="text-danger">*</span>' : '';
+                            
+                            let inputHtml = '';
+                            if (f.fieldType === 'TEXT' || f.fieldType === 'NUMBER') {
+                                const type = f.fieldType === 'NUMBER' ? 'number' : 'text';
+                                inputHtml = `<input type="${type}" class="form-control dynamic-input" data-key="${f.fieldKey}" value="${val}" ${requiredAttr}>`;
+                            } else if (f.fieldType === 'TEXTAREA') {
+                                inputHtml = `<textarea class="form-control dynamic-input" data-key="${f.fieldKey}" rows="2" ${requiredAttr}>${val}</textarea>`;
+                            } else if (f.fieldType === 'SELECT') {
+                                let options = [];
+                                try { options = JSON.parse(f.optionsJson); } catch(e){}
+                                inputHtml = `<select class="form-select dynamic-input" data-key="${f.fieldKey}" ${requiredAttr}>
+                                    <option value="">请选择...</option>`;
+                                options.forEach(opt => {
+                                    const selected = val === opt ? 'selected' : '';
+                                    inputHtml += `<option value="${opt}" ${selected}>${opt}</option>`;
+                                });
+                                inputHtml += `</select>`;
+                            }
+
+                            const wrap = `
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary" style="font-size: 0.9em;">
+                                        ${f.labelName} ${reqStar}
+                                    </label>
+                                    ${inputHtml}
+                                </div>
+                            `;
+                            body.innerHTML += wrap;
+                        });
+                    });
+            };
+
+            // Intercept form submit to serialize dynamicData
+            const studentForm = document.querySelector('#studentRecordModal form');
+            if(studentForm) {
+                studentForm.addEventListener('submit', function(e) {
+                    const inputs = document.querySelectorAll('.dynamic-input');
+                    const dataObj = {};
+                    inputs.forEach(inp => {
+                        const key = inp.getAttribute('data-key');
+                        if (key && inp.value) {
+                            dataObj[key] = inp.value;
+                        }
+                    });
+                    document.getElementById('sdynamicData').value = JSON.stringify(dataObj);
+                    // continue normal form submission
+                });
+            }
         });
     </script>
 </body>

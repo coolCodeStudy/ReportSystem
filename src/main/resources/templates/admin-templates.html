@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统配置 - 动态表单管理</title>
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Custom Styles -->
+    <link href="/css/style.css" rel="stylesheet">
+    <style>
+        .type-list-item.active { background-color: #e9ecef; border-left: 4px solid var(--primary); }
+        .type-list-item:hover { background-color: #f8f9fa; cursor: pointer; }
+        .field-card { border-left: 4px solid var(--purple); margin-bottom: 10px; }
+        .field-card-header { display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <img src="/images/lingoland_logo.jpg" alt="Lingoland Logo">
+                <span style="font-size: 1.1rem; letter-spacing: 0.5px;">语陆教育Admin配置后台</span>
+            </div>
+            <div class="header-actions">
+                <a href="/" class="btn btn-outline-primary btn-sm"><i class="bi bi-box-arrow-left"></i> 返回教务主页</a>
+            </div>
+        </header>
+
+        <div class="app-body">
+            <!-- Sidebar -->
+            <aside class="app-sidebar">
+                <div class="sidebar-section">
+                    <h6 class="sidebar-heading">系统管理</h6>
+                    <ul class="nav flex-column sidebar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/templates"><i class="bi bi-layout-text-window-reverse"></i> 学生类型及表单配置</a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="app-main">
+                <div class="main-header mb-4">
+                     <h4 class="fw-bold mb-1">动态表单模版引擎</h4>
+                     <p class="text-muted">通过在此处添加和配置“学生体系”专属字段，前台在录入档案时会自动渲染对应输入框。</p>
+                </div>
+
+                <div class="row">
+                    <!-- Left: Student Types List -->
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                <h6 class="mb-0 fw-bold">1. 学生类型配置</h6>
+                                <button class="btn btn-sm btn-primary" onclick="showAddTypeModal()">+ 新增</button>
+                            </div>
+                            <div class="list-group list-group-flush" id="studentTypeContainer">
+                                <div class="p-4 text-center text-muted" id="typesLoading">
+                                    <div class="spinner-border spinner-border-sm me-2"></div>加载中...
+                                </div>
+                                <!-- Types injected here via JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Fields Configurator -->
+                    <div class="col-md-8">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                <h6 class="mb-0 fw-bold" id="currentConfigTitle">2. 专属字段配置面板 (请先从左侧选择)</h6>
+                                <button class="btn btn-sm btn-success" id="addFieldBtn" onclick="showAddFieldModal()" disabled>+ 添加字段</button>
+                            </div>
+                            <div class="card-body bg-light" id="fieldsContainer" style="overflow-y: auto; max-height: 600px;">
+                                <div class="text-center py-5 text-muted" id="fieldEmptyState">
+                                    <i class="bi bi-arrow-left-circle fs-1 text-light mb-3 block"></i>
+                                    <p>请点击左板块中的某个具体类型，来配置其专属表单字段。</p>
+                                </div>
+                                <div id="fieldsList">
+                                    <!-- Fields injected here via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Add Type Modal -->
+    <div class="modal fade" id="addTypeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">新增学生类型/体系</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">类型编码 (英文枚举值，用于底层辨识)</label>
+                        <input type="text" id="newTypeCode" class="form-control" placeholder="例如: IELTS_PREP" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">展示名称 (给老师看的中文名字)</label>
+                        <input type="text" id="newTypeName" class="form-control" placeholder="例如: 雅思备考班" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">排序权重</label>
+                        <input type="number" id="newTypeSort" class="form-control" value="10">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveType()">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Field Modal -->
+    <div class="modal fade" id="addFieldModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加专属字段</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="fieldTargetTypeCode">
+                    <div class="mb-3">
+                        <label class="form-label">字段中文名 (Label)</label>
+                        <input type="text" id="newFieldLabel" class="form-control" placeholder="例如: 目标分数" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">数据存储键 (Key, 英文)</label>
+                        <input type="text" id="newFieldKey" class="form-control" placeholder="例如: target_score" required>
+                        <div class="form-text">用于底层存入 JSON，同体系下须唯一</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">组件交互类型</label>
+                        <select id="newFieldType" class="form-select" onchange="toggleOptionsInput()">
+                            <option value="TEXT">单行文本 (Text)</option>
+                            <option value="NUMBER">数字输入框 (Number)</option>
+                            <option value="TEXTAREA">多行输入区域 (Textarea)</option>
+                            <option value="SELECT">下拉选择 (Select)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 d-none" id="optionsGroup">
+                        <label class="form-label">下拉选项 (英文逗号分隔)</label>
+                        <input type="text" id="newFieldOptions" class="form-control" placeholder="例如: 优秀,良好,及格">
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="newFieldRequired">
+                        <label class="form-check-label" for="newFieldRequired">设为必填</label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">排序权重</label>
+                        <input type="number" id="newFieldSort" class="form-control" value="10">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveField()">添加字段</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentSelectedType = null;
+        let adminTypes = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+             loadTypes();
+        });
+
+        // 1. Types Logic
+        function loadTypes() {
+            fetch('/admin/api/types')
+            .then(res => res.json())
+            .then(data => {
+                adminTypes = data;
+                renderTypes(data);
+            });
+        }
+
+        function renderTypes(types) {
+            const container = document.getElementById('studentTypeContainer');
+            container.innerHTML = '';
+            types.forEach(t => {
+                const isActive = currentSelectedType === t.typeCode ? 'active' : '';
+                const display = `
+                    <div class="list-group-item list-group-item-action p-3 type-list-item ${isActive}" onclick="selectType('${t.typeCode}', '${t.typeName}')">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1 fw-bold">${t.typeName}</h6>
+                            <small class="text-muted"><code>${t.typeCode}</code></small>
+                        </div>
+                        <small class="text-muted d-block mt-1">状态: ${t.status} | 排序: ${t.sortOrder}</small>
+                        <button class="btn btn-sm btn-link text-danger p-0 mt-2" onclick="deleteType(event, ${t.id}, '${t.typeName}')">删除体系</button>
+                    </div>
+                `;
+                container.innerHTML += display;
+            });
+        }
+
+        function showAddTypeModal() {
+            document.getElementById('newTypeCode').value = '';
+            document.getElementById('newTypeName').value = '';
+            new bootstrap.Modal('#addTypeModal').show();
+        }
+
+        function saveType() {
+            const code = document.getElementById('newTypeCode').value.trim();
+            const name = document.getElementById('newTypeName').value.trim();
+            const sort = document.getElementById('newTypeSort').value;
+            if(!code || !name) return alert('请填入必填项');
+
+            fetch('/admin/api/types', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ typeCode: code, typeName: name, sortOrder: sort, status: 'ACTIVE' })
+            }).then(() => {
+                bootstrap.Modal.getInstance('#addTypeModal').hide();
+                loadTypes();
+            });
+        }
+
+        function deleteType(e, id, name) {
+            e.stopPropagation();
+            if(confirm(`谨慎：确定要彻底删除 [${name}] 及其所有配置好的表单吗？数据可能不兼容！`)) {
+                fetch(`/admin/api/types/${id}`, { method: 'DELETE' }).then(() => {
+                    if(currentSelectedType === adminTypes.find(x => x.id === id)?.typeCode) {
+                        currentSelectedType = null;
+                        document.getElementById('fieldEmptyState').style.display = 'block';
+                        document.getElementById('fieldsList').innerHTML = '';
+                        document.getElementById('addFieldBtn').disabled = true;
+                        document.getElementById('currentConfigTitle').innerText = '2. 专属字段配置面板';
+                    }
+                    loadTypes();
+                });
+            }
+        }
+
+        // 2. Fields Logic
+        function selectType(typeCode, typeName) {
+            currentSelectedType = typeCode;
+            document.getElementById('currentConfigTitle').innerText = `正在配置: ${typeName} 专属表单`;
+            document.getElementById('addFieldBtn').disabled = false;
+            document.getElementById('fieldTargetTypeCode').value = typeCode;
+            
+            // Re-render styles
+            renderTypes(adminTypes);
+            loadFields(typeCode);
+        }
+
+        function loadFields(typeCode) {
+            document.getElementById('fieldEmptyState').style.display = 'none';
+            fetch(`/admin/api/fields/${typeCode}`)
+            .then(res => res.json())
+            .then(data => {
+                const list = document.getElementById('fieldsList');
+                list.innerHTML = '';
+                if(data.length === 0) {
+                    list.innerHTML = `<div class="p-4 text-center text-muted">目前此体系下没有任何自定义专属字段，请点击右上角新增。</div>`;
+                    return;
+                }
+                
+                data.forEach(f => {
+                    let typeBadge = '';
+                    if(f.fieldType === 'TEXT') typeBadge = '<span class="badge bg-secondary">文本</span>';
+                    if(f.fieldType === 'NUMBER') typeBadge = '<span class="badge bg-primary">数字</span>';
+                    if(f.fieldType === 'TEXTAREA') typeBadge = '<span class="badge bg-info text-dark">长文本</span>';
+                    if(f.fieldType === 'SELECT') typeBadge = `<span class="badge bg-success">下拉单选</span> <br/><small class="text-muted mt-1 d-block">选项: ${f.optionsJson || '未配置'}</small>`;
+
+                    list.innerHTML += `
+                        <div class="card field-card shadow-sm">
+                            <div class="card-body">
+                                <div class="field-card-header">
+                                    <h6 class="fw-bold mb-0">${f.labelName} ${f.isRequired ? '<span class="text-danger">*</span>' : ''}</h6>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-danger shadow-sm" onclick="deleteField(${f.id})"><i class="bi bi-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="mt-2" style="font-size: 0.9em;">
+                                    Key: <code>${f.fieldKey}</code> | 类型: ${typeBadge} | 排序: ${f.sortOrder}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function toggleOptionsInput() {
+            const t = document.getElementById('newFieldType').value;
+            if(t === 'SELECT') {
+                document.getElementById('optionsGroup').classList.remove('d-none');
+            } else {
+                document.getElementById('optionsGroup').classList.add('d-none');
+            }
+        }
+
+        function showAddFieldModal() {
+            document.getElementById('newFieldLabel').value = '';
+            document.getElementById('newFieldKey').value = '';
+            document.getElementById('newFieldType').value = 'TEXT';
+            document.getElementById('newFieldOptions').value = '';
+            document.getElementById('newFieldRequired').checked = false;
+            document.getElementById('newFieldSort').value = '10';
+            toggleOptionsInput();
+            new bootstrap.Modal('#addFieldModal').show();
+        }
+
+        function saveField() {
+            const f = {
+                studentTypeCode: document.getElementById('fieldTargetTypeCode').value,
+                labelName: document.getElementById('newFieldLabel').value.trim(),
+                fieldKey: document.getElementById('newFieldKey').value.trim(),
+                fieldType: document.getElementById('newFieldType').value,
+                optionsJson: document.getElementById('newFieldType').value === 'SELECT' ? JSON.stringify(document.getElementById('newFieldOptions').value.split(',').map(s=>s.trim())) : null,
+                isRequired: document.getElementById('newFieldRequired').checked,
+                sortOrder: parseInt(document.getElementById('newFieldSort').value) || 10
+            };
+            if(!f.labelName || !f.fieldKey) return alert('中文名和Key均为必填');
+
+            fetch('/admin/api/fields', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(f)
+            }).then(() => {
+                bootstrap.Modal.getInstance('#addFieldModal').hide();
+                loadFields(f.studentTypeCode);
+            });
+        }
+
+        function deleteField(id) {
+            if(confirm('确定要删除此专属字段吗？已录入的数据依然存在数据库JSON中，但他将不会在表单填报显示。')) {
+                fetch(`/admin/api/fields/${id}`, { method: 'DELETE' }).then(() => {
+                    loadFields(currentSelectedType);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

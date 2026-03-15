@@ -24,7 +24,8 @@ class HomeController(
     private val studentArchiveService: StudentArchiveService,
     private val docxGeneratorService: com.example.reportsystem.service.DocxGeneratorService,
     private val studentRepository: StudentRepository,
-    private val assessmentRecordRepository: AssessmentRecordRepository
+    private val assessmentRecordRepository: AssessmentRecordRepository,
+    private val dictService: com.example.reportsystem.service.SystemDictionaryService
 ) {
 
     @GetMapping("/")
@@ -57,14 +58,17 @@ class HomeController(
                 grade = student.grade,
                 genderAgeInfo = if (genderStr.isEmpty() && ageStr.isEmpty()) "" else "$genderStr $ageStr".trim(),
                 schoolOrTarget = schoolStr,
-                studentType = student.studentType?.description ?: "未定",
+                studentType = student.studentType ?: "未定",
                 latestAssessmentDate = dateStr,
                 latestStudyGoal = goalStr,
-                latestLevel = levelStr
+                latestLevel = levelStr,
+                dynamicData = student.dynamicData
             )
         }
         
+        val activeTypes = dictService.getAllActiveStudentTypes()
         model.addAttribute("students", dtos)
+        model.addAttribute("activeStudentTypes", activeTypes)
         return "index"
     }
 
@@ -132,10 +136,11 @@ data class UserReportForm(
     val gender: String? = null,
     val school: String? = null,
     val grade: String? = null,
-    val studentType: com.example.reportsystem.entity.StudentType? = null,
+    val studentType: String? = null,
     val lingolandLevel: String? = null,
     val studyGoal: String? = null,
     val assessmentType: List<String>? = null,
     val otherAssessment: String? = null,
-    val assessmentDate: String? = null
+    val assessmentDate: String? = null,
+    val dynamicData: String? = null
 )
