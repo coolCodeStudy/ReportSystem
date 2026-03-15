@@ -19,5 +19,8 @@ class StudentTypeDictionary(
     var status: String = "ACTIVE", // ACTIVE or INACTIVE
 
     @Column(name = "sort_order", nullable = false)
-    var sortOrder: Int = 0
+    var sortOrder: Int = 0,
+
+    @Column(name = "capability_matrix_csv", columnDefinition = "text")
+    var capabilityMatrixCsv: String? = null
 )

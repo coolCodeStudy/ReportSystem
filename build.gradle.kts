@@ -28,6 +28,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.poi:poi-ooxml:5.2.3")
     implementation("com.github.librepdf:openpdf:1.3.30")
+    implementation("org.apache.commons:commons-csv:1.10.0")
     
     // Database dependencies
     implementation("org.postgresql:postgresql")

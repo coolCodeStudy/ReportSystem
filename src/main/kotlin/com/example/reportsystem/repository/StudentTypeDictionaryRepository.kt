@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface StudentTypeDictionaryRepository : JpaRepository<StudentTypeDictionary, Long> {
     fun findByStatusOrderBySortOrderAsc(status: String): List<StudentTypeDictionary>
     fun existsByTypeCode(typeCode: String): Boolean
+    fun findByTypeCode(typeCode: String): StudentTypeDictionary?
 }
