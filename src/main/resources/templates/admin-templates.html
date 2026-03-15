@@ -55,7 +55,7 @@
                     <div class="col-md-4">
                         <div class="card shadow-sm border-0 h-100">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                                <h6 class="mb-0 fw-bold">1. 学生类型配置</h6>
+                                <h6 class="mb-0 fw-bold">学生类型配置</h6>
                                 <button class="btn btn-sm btn-primary" onclick="showAddTypeModal()">+ 新增</button>
                             </div>
                             <div class="list-group list-group-flush" id="studentTypeContainer">
@@ -71,21 +71,17 @@
                     <div class="col-md-8">
                         <div class="card shadow-sm border-0 h-100">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                                <h6 class="mb-0 fw-bold" id="currentConfigTitle">2. 专属字段配置面板 (请先从左侧选择)</h6>
-                                <button class="btn btn-sm btn-success" id="addFieldBtn" onclick="showAddFieldModal()" disabled>+ 添加字段</button>
+                                <h6 class="mb-0 fw-bold" id="currentConfigTitle">升学梯队能力对照表 (请先从左侧选择)</h6>
                             </div>
                             <div class="card-body bg-light" id="fieldsContainer" style="overflow-y: auto; max-height: 600px;">
                                 <div class="text-center py-5 text-muted" id="fieldEmptyState">
                                     <i class="bi bi-arrow-left-circle fs-1 text-light mb-3 block"></i>
-                                    <p>请点击左板块中的某个具体类型，来配置其专属表单字段和能力矩阵。</p>
-                                </div>
-                                <div id="fieldsList">
-                                    <!-- Fields injected here via JS -->
+                                    <p>请点击左板块中的某个具体类型，来配置其能力矩阵。</p>
                                 </div>
 
                                 <!-- CSV Matrix Section -->
-                                <div id="matrixSection" class="mt-4 d-none">
-                                    <h6 class="fw-bold mb-3 border-top pt-4">3. 升学梯队能力对照表 (CSV矩阵)</h6>
+                                <div id="matrixSection" class="d-none">
+                                    <h6 class="fw-bold mb-3">升学梯队能力对照表 (CSV矩阵)</h6>
                                     <div class="mb-2 text-muted small">修改此处的CSV即可直接改变Word报告中生成的表格列和行数据。</div>
                                     <textarea id="matrixTextarea" class="form-control matrix-textarea" rows="12"></textarea>
                                     <div class="mt-3 text-end">
@@ -246,10 +242,8 @@
                     if(currentSelectedType === adminTypes.find(x => x.id === id)?.typeCode) {
                         currentSelectedType = null;
                         document.getElementById('fieldEmptyState').style.display = 'block';
-                        document.getElementById('fieldsList').innerHTML = '';
                         document.getElementById('matrixSection').classList.add('d-none');
-                        document.getElementById('addFieldBtn').disabled = true;
-                        document.getElementById('currentConfigTitle').innerText = '2. 专属字段配置面板';
+                        document.getElementById('currentConfigTitle').innerText = '升学梯队能力对照表 (请先从左侧选择)';
                     }
                     loadTypes();
                 });
@@ -259,13 +253,11 @@
         // 2. Fields Logic
         function selectType(typeCode, typeName) {
             currentSelectedType = typeCode;
-            document.getElementById('currentConfigTitle').innerText = `正在配置: ${typeName} 专属表单`;
-            document.getElementById('addFieldBtn').disabled = false;
-            document.getElementById('fieldTargetTypeCode').value = typeCode;
+            document.getElementById('currentConfigTitle').innerText = `正在配置: ${typeName} 能力对照表`;
             
             // Re-render styles and load content
             renderTypes(adminTypes);
-            loadFields(typeCode);
+            document.getElementById('fieldEmptyState').style.display = 'none';
             loadMatrix(typeCode);
         }
 

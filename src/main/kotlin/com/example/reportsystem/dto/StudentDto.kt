@@ -11,6 +11,7 @@ data class StudentDto(
     val genderAgeInfo: String,
     val schoolOrTarget: String,
     val studentType: String,
+    val studentTypeName: String,
     val latestAssessmentDate: String,
     val latestStudyGoal: String,
     val latestLevel: String,

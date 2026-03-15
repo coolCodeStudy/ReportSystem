@@ -30,6 +30,8 @@ class HomeController(
 
     @GetMapping("/")
     fun home(model: Model): String {
+        val activeTypes = dictService.getAllActiveStudentTypes()
+        
         val students = studentRepository.findAllByOrderByUpdatedAtDesc()
         val dtos = students.map { student ->
             val records = student.id?.let { assessmentRecordRepository.findByStudentId(it) } ?: emptyList()
@@ -47,6 +49,8 @@ class HomeController(
                 
             val goalStr = latestRecord?.studyGoal ?: "-"
             val levelStr = latestRecord?.lingolandLevel ?: "-"
+            
+            val typeName = activeTypes.find { it.typeCode == student.studentType }?.typeName ?: student.studentType ?: "未定"
 
             StudentDto(
                 id = student.id,
@@ -59,6 +63,7 @@ class HomeController(
                 genderAgeInfo = if (genderStr.isEmpty() && ageStr.isEmpty()) "" else "$genderStr $ageStr".trim(),
                 schoolOrTarget = schoolStr,
                 studentType = student.studentType ?: "未定",
+                studentTypeName = typeName,
                 latestAssessmentDate = dateStr,
                 latestStudyGoal = goalStr,
                 latestLevel = levelStr,
@@ -66,7 +71,6 @@ class HomeController(
             )
         }
         
-        val activeTypes = dictService.getAllActiveStudentTypes()
         model.addAttribute("students", dtos)
         model.addAttribute("activeStudentTypes", activeTypes)
         return "index"

@@ -183,7 +183,7 @@
                                         <td>
                                             <span
                                                 th:classappend="${student.studentType == 'drop out'} ? 'fw-bold fs-6' : ''"
-                                                th:text="${student.studentType}">normal</span>
+                                                th:text="${student.studentTypeName}">normal</span>
                                         </td>
                                         <td th:text="${student.genderAgeInfo}">Gender Age</td>
                                         <td th:text="${student.phone ?: '-'}">Phone</td>
