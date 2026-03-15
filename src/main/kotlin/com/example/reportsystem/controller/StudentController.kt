@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ModelAttribute
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
 import org.springframework.http.ResponseEntity
@@ -14,6 +15,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import com.example.reportsystem.repository.AssessmentRecordRepository
 import com.example.reportsystem.service.DocxGeneratorService
+import com.example.reportsystem.service.StudentArchiveService
 import java.time.format.DateTimeFormatter
 
 data class StudentForm(
@@ -41,8 +43,32 @@ data class AssessmentHistoryDto(
 class StudentController(
     private val studentRepository: StudentRepository,
     private val assessmentRecordRepository: AssessmentRecordRepository,
-    private val docxGeneratorService: DocxGeneratorService
+    private val docxGeneratorService: DocxGeneratorService,
+    private val studentArchiveService: StudentArchiveService
 ) {
+
+    @DeleteMapping("/{id}")
+    @ResponseBody
+    fun deleteStudent(@PathVariable id: Long): ResponseEntity<String> {
+        return try {
+            studentArchiveService.deleteStudent(id)
+            ResponseEntity.ok("Deleted successfully")
+        } catch (e: Exception) {
+            ResponseEntity.internalServerError().body("Error deleting student: ${e.message}")
+        }
+    }
+
+    @DeleteMapping("/history/{recordId}")
+    @ResponseBody
+    fun deleteAssessmentRecord(@PathVariable recordId: Long): ResponseEntity<String> {
+         return try {
+            studentArchiveService.deleteAssessmentRecord(recordId)
+            ResponseEntity.ok("Deleted successfully")
+        } catch (e: Exception) {
+            ResponseEntity.internalServerError().body("Error deleting record: ${e.message}")
+        }
+    }
+
 
     @PostMapping("/save")
     fun saveStudent(@ModelAttribute form: StudentForm): String {

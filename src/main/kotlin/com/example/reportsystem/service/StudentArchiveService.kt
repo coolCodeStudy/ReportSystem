@@ -72,4 +72,26 @@ class StudentArchiveService(
         }
         assessmentRecordRepository.save(record)
     }
+
+    @Transactional
+    fun deleteStudent(studentId: Long) {
+        // Find and soft-delete all associated assessment records first
+        val records = assessmentRecordRepository.findByStudentId(studentId)
+        records.forEach { it.isDeleted = true }
+        assessmentRecordRepository.saveAll(records)
+
+        // Now soft-delete the student
+        studentRepository.findById(studentId).ifPresent {
+            it.isDeleted = true
+            studentRepository.save(it)
+        }
+    }
+
+    @Transactional
+    fun deleteAssessmentRecord(recordId: Long) {
+        assessmentRecordRepository.findById(recordId).ifPresent {
+            it.isDeleted = true
+            assessmentRecordRepository.save(it)
+        }
+    }
 }

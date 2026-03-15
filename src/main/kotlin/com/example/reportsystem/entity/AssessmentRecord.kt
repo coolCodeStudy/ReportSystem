@@ -7,9 +7,12 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.*
 
+import org.hibernate.annotations.Where
+
 @Entity
 @Table(name = "assessment_record")
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType::class)
+@Where(clause = "is_deleted = false")
 class AssessmentRecord {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +46,9 @@ class AssessmentRecord {
 
     @Column(name = "assessment_date")
     var assessmentDate: LocalDate? = null
+
+    @Column(name = "is_deleted")
+    var isDeleted: Boolean = false
 
     @PrePersist
     fun prePersist() {
