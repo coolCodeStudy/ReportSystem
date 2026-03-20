@@ -35,6 +35,8 @@ dependencies {
     implementation("com.vladmihalcea:hibernate-types-55:2.21.1")
     
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.mockk:mockk:1.12.8")
+    testImplementation("com.ninja-squad:springmockk:3.1.1")
 }
 
 tasks.withType<Test> {
