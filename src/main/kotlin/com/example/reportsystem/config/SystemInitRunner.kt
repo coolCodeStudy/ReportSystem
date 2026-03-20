@@ -1,7 +1,9 @@
 package com.example.reportsystem.config
 
 import com.example.reportsystem.entity.StudentTypeDictionary
+import com.example.reportsystem.entity.SystemConfig
 import com.example.reportsystem.repository.StudentTypeDictionaryRepository
+import com.example.reportsystem.repository.SystemConfigRepository
 import org.springframework.boot.CommandLineRunner
 import org.springframework.stereotype.Component
 
@@ -40,8 +42,41 @@ private val FIXED_COLS = listOf(
 
 @Component
 class SystemInitRunner(
-    private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository
+    private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository,
+    private val systemConfigRepository: SystemConfigRepository
 ) : CommandLineRunner {
+
+    private fun generateGlobalCsv(): String {
+        val dynamicCols = listOf(
+            SeedColConfig("第一梯队国际") { it.int1 }, SeedColConfig("第二梯队国际") { it.int2 },
+            SeedColConfig("香港DSE Band 1A") { it.dse1a }, SeedColConfig("香港DSE Band 1B-1C") { it.dse1bc }, SeedColConfig("香港DSE Band 2") { it.dse2 },
+            SeedColConfig("WBS前20%") { it.wbs }, SeedColConfig("贝赛思") { it.beisaisi }, SeedColConfig("Map (83%-86%)") { it.mapScore }, SeedColConfig("惠立") { it.huli }, SeedColConfig("HIS") { it.his }, SeedColConfig("杭外剑高") { it.hangwai },
+            SeedColConfig("浙江高考") { it.zj }, SeedColConfig("上海高考") { it.sh }
+        )
+        val allCols = FIXED_COLS + dynamicCols
+        val sb = StringBuilder()
+        
+        // Headers
+        sb.append(allCols.joinToString(",") { "\"${it.header.replace("\"", "\"\"")}\"" }).append("\n")
+        
+        // Rows
+        SEED_ROWS.forEach { row ->
+            sb.append(allCols.joinToString(",") { "\"${it.getValue(row).replace("\"", "\"\"")}\"" }).append("\n")
+        }
+        return sb.toString().trim()
+    }
+
+    private fun getAssociatedColumns(typeCode: String): String {
+        val dynamicCols = when (typeCode) {
+            "INTL", "TRANSITION_INTL" -> listOf("第一梯队国际", "第二梯队国际")
+            "TRANSITION_HKDSE" -> listOf("香港DSE Band 1A", "香港DSE Band 1B-1C", "香港DSE Band 2")
+            "TRANSITION_HANGZHOU_INTL" -> listOf("WBS前20%", "贝赛思", "Map (83%-86%)", "惠立", "HIS", "杭外剑高")
+            "DOMESTIC" -> listOf("浙江高考", "上海高考")
+            else -> emptyList()
+        }
+        val allCols = FIXED_COLS.map { it.header } + dynamicCols
+        return allCols.joinToString(",")
+    }
 
     private fun generateCsvForType(typeCode: String): String {
         val dynamicCols = when (typeCode) {
@@ -65,17 +100,42 @@ class SystemInitRunner(
     }
 
     override fun run(vararg args: String?) {
+        // Initialize global matrix CSV
+        if (systemConfigRepository.findByConfigKey("GLOBAL_CAPABILITY_MATRIX_CSV") == null) {
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAPABILITY_MATRIX_CSV", configValue = generateGlobalCsv()))
+            println("=== Initialized global capability matrix CSV in system config ===")
+        }
+
+        // Initialize global assessment descriptions
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ASSESSMENT_DESCRIPTIONS") == null) {
+            val defaultDescs = """
+                [
+                  {"name":"Starters","description":"本次测评难度为Starters难度。"},
+                  {"name":"Movers","description":"本次测评难度为Movers难度。"},
+                  {"name":"Flyers","description":"本次测评难度为Flyers难度。"},
+                  {"name":"KET","description":"本次测评难度为KET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与基础交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"name":"PET","description":"本次测评难度为PET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与初级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"name":"IELTS","description":"本次测评难度为雅思难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与中级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"name":"雅思","description":"本次测评难度为雅思难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与中级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"name":"TOEFL Junior","description":"本次测评难度为TOEFL Junior难度。"},
+                  {"name":"MAP","description":"本次测评难度为MAP难度。"}
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ASSESSMENT_DESCRIPTIONS", configValue = defaultDescs))
+            println("=== Initialized global assessment descriptions in system config ===")
+        }
+
         // Initialize default student types if the table is empty
         if (studentTypeDictionaryRepository.count() == 0L) {
             val defaults = listOf(
-                StudentTypeDictionary(typeCode = "INTL", typeName = "国际学校", sortOrder = 1, capabilityMatrixCsv = generateCsvForType("INTL")),
-                StudentTypeDictionary(typeCode = "TRANSITION_INTL", typeName = "体制内转国际", sortOrder = 2, capabilityMatrixCsv = generateCsvForType("TRANSITION_INTL")),
-                StudentTypeDictionary(typeCode = "TRANSITION_HKDSE", typeName = "体制内转HKDSE", sortOrder = 3, capabilityMatrixCsv = generateCsvForType("TRANSITION_HKDSE")),
-                StudentTypeDictionary(typeCode = "TRANSITION_HANGZHOU_INTL", typeName = "体制内转杭州国际学校", sortOrder = 4, capabilityMatrixCsv = generateCsvForType("TRANSITION_HANGZHOU_INTL")),
-                StudentTypeDictionary(typeCode = "DOMESTIC", typeName = "体制内", sortOrder = 5, capabilityMatrixCsv = generateCsvForType("DOMESTIC"))
+                StudentTypeDictionary(typeCode = "INTL", typeName = "国际学校", sortOrder = 1, capabilityMatrixCsv = generateCsvForType("INTL"), associatedColumns = getAssociatedColumns("INTL")),
+                StudentTypeDictionary(typeCode = "TRANSITION_INTL", typeName = "体制内转国际", sortOrder = 2, capabilityMatrixCsv = generateCsvForType("TRANSITION_INTL"), associatedColumns = getAssociatedColumns("TRANSITION_INTL")),
+                StudentTypeDictionary(typeCode = "TRANSITION_HKDSE", typeName = "体制内转HKDSE", sortOrder = 3, capabilityMatrixCsv = generateCsvForType("TRANSITION_HKDSE"), associatedColumns = getAssociatedColumns("TRANSITION_HKDSE")),
+                StudentTypeDictionary(typeCode = "TRANSITION_HANGZHOU_INTL", typeName = "体制内转杭州国际学校", sortOrder = 4, capabilityMatrixCsv = generateCsvForType("TRANSITION_HANGZHOU_INTL"), associatedColumns = getAssociatedColumns("TRANSITION_HANGZHOU_INTL")),
+                StudentTypeDictionary(typeCode = "DOMESTIC", typeName = "体制内", sortOrder = 5, capabilityMatrixCsv = generateCsvForType("DOMESTIC"), associatedColumns = getAssociatedColumns("DOMESTIC"))
             )
             studentTypeDictionaryRepository.saveAll(defaults)
-            println("=== Initialized default student types in database with CSV matrices ===")
+            println("=== Initialized default student types in database with CSV matrices and associated columns ===")
         } else {
             // Migration for existing records missing CSV
             val existingTypes = studentTypeDictionaryRepository.findAll()
@@ -85,10 +145,14 @@ class SystemInitRunner(
                     type.capabilityMatrixCsv = generateCsvForType(type.typeCode)
                     modified = true
                 }
+                if (type.associatedColumns.isNullOrBlank()) {
+                    type.associatedColumns = getAssociatedColumns(type.typeCode)
+                    modified = true
+                }
             }
             if (modified) {
                 studentTypeDictionaryRepository.saveAll(existingTypes)
-                println("=== Migrated existing student types to include CSV matrices ===")
+                println("=== Migrated existing student types to include CSV matrices and/or associated columns ===")
             }
         }
     }

@@ -37,7 +37,12 @@ class AdminController(
     fun updateMatrix(@PathVariable id: Long, @RequestBody body: Map<String, String>): ResponseEntity<Void> {
         val types = dictService.getAllStudentTypes()
         val type = types.find { it.id == id } ?: return ResponseEntity.notFound().build()
-        type.capabilityMatrixCsv = body["csv"]
+        // Save associated_columns if provided instead of matrix (matrix is kept for legacy)
+        if (body.containsKey("associatedColumns")) {
+            type.associatedColumns = body["associatedColumns"]
+        } else if (body.containsKey("csv")) {
+            type.capabilityMatrixCsv = body["csv"]
+        }
         dictService.saveStudentType(type)
         return ResponseEntity.ok().build()
     }
@@ -65,6 +70,20 @@ class AdminController(
     @ResponseBody
     fun deleteField(@PathVariable id: Long): ResponseEntity<Void> {
         dictService.deleteFormField(id)
+        return ResponseEntity.ok().build()
+    }
+
+    @GetMapping("/api/config/{key}")
+    @ResponseBody
+    fun getConfig(@PathVariable key: String): ResponseEntity<Map<String, String>> {
+        val value = dictService.getGlobalConfig(key) ?: ""
+        return ResponseEntity.ok(mapOf("value" to value))
+    }
+
+    @PostMapping("/api/config/{key}")
+    @ResponseBody
+    fun saveConfig(@PathVariable key: String, @RequestBody body: Map<String, String>): ResponseEntity<Void> {
+        dictService.saveGlobalConfig(key, body["value"] ?: "")
         return ResponseEntity.ok().build()
     }
 }

@@ -22,5 +22,8 @@ class StudentTypeDictionary(
     var sortOrder: Int = 0,
 
     @Column(name = "capability_matrix_csv", columnDefinition = "text")
-    var capabilityMatrixCsv: String? = null
+    var capabilityMatrixCsv: String? = null,
+
+    @Column(name = "associated_columns", columnDefinition = "text")
+    var associatedColumns: String? = null
 )

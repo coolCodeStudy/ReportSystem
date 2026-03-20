@@ -4,13 +4,15 @@ import com.example.reportsystem.entity.StudentTypeDictionary
 import com.example.reportsystem.entity.TypeFormField
 import com.example.reportsystem.repository.StudentTypeDictionaryRepository
 import com.example.reportsystem.repository.TypeFormFieldRepository
+import com.example.reportsystem.repository.SystemConfigRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SystemDictionaryService(
     private val typeDictRepo: StudentTypeDictionaryRepository,
-    private val formFieldRepo: TypeFormFieldRepository
+    private val formFieldRepo: TypeFormFieldRepository,
+    private val systemConfigRepo: SystemConfigRepository
 ) {
     fun getAllActiveStudentTypes(): List<StudentTypeDictionary> {
         return typeDictRepo.findByStatusOrderBySortOrderAsc("ACTIVE")
@@ -46,5 +48,20 @@ class SystemDictionaryService(
     @Transactional
     fun deleteFormField(id: Long) {
         formFieldRepo.deleteById(id)
+    }
+
+    fun getGlobalConfig(key: String): String? {
+        return systemConfigRepo.findByConfigKey(key)?.configValue
+    }
+
+    @Transactional
+    fun saveGlobalConfig(key: String, value: String) {
+        var config = systemConfigRepo.findByConfigKey(key)
+        if (config == null) {
+            config = com.example.reportsystem.entity.SystemConfig(configKey = key, configValue = value)
+        } else {
+            config.configValue = value
+        }
+        systemConfigRepo.save(config)
     }
 }

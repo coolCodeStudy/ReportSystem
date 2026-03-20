@@ -60,6 +60,17 @@
                                 <h6 class="mb-0 fw-bold">学生类型配置</h6>
                                 <button class="btn btn-sm btn-primary" onclick="showAddTypeModal()">+ 新增</button>
                             </div>
+                            <div class="p-3 border-bottom bg-light">
+                                <h6 class="fw-bold mb-2">全局能力矩阵配置</h6>
+                                <div class="mb-2 text-muted small">所有列头和数据的一手来源，各体系在此基础上勾选需要的列。</div>
+                                <button class="btn btn-outline-secondary btn-sm w-100" onclick="showGlobalMatrixModal()">编辑全局 CSV</button>
+                            </div>
+                            <!-- Assessment Description Config -->
+                            <div class="p-3 border-bottom bg-light">
+                                <h6 class="fw-bold mb-2">测评尾页说明文案配置</h6>
+                                <div class="mb-2 text-muted small">此处配置的话术，会在导出报告末尾（若涉及该测评）作为补充说明自动追加。</div>
+                                <button class="btn btn-outline-info btn-sm w-100" onclick="showAssessmentDescModal()">编辑测评说明</button>
+                            </div>
                             <div class="list-group list-group-flush" id="studentTypeContainer">
                                 <div class="p-4 text-center text-muted" id="typesLoading">
                                     <div class="spinner-border spinner-border-sm me-2"></div>加载中...
@@ -83,11 +94,15 @@
 
                                 <!-- CSV Matrix Section -->
                                 <div id="matrixSection" class="d-none">
-                                    <h6 class="fw-bold mb-3">升学梯队能力对照表 (CSV矩阵)</h6>
-                                    <div class="mb-2 text-muted small">修改此处的CSV即可直接改变Word报告中生成的表格列和行数据。</div>
-                                    <textarea id="matrixTextarea" class="form-control matrix-textarea" rows="12"></textarea>
+                                    <h6 class="fw-bold mb-3">体系关联列配置</h6>
+                                    <div class="mb-3 text-muted small">系统会自动解析全局 CSV 的表头，请勾选该体系在导出时需要默认展示的列。<br/>
+                                        <span class="text-warning"><i class="bi bi-info-circle"></i> 勾选并保存后，前台用户导出时将默认选中这些列。</span>
+                                    </div>
+                                    <div id="columnCheckboxesContainer" class="row g-2 mb-3">
+                                        <!-- Checkboxes injected here -->
+                                    </div>
                                     <div class="mt-3 text-end">
-                                        <button class="btn btn-primary btn-sm" onclick="saveMatrix()">保存对照表</button>
+                                        <button class="btn btn-primary btn-sm" onclick="saveAssociatedColumns()">保存关联列</button>
                                     </div>
                                 </div>
                             </div>
@@ -177,14 +192,187 @@
         </div>
     </div>
 
+    <!-- Global Matrix Modal -->
+    <div class="modal fade" id="globalMatrixModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">全局能力矩阵 (CSV) 配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2 small">
+                        <strong>注意：</strong> 第一行必须是表头字段名（如 Lingoland,CEFR,雅思 等）。系统将读取这行来让各体系配置列关联。
+                    </div>
+                    <textarea id="globalMatrixTextarea" class="form-control matrix-textarea" rows="20"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGlobalMatrix()">保存配置</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assessment Descriptions Modal -->
+    <div class="modal fade" id="assessmentDescModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">测评说明文案配置</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-secondary py-2 small mb-3">
+                        <strong>提醒：</strong> 当填报端勾选了对应“参考测评体系”（如 KET / PET / 雅思）时，这边的文案会被自动作为尾页附录追加至生成的报告中。
+                    </div>
+                    <div class="text-end mb-2">
+                        <button class="btn btn-sm btn-primary" onclick="addAssessmentDescRow()">+ 新增测评说明</button>
+                    </div>
+                    <div id="assessmentDescList" class="list-group bg-white" style="max-height: 50vh; overflow-y: auto;">
+                        <!-- rows injected via JS -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-success" onclick="saveAssessmentDescs()">保存所有文案</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentSelectedType = null;
         let adminTypes = [];
+        let globalCsvHeader = [];
 
         document.addEventListener('DOMContentLoaded', () => {
              loadTypes();
+             loadGlobalCsvHeader();
         });
+
+        // 0. Global Config Logic
+        function loadGlobalCsvHeader() {
+            fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV')
+            .then(res => res.json())
+            .then(data => {
+                if (data.value) {
+                    const firstLine = data.value.split('\n')[0];
+                    if (firstLine) {
+                        // Very simple CSV split
+                        globalCsvHeader = firstLine.split(',').map(s => s.replace(/^"|"$/g, '').trim());
+                    }
+                }
+            });
+        }
+
+        function showGlobalMatrixModal() {
+            fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('globalMatrixTextarea').value = data.value || '';
+                new bootstrap.Modal('#globalMatrixModal').show();
+            });
+        }
+
+        function saveGlobalMatrix() {
+            const newCsv = document.getElementById('globalMatrixTextarea').value;
+            fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ value: newCsv })
+            }).then(() => {
+                bootstrap.Modal.getInstance('#globalMatrixModal').hide();
+                loadGlobalCsvHeader();
+                alert('全局能力矩阵已保存！');
+                if (currentSelectedType) {
+                    loadMatrix(currentSelectedType); // Refresh checkboxes if type selected
+                }
+            });
+        }
+
+        // 0.5 Assessment Descs Logic
+        let assessmentDescs = [];
+
+        function showAssessmentDescModal() {
+            fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS')
+            .then(res => res.json())
+            .then(data => {
+                try {
+                    assessmentDescs = data.value ? JSON.parse(data.value) : [];
+                } catch(e) { assessmentDescs = []; }
+                renderAssessmentDescs();
+                new bootstrap.Modal('#assessmentDescModal').show();
+            }).catch(() => {
+                assessmentDescs = [];
+                renderAssessmentDescs();
+                new bootstrap.Modal('#assessmentDescModal').show();
+            });
+        }
+
+        function renderAssessmentDescs() {
+            const list = document.getElementById('assessmentDescList');
+            list.innerHTML = '';
+            if (assessmentDescs.length === 0) {
+                list.innerHTML = '<div class="text-center text-muted py-4">暂无测评说明，点击上方新增。</div>';
+                return;
+            }
+            assessmentDescs.forEach((item, index) => {
+                list.innerHTML += `
+                    <div class="list-group-item bg-light mb-2 border rounded p-3">
+                        <div class="row align-items-start">
+                            <div class="col-md-3">
+                                <label class="small text-muted mb-1 fw-bold">测评名称 / 关键词</label>
+                                <input type="text" class="form-control form-control-sm desc-name-input" value="${item.name}" placeholder="如：KET">
+                            </div>
+                            <div class="col-md-8">
+                                <label class="small text-muted mb-1 fw-bold">说明详情 (大段文案)</label>
+                                <textarea class="form-control form-control-sm desc-text-input" rows="3" placeholder="如：本次测评难度为KET...">${item.description}</textarea>
+                            </div>
+                            <div class="col-md-1 text-end mt-4">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteAssessmentDescRow(${index})"><i class="bi bi-trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function addAssessmentDescRow() {
+            assessmentDescs.push({ name: '', description: '' });
+            renderAssessmentDescs();
+            setTimeout(() => {
+                const list = document.getElementById('assessmentDescList');
+                list.scrollTop = list.scrollHeight;
+            }, 50);
+        }
+
+        function deleteAssessmentDescRow(index) {
+            assessmentDescs.splice(index, 1);
+            renderAssessmentDescs();
+        }
+
+        function saveAssessmentDescs() {
+            const names = document.querySelectorAll('.desc-name-input');
+            const texts = document.querySelectorAll('.desc-text-input');
+            const newArray = [];
+            for(let i=0; i<names.length; i++){
+                const n = names[i].value.trim();
+                const t = texts[i].value.trim();
+                if (n || t) {
+                    newArray.push({ name: n, description: t });
+                }
+            }
+            fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ value: JSON.stringify(newArray) })
+            }).then(() => {
+                alert('测评文案已成功保存至后台数据库！');
+                bootstrap.Modal.getInstance('#assessmentDescModal').hide();
+            });
+        }
 
         // 1. Types Logic
         function loadTypes() {
@@ -351,25 +539,66 @@
             }
         }
 
-        // 3. Matrix Logic
+        // 3. Matrix Logic (Associated Columns)
         function loadMatrix(typeCode) {
             const typeInfo = adminTypes.find(t => t.typeCode === typeCode);
             if(typeInfo) {
                 document.getElementById('matrixSection').classList.remove('d-none');
-                document.getElementById('matrixTextarea').value = typeInfo.capabilityMatrixCsv || '';
+                
+                const container = document.getElementById('columnCheckboxesContainer');
+                container.innerHTML = '';
+                
+                let associated = [];
+                if (typeInfo.associatedColumns) {
+                    associated = typeInfo.associatedColumns.split(',').map(s => s.trim());
+                }
+
+                if (globalCsvHeader.length === 0) {
+                    container.innerHTML = '<div class="col-12 text-danger small">无法加载全局 CSV 表头，请先配置全局能力矩阵。</div>';
+                    return;
+                }
+
+                globalCsvHeader.forEach((col, index) => {
+                    const isChecked = associated.includes(col) ? 'checked' : '';
+                    // First column (usually Lingoland) is often required, but let user decide. Or force checked.
+                    const isRequired = index === 0 ? 'disabled checked' : ''; 
+                    const reqHint = index === 0 ? '<span class="text-muted">(必需)</span>' : '';
+
+                    container.innerHTML += `
+                        <div class="col-md-4 col-sm-6">
+                            <div class="form-check border p-2 rounded bg-white">
+                                <input class="form-check-input column-checkbox" type="checkbox" value="${col}" id="col_${index}" ${isChecked} ${isRequired}>
+                                <label class="form-check-label w-100" style="cursor: pointer;" for="col_${index}">
+                                    ${col} ${reqHint}
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                });
             }
         }
 
-        function saveMatrix() {
+        function saveAssociatedColumns() {
             const typeInfo = adminTypes.find(t => t.typeCode === currentSelectedType);
             if(!typeInfo) return;
-            const newCsv = document.getElementById('matrixTextarea').value;
+            
+            const checkboxes = document.querySelectorAll('.column-checkbox');
+            const selected = [];
+            checkboxes.forEach(cb => {
+                // If it's checked OR disabled (required first column)
+                if (cb.checked || cb.disabled) {
+                    selected.push(cb.value);
+                }
+            });
+
+            const newAssociated = selected.join(',');
+            
             fetch(`/admin/api/types/${typeInfo.id}/matrix`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ csv: newCsv })
+                body: JSON.stringify({ associatedColumns: newAssociated })
             }).then(() => {
-                alert('能力矩阵已保存！');
+                alert('关联列配置已保存！');
                 loadTypes(); // reload to refresh memory state
             });
         }

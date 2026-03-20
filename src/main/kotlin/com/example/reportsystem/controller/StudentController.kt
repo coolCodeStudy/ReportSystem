@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.http.ResponseEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -36,7 +37,8 @@ data class AssessmentHistoryDto(
     val type: String,
     val targetGrade: String,
     val level: String,
-    val goal: String
+    val goal: String,
+    val studentTypeCode: String?
 )
 
 @Controller
@@ -124,14 +126,15 @@ class StudentController(
                 type = it.assessmentType ?: "-",
                 targetGrade = it.targetGrade ?: "-",
                 level = it.lingolandLevel ?: "-",
-                goal = it.studyGoal ?: "-"
+                goal = it.studyGoal ?: "-",
+                studentTypeCode = it.student?.studentType
             )
         }
         return ResponseEntity.ok(dtos)
     }
 
     @GetMapping("/history/{recordId}/export")
-    fun exportHistoricReport(@PathVariable recordId: Long): ResponseEntity<ByteArray> {
+    fun exportHistoricReport(@PathVariable recordId: Long, @RequestParam(required = false) columns: String?): ResponseEntity<ByteArray> {
         val recordOpt = assessmentRecordRepository.findById(recordId)
         if (!recordOpt.isPresent) {
             return ResponseEntity.notFound().build()
@@ -144,11 +147,15 @@ class StudentController(
             ?.split(",")
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
+
+        val selectedColumns = columns?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+
         val modifiedBytes = docxGeneratorService.generateDocx(
             record.lingolandLevel,
             record.targetGrade,
             record.student?.studentType,
-            assessmentTypeList
+            assessmentTypeList,
+            selectedColumns
         )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
