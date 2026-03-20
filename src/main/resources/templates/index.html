@@ -825,7 +825,14 @@
                         container.innerHTML = '<span class="text-danger small">加载失败</span>';
                     });
             }
+            // Load once on init
             loadAssessmentTypeCheckboxes();
+            
+            // Also refresh every time the modal opens for real-time sync without page reload
+            const downloadModalEl = document.getElementById('downloadFormModal');
+            if (downloadModalEl) {
+                downloadModalEl.addEventListener('show.bs.modal', loadAssessmentTypeCheckboxes);
+            }
 
             // ── Export Columns Modal Logic ───────────────────────────────────────
             let _exportRecordId = null;
