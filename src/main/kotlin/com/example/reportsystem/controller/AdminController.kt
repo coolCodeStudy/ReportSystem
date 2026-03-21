@@ -18,6 +18,11 @@ class AdminController(
         return "admin-templates"
     }
 
+    @GetMapping("/analysis-templates")
+    fun analysisTemplatesPage(model: Model): String {
+        return "admin-analysis-templates"
+    }
+
     // --- API Endpoints ---
 
     @GetMapping("/api/types")

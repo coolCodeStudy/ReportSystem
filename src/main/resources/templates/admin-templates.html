@@ -52,6 +52,11 @@
                                 <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
                             </a>
                         </li>
+                        <li class="nav-item mt-1">
+                            <a class="nav-link" href="/admin/analysis-templates">
+                                <i class="bi bi-bar-chart-steps"></i> 测评分析模板配置
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </aside>
@@ -76,10 +81,6 @@
                                 <div class="list-group-item list-group-item-action p-3 type-list-item" id="menu-desc" onclick="selectMainMenu('desc')">
                                     <h6 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text-fill text-info me-2"></i>测评尾页说明文案</h6>
                                 </div>
-                                <div class="list-group-item list-group-item-action p-3 type-list-item" id="menu-analysis" onclick="selectMainMenu('analysis')">
-                                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-warning me-2"></i>测评分析模板配置</h6>
-                                </div>
-
                                 <!-- Dynamic Student Types -->
                                 <div class="p-3 bg-light border-bottom border-top text-muted small fw-bold d-flex justify-content-between align-items-center">
                                     <span>学生体系专属配置</span>
@@ -157,88 +158,6 @@
                                         </div>
                                         <div class="text-end border-top pt-3 mt-auto">
                                             <button class="btn btn-success px-4 shadow-sm rounded-pill" onclick="saveAssessmentDescs()">保存所有文案</button>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Panel: Analysis Config -->
-                                <div id="panel-analysis" class="config-panel d-none">
-                                    <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 阅读测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="readingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="readingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 听力测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="listeningAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="listeningCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 口语测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="speakingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="speakingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 写作测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="writingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="writingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 语言运用测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="languageUseAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="languageUseCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 学习素养测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="learningLiteracyAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="learningLiteracyCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-
-                                        <div class="text-end border-top pt-3 mt-2">
-                                            <button class="btn btn-success px-4 shadow-sm rounded-pill" onclick="saveAnalysisConfigs()">保存模板配置</button>
                                         </div>
                                     </div>
                                 </div>
