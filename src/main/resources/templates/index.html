@@ -65,7 +65,7 @@
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
                             <a class="nav-link text-secondary" href="/admin/templates">
-                                <i class="bi bi-gear-wide-connected"></i> 测评及表单引擎配置
+                                <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
                             </a>
                         </li>
                     </ul>
@@ -234,78 +234,33 @@
     <!-- Download Form Modal (For new assessment / Generate report) -->
     <div class="modal fade" id="downloadFormModal" tabindex="-1" aria-labelledby="downloadFormModalLabel"
         aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <form action="/report/save" method="POST">
-                    <div class="modal-header">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <form id="workspaceCreateForm">
+                    <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);">
                         <h5 class="modal-title" id="downloadFormModalLabel"><i
-                                class="bi bi-file-earmark-plus me-2"></i>创建测评档案</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                class="bi bi-rocket-takeoff me-2"></i>新建测评档案</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="name" class="form-label">学生姓名</label>
-                                <select class="form-select fw-medium text-primary" id="name" name="name" required>
-                                    <option value="" selected disabled>-- 请选择已有学生 --</option>
-                                    <th:block th:each="student : ${students}">
-                                        <option th:value="${student.name}" th:text="${student.name}"
-                                            th:attr="data-grade=${student.grade}"></option>
-                                    </th:block>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="grade" class="form-label">
-                                    所在年级
-                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(由系统自动获取带入)</span>
-                                </label>
-                                <input type="text" class="form-control bg-light text-muted" id="grade" name="grade"
-                                    readonly tabindex="-1" placeholder="选择姓名后自动显示">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="lingolandLevel" class="form-label">当前测评 Level</label>
-                                <select class="form-select" id="lingolandLevel" name="lingolandLevel">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="A1">A1</option>
-                                    <option value="A2-">A2-</option>
-                                    <option value="A2+">A2+</option>
-                                    <option value="B1-">B1-</option>
-                                    <option value="B1+">B1+</option>
-                                    <option value="B2-">B2-</option>
-                                    <option value="B2+">B2+</option>
-                                    <option value="C1-">C1-</option>
-                                    <option value="C1+">C1+</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="assessmentDate" class="form-label">
-                                    测评日期
-                                    <span class="text-muted fw-normal" style="font-size:0.85em;">(不填则默认为今日)</span>
-                                </label>
-                                <input type="date" class="form-control" id="assessmentDate" name="assessmentDate">
-                            </div>
-                            <div class="col-12">
-                                <label for="studyGoal" class="form-label">近期学习目标 / 教学重点</label>
-                                <textarea class="form-control" id="studyGoal" name="studyGoal" rows="2"
-                                    placeholder="填写重点..."></textarea>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label d-block">参考测评体系</label>
-                                <div class="d-flex flex-wrap gap-3" id="dynamicAssessmentTypesContainer">
-                                    <span class="text-muted small"><div class="spinner-border spinner-border-sm me-1"></div>加载中...</span>
-                                </div>
-                                <div class="mt-3">
-                                    <input type="text" class="form-control" id="otherAssessmentInput"
-                                        name="otherAssessment" placeholder="其他定制体系 (如需填写请直接输入)...">
-                                </div>
-                            </div>
+                    <div class="modal-body p-4">
+                        <div class="mb-4">
+                            <label for="studentId" class="form-label fw-bold text-secondary mb-3">为哪位学生创建测评档案？</label>
+                            <select class="form-select form-select-lg shadow-sm border-primary" id="studentId" name="studentId" required>
+                                <option value="" selected disabled>-- 请选择已有学生 --</option>
+                                <th:block th:each="student : ${students}">
+                                    <option th:value="${student.id}" th:text="${student.name}"></option>
+                                </th:block>
+                            </select>
+                        </div>
+                        <div class="alert alert-light border small text-muted mb-0">
+                            <i class="bi bi-info-circle me-1 text-primary"></i> 确认后，将立刻进入 <strong>「沉浸式测评工作台」</strong>，您可以在那里从容填写测评时间、等级、系统模版及详细算分。
                         </div>
                     </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">暂不保存</button>
-                        <button type="submit" class="btn btn-primary px-4 shadow-sm"
+                    <div class="modal-footer bg-light border-top-0 pt-0">
+                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">取消</button>
+                        <button type="submit" id="btnEnterWorkspace" class="btn btn-primary px-4 shadow-sm"
                             style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
-                            创建档案
+                            进入工作台 <i class="bi bi-arrow-right ms-1"></i>
                         </button>
                     </div>
                 </form>
@@ -453,46 +408,39 @@
         </div>
     </div>
 
-    <!-- Export Columns Modal -->
-    <div class="modal fade" id="exportColumnsModal" tabindex="-1" aria-labelledby="exportColumnsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                    <h5 class="modal-title text-white" id="exportColumnsModalLabel"><i class="bi bi-check2-square me-2"></i>选择导出列</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p class="text-muted small mb-3">请勾选需要在导出报告中展示的能力矩阵列。默认已根据该学生体系预选关联列，您可自行调整。</p>
-                    <div id="exportColumnCheckboxes" class="row g-2">
-                        <div class="col-12 text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在加载...</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary px-4 shadow-sm" id="confirmExportBtn"
-                        style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border:none;">
-                        <i class="bi bi-download me-1"></i>确认导出
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // To close modal upon submission and simulate a clean state for the user
-            const downloadForm = document.querySelector('#downloadFormModal form');
-            const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('downloadFormModal'));
+            // Rapid Create Empty Workspace Record
+            const workspaceCreateForm = document.getElementById('workspaceCreateForm');
+            if(workspaceCreateForm) {
+                workspaceCreateForm.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const studentId = document.getElementById('studentId').value;
+                    const btn = document.getElementById('btnEnterWorkspace');
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>进入中...';
 
-            downloadForm.addEventListener('submit', function () {
-                setTimeout(() => {
-                    modal.hide();
-                    downloadForm.reset();
-                }, 800);
-            });
+                    fetch('/api/workspace/create?studentId=' + studentId, { method: 'POST' })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.recordId) {
+                                window.location.href = '/assessment/' + data.recordId + '/workspace';
+                            } else {
+                                alert('创建失败');
+                                btn.disabled = false;
+                                btn.innerHTML = '进入工作台 <i class="bi bi-arrow-right ms-1"></i>';
+                            }
+                        }).catch(err => {
+                            console.error(err);
+                            alert('网络错误');
+                            btn.disabled = false;
+                            btn.innerHTML = '进入工作台 <i class="bi bi-arrow-right ms-1"></i>';
+                        });
+                });
+            }
 
             // Functionality to open Student form modal for New
             const newStudentBtn = document.querySelector('[data-bs-target="#studentRecordModal"]');
@@ -588,13 +536,14 @@
 
                             data.forEach(item => {
                                 const tr = document.createElement('tr');
-                                const exportBtnHtml = `<button class="btn btn-sm btn-outline-primary shadow-sm open-export-modal-btn"
-                                         data-record-id="${item.id}"
-                                         data-student-type="${item.studentTypeCode || ''}"
-                                         title="选择列后导出报告">
-                                         <i class="bi bi-file-earmark-word"></i> 导出报告
+                                const exportBtnHtml = `
+                                        <button class="btn btn-sm btn-primary shadow-sm open-workspace-btn" data-record-id="${item.id}" title="进入工作台填写分析">
+                                         <i class="bi bi-pencil-square"></i> 分析
+                                       </button>
+                                       <button class="btn btn-sm btn-outline-success shadow-sm ms-1 open-export-modal-btn" data-record-id="${item.id}" title="一键导出报告">
+                                         <i class="bi bi-file-earmark-word"></i> 导出
                                        </button>`;
-                                const deleteBtnHtml = `<button class="btn btn-sm btn-outline-danger shadow-sm ms-2 delete-history-btn" title="删除此记录" data-id="${item.id}">
+                                const deleteBtnHtml = `<button class="btn btn-sm btn-outline-danger shadow-sm ms-1 delete-history-btn" title="删除此记录" data-id="${item.id}">
                                          <i class="bi bi-trash"></i>
                                        </button>`;
 
@@ -633,12 +582,19 @@
                                 });
                             });
 
-                            // Attach export modal triggers
+                            // Attach workspace triggers
+                            document.querySelectorAll('.open-workspace-btn').forEach(btn => {
+                                btn.addEventListener('click', function() {
+                                    const recordId = this.getAttribute('data-record-id');
+                                    window.location.href = `/assessment/${recordId}/workspace`;
+                                });
+                            });
+
+                            // Attach export triggers (direct download)
                             document.querySelectorAll('.open-export-modal-btn').forEach(btn => {
                                 btn.addEventListener('click', function() {
                                     const recordId = this.getAttribute('data-record-id');
-                                    const studentType = this.getAttribute('data-student-type');
-                                    openExportModal(recordId, studentType);
+                                    window.location.href = `/student/history/${recordId}/export`;
                                 });
                             });
                         })
@@ -681,11 +637,16 @@
                 nameSelectInput.addEventListener('change', function () {
                     const selectedOption = this.options[this.selectedIndex];
                     const gradeVal = selectedOption.getAttribute('data-grade');
-
+                    const studentTypeVal = selectedOption.getAttribute('data-type');
+                    
                     if (gradeVal && gradeVal !== 'null' && gradeVal.trim() !== '') {
                         gradeReadOnlyInput.value = gradeVal;
                     } else {
                         gradeReadOnlyInput.value = '暂无记录';
+                    }
+
+                    if (typeof loadExportColumnsForStudent === 'function') {
+                        loadExportColumnsForStudent(studentTypeVal);
                     }
                 });
             }
@@ -794,159 +755,13 @@
             }
         });
 
-            // ── Dynamic Assessment Types Checkboxes ─────────────────────────────
-            function loadAssessmentTypeCheckboxes() {
-                const container = document.getElementById('dynamicAssessmentTypesContainer');
-                if (!container) return;
-                fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS')
-                    .then(r => r.json())
-                    .then(data => {
-                        container.innerHTML = '';
-                        if (data && data.value) {
-                            try {
-                                const descs = JSON.parse(data.value);
-                                if (descs.length > 0) {
-                                    descs.forEach((item, index) => {
-                                        if (!item.name) return;
-                                        container.innerHTML += `
-                                            <div class="form-check form-check-inline m-0">
-                                                <input class="form-check-input shadow-sm" type="checkbox" id="evalDync_${index}"
-                                                    name="assessmentType" value="${item.name}">
-                                                <label class="form-check-label" for="evalDync_${index}">${item.name}</label>
-                                            </div>
-                                        `;
-                                    });
-                                    return;
-                                }
-                            } catch(e) { console.error(e); }
-                        }
-                        container.innerHTML = '<span class="text-muted small">暂无配置的参考测评体系，请在后台新增。</span>';
-                    }).catch(() => {
-                        container.innerHTML = '<span class="text-danger small">加载失败</span>';
-                    });
-            }
-            // Load once on init
-            loadAssessmentTypeCheckboxes();
-            
-            // Also refresh every time the modal opens for real-time sync without page reload
+
             const downloadModalEl = document.getElementById('downloadFormModal');
             if (downloadModalEl) {
                 downloadModalEl.addEventListener('show.bs.modal', loadAssessmentTypeCheckboxes);
             }
 
-            // ── Export Columns Modal Logic ───────────────────────────────────────
-            let _exportRecordId = null;
 
-            window.openExportModal = function(recordId, studentTypeCode) {
-                _exportRecordId = recordId;
-                const checkboxContainer = document.getElementById('exportColumnCheckboxes');
-                checkboxContainer.innerHTML = '<div class="col-12 text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在加载...</div>';
-
-                const exportModal = new bootstrap.Modal(document.getElementById('exportColumnsModal'));
-                exportModal.show();
-
-                // Close history modal first
-                const historyModal = bootstrap.Modal.getInstance(document.getElementById('assessmentHistoryModal'));
-                if (historyModal) historyModal.hide();
-
-                // Fetch global CSV headers and type's associated columns in parallel
-                Promise.all([
-                    fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(r => r.json()),
-                    studentTypeCode ? fetch('/admin/api/types').then(r => r.json()) : Promise.resolve([])
-                ]).then(([configData, allTypes]) => {
-                    const csvValue = configData.value || '';
-                    const firstLine = csvValue.split('\n')[0] || '';
-                    const headers = firstLine.split(',').map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
-
-                    let associatedSet = new Set();
-                    if (studentTypeCode && Array.isArray(allTypes)) {
-                        const typeInfo = allTypes.find(t => t.typeCode === studentTypeCode);
-                        if (typeInfo && typeInfo.associatedColumns) {
-                            typeInfo.associatedColumns.split(',').map(s => s.trim()).forEach(c => associatedSet.add(c));
-                        }
-                    }
-
-                    if (headers.length === 0) {
-                        checkboxContainer.innerHTML = '<div class="col-12 text-danger small">无法加载全局 CSV 表头，请先在管理后台配置全局能力矩阵。</div>';
-                        return;
-                    }
-
-                    checkboxContainer.innerHTML = '';
-
-                    const groups = [
-                        { title: '基础与通用标化', keywords: ['Lingoland', 'CEFR', '蓝思', '词汇', '剑桥', 'TOEFL', '托福', '雅思'], cols: [] },
-                        { title: '转国际小学', keywords: ['小学', 'HIS', 'WIS', 'MAP', '贝赛思小学', '惠立小学'], cols: [] },
-                        { title: '转国际初高中', keywords: ['初高', '高中', '初中', '杭外', '第二梯队', '贝赛思初高', '惠立初高'], cols: [] },
-                        { title: 'HKDSE', keywords: ['DSE', 'Band', 'HKDSE'], cols: [] },
-                        { title: '体制内', keywords: ['高考', '体制'], cols: [] },
-                        { title: '其他未分类', keywords: [], cols: [] }
-                    ];
-
-                    headers.forEach((col) => {
-                        let assigned = false;
-                        for (let g of groups) {
-                            if (g.title === '其他未分类') continue;
-                            if (g.keywords.some(k => col.includes(k))) {
-                                g.cols.push(col);
-                                assigned = true;
-                                break;
-                            }
-                        }
-                        if (!assigned) {
-                            if (['贝赛思', '惠立', 'WBS', '第一梯队国际'].includes(col)) {
-                                groups.find(g => g.title === '转国际小学').cols.push(col);
-                                assigned = true;
-                            }
-                        }
-                        if (!assigned) {
-                            groups.find(g => g.title === '其他未分类').cols.push(col);
-                        }
-                    });
-
-                    groups.forEach(g => {
-                        if (g.cols.length === 0) return;
-                        
-                        let groupHtml = `<div class="col-12 mt-3 mb-2"><h6 class="text-primary fw-bold border-bottom pb-2" style="font-size:0.95em;"><i class="bi bi-tag-fill me-2 opacity-50"></i>${g.title}</h6></div>`;
-                        
-                        g.cols.forEach(col => {
-                            const idx = headers.indexOf(col);
-                            const isChecked = (idx === 0 || associatedSet.has(col)) ? 'checked' : '';
-                            const isDisabled = idx === 0 ? 'disabled' : '';
-                            const hint = idx === 0 ? '<span class="text-muted small">(必需)</span>' : '';
-                            
-                            groupHtml += `
-                                <div class="col-md-4 col-sm-6 mb-2">
-                                    <div class="form-check border p-2 rounded bg-white shadow-sm h-100 d-flex align-items-center">
-                                        <input class="form-check-input export-col-checkbox me-2" type="checkbox"
-                                            value="${col}" id="ecol_${idx}" ${isChecked} ${isDisabled}>
-                                        <label class="form-check-label w-100 mb-0" style="cursor:pointer;font-size:0.85em;line-height:1.2;" for="ecol_${idx}">
-                                            ${col} ${hint}
-                                        </label>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        checkboxContainer.innerHTML += groupHtml;
-                    });
-                }).catch(() => {
-                    checkboxContainer.innerHTML = '<div class="col-12 text-danger small">加载失败，请检查网络后重试。</div>';
-                });
-
-                document.getElementById('confirmExportBtn').onclick = function() {
-                    const selected = [];
-                    document.querySelectorAll('.export-col-checkbox').forEach(cb => {
-                        if (cb.checked || cb.disabled) selected.push(cb.value);
-                    });
-                    if (selected.length === 0) {
-                        alert('请至少勾选一列后再导出。');
-                        return;
-                    }
-                    const columnsParam = encodeURIComponent(selected.join(','));
-                    const url = `/student/history/${_exportRecordId}/export?columns=${columnsParam}`;
-                    window.location.href = url;
-                    bootstrap.Modal.getInstance(document.getElementById('exportColumnsModal')).hide();
-                };
-            };
     </script>
 </body>
 

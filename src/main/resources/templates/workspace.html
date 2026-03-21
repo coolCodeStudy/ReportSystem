@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测评工作台 - ReportSystem</title>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #4F46E5;
+            --primary-dark: #4338CA;
+            --purple: #7C3AED;
+            --bg-body: #F9FAFB;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-body);
+            color: #374151;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 280px;
+            background-color: #fff;
+            border-right: 1px solid #E5E7EB;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            color: #4B5563;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left: 4px solid transparent;
+        }
+
+        .menu-item:hover {
+            background-color: #F3F4F6;
+            color: var(--primary);
+        }
+
+        .menu-item.active {
+            background-color: #EEF2FF;
+            color: var(--primary);
+            font-weight: 600;
+            border-left-color: var(--primary);
+        }
+
+        .menu-icon {
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .menu-step-number {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            color: #6B7280;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-right: 0.75rem;
+        }
+        
+        .menu-item.active .menu-step-number {
+            background-color: var(--primary);
+            color: #fff;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .top-navbar {
+            background-color: #fff;
+            border-bottom: 1px solid #E5E7EB;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .content-body {
+            padding: 2rem;
+            flex: 1;
+        }
+
+        /* Action Footer */
+        .bottom-action-bar {
+            background-color: #fff;
+            border-top: 1px solid #E5E7EB;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        /* Reading Analysis UI */
+        .analysis-card {
+            border: 1px solid #E5E7EB;
+            border-radius: 0.75rem;
+            background: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .analysis-card-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #E5E7EB;
+            background-color: #F9FAFB;
+            border-top-left-radius: 0.75rem;
+            border-top-right-radius: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .auto-grade-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            padding: 0.5rem 1rem;
+            background-color: #EEF2FF;
+            border-radius: 0.5rem;
+            border: 1px solid #C7D2FE;
+            min-width: 100px;
+        }
+
+        .three-state-btn {
+            border-color: #D1D5DB;
+            color: #6B7280;
+        }
+        .three-state-btn.btn-outline-success.active {
+            background-color: #10B981;
+            border-color: #10B981;
+            color: white;
+        }
+        .three-state-btn.btn-outline-danger.active {
+            background-color: #EF4444;
+            border-color: #EF4444;
+            color: white;
+        }
+        .three-state-btn.btn-outline-secondary.active {
+            background-color: #6B7280;
+            border-color: #6B7280;
+            color: white;
+        }
+
+        .cause-tag {
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        .cause-tag.selected {
+            background-color: var(--primary) !important;
+            color: white !important;
+            border-color: var(--primary) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h5 class="fw-bold mb-1 text-primary">
+                <a href="/" class="text-decoration-none"><i class="bi bi-arrow-left-circle me-2"></i>返回首页</a>
+            </h5>
+            <small class="text-muted d-block mt-2">工作台为单次测试报告服务，当前进度会自动保存草稿。</small>
+        </div>
+        <div class="flex-grow-1 overflow-y-auto py-3">
+            <div class="menu-item" onclick="switchTab('step1')" id="tab-step1">
+                <span class="menu-step-number">1</span>
+                <span>基础信息与目标分析</span>
+            </div>
+            <div class="menu-item active" onclick="switchTab('step2')" id="tab-step2">
+                <span class="menu-step-number">2</span>
+                <span>测评分析</span>
+            </div>
+            <div class="menu-item text-muted" style="cursor:not-allowed;" title="正在开发中...">
+                <span class="menu-step-number text-muted">3</span>
+                <span>语言教学安排 <i class="bi bi-lock-fill ms-1"></i></span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div>
+                <h4 class="mb-0 fw-bold" th:text="${studentName} + ' 的测评评估'">学生姓名</h4>
+                <div class="text-muted small mt-1">记录ID：<span th:text="${recordId}" id="recordIdSpan">0</span></div>
+            </div>
+            <div>
+                <button class="btn btn-outline-primary shadow-sm" onclick="exportWord()">
+                    <i class="bi bi-file-earmark-word me-1"></i>导出报告
+                </button>
+            </div>
+        </header>
+
+        <!-- Body -->
+        <div class="content-body" id="step1-content" style="display:none;">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                    <h5 class="fw-bold text-dark"><i class="bi bi-person-vcard me-2"></i>基础信息与目标定级</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium text-secondary">学生姓名</label>
+                            <input type="text" class="form-control bg-light" th:value="${studentName}" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium text-secondary">当前测评 Level</label>
+                            <select class="form-select" id="step1_level">
+                                <option value="" th:selected="${record.lingolandLevel == null}">请选择...</option>
+                                <option value="A1" th:selected="${record.lingolandLevel == 'A1'}">A1</option>
+                                <option value="A2-" th:selected="${record.lingolandLevel == 'A2-'}">A2-</option>
+                                <option value="A2+" th:selected="${record.lingolandLevel == 'A2+'}">A2+</option>
+                                <option value="B1-" th:selected="${record.lingolandLevel == 'B1-'}">B1-</option>
+                                <option value="B1+" th:selected="${record.lingolandLevel == 'B1+'}">B1+</option>
+                                <option value="B2-" th:selected="${record.lingolandLevel == 'B2-'}">B2-</option>
+                                <option value="B2+" th:selected="${record.lingolandLevel == 'B2+'}">B2+</option>
+                                <option value="C1-" th:selected="${record.lingolandLevel == 'C1-'}">C1-</option>
+                                <option value="C1+" th:selected="${record.lingolandLevel == 'C1+'}">C1+</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium text-secondary">测评日期</label>
+                            <input type="date" class="form-control" id="step1_date" th:value="${record.assessmentDate}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium text-secondary d-block">参考测评体系</label>
+                            <div class="d-flex flex-wrap gap-3" id="dynamicAssessmentTypesContainer">
+                                <span class="text-muted small"><div class="spinner-border spinner-border-sm me-1"></div>加载中...</span>
+                            </div>
+                            <input type="hidden" id="step1_type_hidden" th:value="${record.assessmentType}">
+                        </div>
+                        <div class="col-12">
+                            <hr class="my-3">
+                            <label class="form-label fw-bold text-primary d-block"><i class="bi bi-layout-text-sidebar-reverse me-2"></i>生成报告所需列</label>
+                            <div class="d-flex align-items-center justify-content-between p-3 border rounded bg-light">
+                                <div>
+                                    <span class="text-muted small" id="exportColumnsSummary">尚未配置导出列。</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="manageExportColumnsBtn">
+                                    <i class="bi bi-gear me-1"></i>配置导出列
+                                </button>
+                            </div>
+                            <input type="hidden" id="step1_selectedExportColumns" th:value="${record.selectedExportColumns}">
+                            <input type="hidden" id="step1_studentType" th:value="${student.studentType}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-end">
+                <button class="btn btn-primary px-4 shadow-sm" id="btnSaveStep1" onclick="saveStep1AndContinue()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
+                    保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="content-body" id="step2-content">
+            <div class="d-flex justify-content-between align-items-end mb-4">
+                <div>
+                    <h5 class="fw-bold mb-1">各科表现深度剖析</h5>
+                    <p class="text-muted small mb-0">系统将根据分数自动推算欧洲语言框架(CEFR)等级，无需手工干预。</p>
+                </div>
+            </div>
+
+            <!-- Subject Tabs -->
+            <ul class="nav nav-pills mb-4" id="subjectTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-medium px-4" id="reading-tab" data-bs-toggle="pill" data-bs-target="#reading" type="button" role="tab">📖 阅读 (Reading)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">🎧 听力 (Listening)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">🗣️ 口语 (Speaking)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">✍️ 写作 (Writing)</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="subjectTabContent">
+                <!-- Reading Section -->
+                <div class="tab-pane fade show active" id="reading" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="readingTestType" onchange="calculateReading()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="readingScore" placeholder="得分" oninput="calculateReading()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="readingTotal" placeholder="满分" value="30" oninput="calculateReading()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="readingRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="readingLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="readingPaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="readingCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <footer class="bottom-action-bar">
+            <div>
+                <span class="text-success small fw-medium d-none" id="saveSuccessIndicator"><i class="bi bi-check-circle-fill me-1"></i>已保存</span>
+                <span class="text-muted small ms-2" id="lastSaveTime"></span>
+            </div>
+            <div>
+                <button class="btn btn-primary px-5 shadow-sm" onclick="saveWorkspaceData()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>保存所有修改
+                </button>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Export Columns Modal -->
+    <div class="modal fade" id="exportColumnsModal" tabindex="-1" aria-labelledby="exportColumnsModalLabel" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title text-primary" id="exportColumnsModalLabel">配置导出报告所需列</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <p class="text-muted small mb-3">系统已根据该学生类型为您预先勾选了核心项。您可自由勾选其它所需展示的能力矩阵列：</p>
+                    <div id="exportColumnCheckboxes" class="row g-2">
+                        <div class="col-12 text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在加载...</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary px-4 shadow-sm" id="confirmExportColumnsBtn"
+                        style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
+                        保存我的选择
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Passing JSON from Backend securely via hidden input -->
+    <input type="hidden" id="initAssessmentResults" th:value="${assessmentResults}">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let dbState = {}; // The structured JSON data
+        let readingPaperTemplate = [];
+        let readingCauseTemplate = [];
+
+        // Formatting utilities
+        function numFormat(val) {
+            const parsed = parseFloat(val);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+
+        // --- 1. Top Level Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Parse initial State
+            const rawJson = document.getElementById('initAssessmentResults').value;
+            try {
+                dbState = JSON.parse(rawJson || '{}');
+            } catch(e) {
+                dbState = {};
+            }
+
+            Promise.all([
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json())
+            ]).then(([pr, cr]) => {
+                try {
+                    readingPaperTemplate = JSON.parse(pr.value);
+                    readingCauseTemplate = JSON.parse(cr.value);
+                } catch(e) {
+                    console.error("Failed to parse templates", e);
+                }
+                renderReadingPaperAnalysis();
+                renderReadingCauseAnalysis();
+                hydrateFormFromState();
+            });
+        });
+
+        // Tab Switcher
+        function switchTab(step) {
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('tab-' + step).classList.add('active');
+            
+            document.getElementById('step1-content').style.display = 'none';
+            document.getElementById('step2-content').style.display = 'none';
+            
+            document.getElementById(step + '-content').style.display = 'block';
+        }
+
+        // --- 2. Auto Grade Engine : Reading ---
+        function calculateReading() {
+            const type = document.getElementById('readingTestType').value;
+            const scoreStr = document.getElementById('readingScore').value;
+            const totalStr = document.getElementById('readingTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('readingRateStr').innerText = rateStr;
+            document.getElementById('readingLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('readingLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderReadingPaperAnalysis() {
+            const container = document.getElementById('readingPaperAnalysisContainer');
+            container.innerHTML = '';
+
+            readingPaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_r_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setPaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_r_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setPaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_r_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_r_${idx}`);
+            if (state === '✅') {
+                textArea.value = readingPaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = readingPaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderReadingCauseAnalysis() {
+            const container = document.getElementById('readingCauseAnalysisContainer');
+            container.innerHTML = '';
+            readingCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
+        // --- 4. State Management (Hydrate/Save) ---
+        function hydrateFormFromState() {
+            // Hydrate Reading Score
+            const rData = dbState.reading || {};
+            if (rData.testType) document.getElementById('readingTestType').value = rData.testType;
+            if (rData.score !== undefined) document.getElementById('readingScore').value = rData.score;
+            if (rData.total !== undefined) document.getElementById('readingTotal').value = rData.total;
+            
+            calculateReading(); // Trigger auto-grade
+
+            // Hydrate Paper Analysis
+            setTimeout(() => { // wait for render
+                if (rData.paperAnalysis) {
+                    readingPaperTemplate.forEach((item, idx) => {
+                        const savedItem = rData.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_r_${idx}`).value = savedItem.text || '';
+                        } else {
+                            // Default NA
+                            setPaperState(idx, 'NA');
+                        }
+                    });
+                }
+
+                // Hydrate Cause Analysis
+                if (rData.causeAnalysis && Array.isArray(rData.causeAnalysis)) {
+                    document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rData.causeAnalysis.includes(tag.innerText)) {
+                            tag.classList.add('selected');
+                        }
+                    });
+                }
+            }, 100);
+        }
+
+        function saveWorkspaceData() {
+            // 1. Gather Reading Data
+            const readingData = {
+                testType: document.getElementById('readingTestType').value,
+                score: numFormat(document.getElementById('readingScore').value),
+                total: numFormat(document.getElementById('readingTotal').value),
+                rate: document.getElementById('readingRateStr').innerText,
+                level: document.getElementById('readingLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+
+            readingPaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_r_${idx}`);
+                let status = 'NA';
+                if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+
+                const text = document.getElementById(`paperText_r_${idx}`).value.trim();
+                if (status !== 'NA' || text !== '') { // only save if not fully empty/NA
+                    readingData.paperAnalysis[item.dimension] = {
+                        status: status,
+                        text: text
+                    };
+                }
+            });
+
+            document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                readingData.causeAnalysis.push(tag.innerText);
+            });
+
+            dbState.reading = readingData;
+
+            // 2. Put to Backend
+            const recordId = document.getElementById('recordIdSpan').innerText;
+            fetch(`/api/assessment/${recordId}/results`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dbState)
+            })
+            .then(res => res.json())
+            .then(data => {
+                const indicator = document.getElementById('saveSuccessIndicator');
+                const timeSpan = document.getElementById('lastSaveTime');
+                indicator.classList.remove('d-none');
+                
+                const now = new Date();
+                timeSpan.innerText = `最后保存: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+                
+                setTimeout(() => indicator.classList.add('d-none'), 3000);
+            })
+            .catch(err => {
+                alert("保存失败，请检查网络！");
+                console.error(err);
+            });
+        }
+
+        function exportWord() {
+            // Best practice: save before exporting
+            saveWorkspaceData();
+            const recordId = document.getElementById('recordIdSpan').innerText;
+            window.location.href = `/student/history/${recordId}/export`;
+        }
+
+        // --- 5. Step 1 Logic (Export Columns & Assessment Types) ---
+        function loadAssessmentTypeCheckboxes() {
+            const container = document.getElementById('dynamicAssessmentTypesContainer');
+            if (!container) return;
+            fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS')
+                .then(r => r.json())
+                .then(data => {
+                    container.innerHTML = '';
+                    if (data && data.value) {
+                        try {
+                            const descs = JSON.parse(data.value);
+                            if (descs.length > 0) {
+                                const hiddenVal = document.getElementById('step1_type_hidden').value;
+                                descs.forEach((item, index) => {
+                                    if (!item.name) return;
+                                    const isChecked = hiddenVal === item.name ? 'checked' : '';
+                                    container.innerHTML += `
+                                        <div class="form-check form-check-inline m-0">
+                                            <input class="form-check-input shadow-sm step1-type-radio" type="radio" id="evalDync_${index}"
+                                                name="assessmentType" value="${item.name}" ${isChecked}>
+                                            <label class="form-check-label" for="evalDync_${index}">${item.name}</label>
+                                        </div>
+                                    `;
+                                });
+                                return;
+                            }
+                        } catch(e) { console.error(e); }
+                    }
+                    container.innerHTML = '<span class="text-muted small">暂无配置的参考测评体系，请在后台新增。</span>';
+                }).catch(() => {
+                    container.innerHTML = '<span class="text-danger small">加载失败</span>';
+                });
+        }
+
+        function loadExportColumns() {
+            const checkboxContainer = document.getElementById('exportColumnCheckboxes');
+            const studentTypeCode = document.getElementById('step1_studentType').value;
+            checkboxContainer.innerHTML = '<div class="col-12 text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在加载...</div>';
+
+            Promise.all([
+                fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_BASIC_COLUMNS').then(r => r.json()).catch(() => ({value: ''})),
+                fetch('/admin/api/types').then(r => r.json())
+            ]).then(([configData, basicData, allTypes]) => {
+                const csvValue = configData.value || '';
+                const firstLine = csvValue.split('\n')[0] || '';
+                const headers = firstLine.split(',').map(s => s.replace(/^"|"$/g, '').trim()).filter(Boolean);
+                
+                const basicColsStr = basicData.value || '';
+                const basicColsList = basicColsStr.split(',').map(s => s.trim()).filter(Boolean);
+
+                let studentAssignedSet = new Set();
+                if (studentTypeCode && Array.isArray(allTypes)) {
+                    const typeInfo = allTypes.find(t => t.typeCode === studentTypeCode);
+                    if (typeInfo && typeInfo.associatedColumns) {
+                        typeInfo.associatedColumns.split(',').map(s => s.trim()).forEach(c => studentAssignedSet.add(c));
+                    }
+                }
+
+                if (headers.length === 0) {
+                    checkboxContainer.innerHTML = '<div class="col-12 text-danger small">无法加载全局 CSV 表头，请先在管理后台配置全局能力矩阵。</div>';
+                    return;
+                }
+
+                checkboxContainer.innerHTML = '';
+
+                const groupsMap = new Map();
+                groupsMap.set('基础与通用标化', { title: '基础与通用标化', cols: [] });
+                if (Array.isArray(allTypes)) {
+                    allTypes.forEach(t => {
+                        groupsMap.set(t.typeName, { title: t.typeName, cols: [], associatedSet: new Set(t.associatedColumns ? t.associatedColumns.split(',').map(s => s.trim()) : []) });
+                    });
+                }
+                groupsMap.set('其他未分类', { title: '其他未分类', cols: [] });
+
+                headers.forEach(col => {
+                    let assigned = false;
+                    if (basicColsList.includes(col)) {
+                        groupsMap.get('基础与通用标化').cols.push(col);
+                        assigned = true;
+                    } else {
+                        if (Array.isArray(allTypes)) {
+                            for (let t of allTypes) {
+                                const group = groupsMap.get(t.typeName);
+                                if (group && group.associatedSet.has(col)) {
+                                    group.cols.push(col);
+                                    assigned = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (!assigned) {
+                        groupsMap.get('其他未分类').cols.push(col);
+                    }
+                });
+
+                groupsMap.forEach((g, key) => {
+                    if (g.cols.length === 0) return;
+                    
+                    let groupHtml = `<div class="col-12 mt-3 mb-2"><h6 class="text-primary fw-bold border-bottom pb-2" style="font-size:0.95em;"><i class="bi bi-tag-fill me-2 opacity-50"></i>${g.title}</h6></div>`;
+                    
+                    g.cols.forEach(col => {
+                        const idx = headers.indexOf(col);
+                        // If there is an already saved configuration, we override default logic and use it.
+                        const savedInputStr = document.getElementById('step1_selectedExportColumns').value;
+                        let isChecked = '';
+                        if (savedInputStr && savedInputStr.trim() !== '') {
+                            const savedSet = new Set(savedInputStr.split(',').map(s=>s.trim()));
+                            isChecked = savedSet.has(col) ? 'checked' : '';
+                        } else {
+                            // Default logic if nothing is saved
+                            isChecked = (idx === 0 || basicColsList.includes(col) || studentAssignedSet.has(col)) ? 'checked' : '';
+                        }
+                        
+                        const isDisabled = idx === 0 ? 'disabled' : '';
+                        const hint = idx === 0 ? '<span class="text-muted small">(必需)</span>' : '';
+                        
+                        groupHtml += `
+                            <div class="col-md-4 col-sm-6 mb-2">
+                                <div class="form-check border p-2 rounded bg-white shadow-sm h-100 d-flex align-items-center">
+                                    <input class="form-check-input export-col-checkbox me-2" type="checkbox"
+                                        value="${col}" id="ecol_${idx}" ${isChecked} ${isDisabled}>
+                                    <label class="form-check-label w-100 mb-0" style="cursor:pointer;font-size:0.85em;line-height:1.2;" for="ecol_${idx}">
+                                        ${col} ${hint}
+                                    </label>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    checkboxContainer.innerHTML += groupHtml;
+                });
+            }).then(() => {
+                updateColumnSelectionState();
+            }).catch(() => {
+                checkboxContainer.innerHTML = '<div class="col-12 text-danger small">加载失败，请检查网络后重试。</div>';
+            });
+        }
+
+        function updateColumnSelectionState() {
+            const selected = [];
+            document.querySelectorAll('.export-col-checkbox').forEach(cb => {
+                if (cb.checked || cb.disabled) selected.push(cb.value);
+            });
+            document.getElementById('step1_selectedExportColumns').value = selected.join(',');
+            
+            if (selected.length > 0) {
+                document.getElementById('exportColumnsSummary').innerHTML = `<span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 py-1 px-2"><i class="bi bi-check2-circle me-1"></i>已明确 ${selected.length} 个分析维度项</span>`;
+            } else {
+                document.getElementById('exportColumnsSummary').innerText = '尚未配置导出列。';
+            }
+        }
+
+        document.getElementById('manageExportColumnsBtn').onclick = function() {
+            new bootstrap.Modal(document.getElementById('exportColumnsModal')).show();
+        };
+
+        document.getElementById('confirmExportColumnsBtn').onclick = function() {
+            updateColumnSelectionState();
+            bootstrap.Modal.getInstance(document.getElementById('exportColumnsModal')).hide();
+        };
+
+        function saveStep1AndContinue() {
+            const recordId = document.getElementById('recordIdSpan').innerText;
+            const btn = document.getElementById('btnSaveStep1');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+
+            // Find selected radio
+            let selectedType = '';
+            document.querySelectorAll('.step1-type-radio').forEach(r => {
+                if (r.checked) selectedType = r.value;
+            });
+
+            const payload = {
+                lingolandLevel: document.getElementById('step1_level').value,
+                assessmentDate: document.getElementById('step1_date').value,
+                assessmentType: selectedType,
+                selectedExportColumns: document.getElementById('step1_selectedExportColumns').value
+            };
+
+            fetch(`/api/assessment/${recordId}/step1`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                btn.disabled = false;
+                btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
+                if (data.success) {
+                    // Force UI transition to step 2 after save
+                    switchTab('step2');
+                } else {
+                    alert('保存失败。');
+                }
+            })
+            .catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
+                alert("网络错误，保存失败。");
+            });
+        }
+
+        // Initialize Step 1
+        loadAssessmentTypeCheckboxes();
+        loadExportColumns();
+
+        // Ensure step 1 is default tab if it's considered empty or "new"
+        document.addEventListener('DOMContentLoaded', () => {
+            const dateVal = document.getElementById('step1_date').value;
+            // if date is filled with today out of the box (from rapid create), we should probably open Step 1 immediately.
+            // By default, step 2 was active. Let's make Step 1 active if no level is set.
+            const levelVal = document.getElementById('step1_level').value;
+            if (!levelVal) {
+                switchTab('step1');
+            }
+        });
+    </script>
+</body>
+</html>

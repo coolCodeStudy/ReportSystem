@@ -1,69 +1,13 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>系统配置 - 动态表单管理</title>
-    <!-- Bootstrap CSS & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom Styles -->
-    <link href="/css/style.css" rel="stylesheet">
-    <style>
-        .type-list-item.active { background-color: #e9ecef; border-left: 4px solid var(--primary); }
-        .type-list-item:hover { background-color: #f8f9fa; cursor: pointer; }
-        .field-card { border-left: 4px solid var(--purple); margin-bottom: 10px; }
-        .field-card-header { display: flex; justify-content: space-between; align-items: center; }
-        .matrix-textarea { font-family: monospace; font-size: 0.85rem; white-space: pre; overflow-x: auto; }
-    </style>
-</head>
-<body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="logo">
-                <img src="/images/lingoland_logo.jpg" alt="Lingoland Logo">
-                <span style="font-size: 1.1rem; letter-spacing: 0.5px;">语陆教育 | 后台配置中心</span>
-            </div>
-            <div class="header-actions">
-                <a href="/" class="btn btn-outline-primary btn-sm"><i class="bi bi-box-arrow-left"></i> 返回教务主页</a>
-            </div>
-        </header>
+import re
 
-        <div class="app-body">
-            <!-- Sidebar -->
-            <aside class="app-sidebar">
-                <div class="sidebar-section">
-                    <h6 class="sidebar-heading">教务管理</h6>
-                    <ul class="nav flex-column sidebar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link text-secondary" href="/"><i class="bi bi-arrow-left"></i> 返回档案主页</a>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="sidebar-section border-0">
-                    <h6 class="sidebar-heading">系统及设置</h6>
-                    <ul class="nav flex-column sidebar-nav">
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/admin/templates">
-                                <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </aside>
+with open("src/main/resources/templates/admin-templates.html", "r") as f:
+    content = f.read()
 
-            <!-- Main Content -->
-            <main class="app-main">
-                <div class="main-header mb-4">
-                     <h4 class="fw-bold mb-1">动态配置中心</h4>
-                     <p class="text-muted">集中管理学生类型、全局基本表及各体系间的关系和配置。</p>
-                </div>
+# 1. Replace HTML Body (Lines 66-152)
+html_start = content.find('<!-- Global Configs Row -->')
+html_end = content.find('<!-- Add Type Modal -->')
 
-                                <div class="row" style="height: calc(100vh - 120px);">
+new_html = """                <div class="row" style="height: calc(100vh - 120px);">
                     <!-- Left: Navigation & Student Types List -->
                     <div class="col-md-3 h-100">
                         <div class="card shadow-sm border-0 h-100 d-flex flex-column">
@@ -75,9 +19,6 @@
                                 </div>
                                 <div class="list-group-item list-group-item-action p-3 type-list-item" id="menu-desc" onclick="selectMainMenu('desc')">
                                     <h6 class="mb-0 fw-bold"><i class="bi bi-file-earmark-text-fill text-info me-2"></i>测评尾页说明文案</h6>
-                                </div>
-                                <div class="list-group-item list-group-item-action p-3 type-list-item" id="menu-analysis" onclick="selectMainMenu('analysis')">
-                                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-warning me-2"></i>测评分析模板配置</h6>
                                 </div>
 
                                 <!-- Dynamic Student Types -->
@@ -161,28 +102,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Panel: Analysis Config -->
-                                <div id="panel-analysis" class="config-panel d-none">
-                                    <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 阅读测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="readingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="readingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-
-                                        <div class="text-end border-top pt-3 mt-2">
-                                            <button class="btn btn-success px-4 shadow-sm rounded-pill" onclick="saveAnalysisConfigs()">保存模板配置</button>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Panel: Type Config -->
                                 <div id="panel-type" class="config-panel d-none">
                                     <div id="matrixSection">
@@ -210,41 +129,19 @@
             </main>
         </div>
     </div>
-<!-- Add Type Modal -->
-    <div class="modal fade" id="addTypeModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">新增学生类型/体系</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">类型编码 (英文枚举值，用于底层辨识)</label>
-                        <input type="text" id="newTypeCode" class="form-control" placeholder="例如: IELTS_PREP" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">展示名称 (给老师看的中文名字)</label>
-                        <input type="text" id="newTypeName" class="form-control" placeholder="例如: 雅思备考班" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">排序权重</label>
-                        <input type="number" id="newTypeSort" class="form-control" value="10">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
-                    <button type="button" class="btn btn-primary" onclick="saveType()">保存</button>
-                </div>
-            </div>
-        </div>
-    </div>
+"""
+content = content[:html_start] + new_html + content[html_end:]
 
+# 2. Delete modals
+modal_start = content.find('<!-- Global Matrix Modal -->')
+script_start = content.find('<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>')
+content = content[:modal_start] + content[script_start:]
 
+# 3. Replace JS Section
+js_start = content.find('let currentSelectedType = null;')
+js_end = content.find('// 1. Types Logic')
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-                let currentSelectedType = null;
+new_js = """        let currentSelectedType = null;
         let adminTypes = [];
         let globalCsvHeader = [];
         let globalBasicColumns = [];
@@ -265,11 +162,7 @@
                 document.getElementById('currentConfigTitle').innerHTML = '<i class="bi bi-sliders me-2"></i> 全局矩阵与基础标化配置';
             } else if(menuId === 'desc') {
                 document.getElementById('menu-desc').classList.add('active');
-                document.getElementById('currentConfigTitle').innerHTML = '<i class="bi bi-file-earmark-text-fill text-info me-2"></i> 测评说明文案配置';
-            } else if(menuId === 'analysis') {
-                document.getElementById('menu-analysis').classList.add('active');
-                document.getElementById('currentConfigTitle').innerHTML = '<i class="bi bi-bar-chart-steps text-warning me-2"></i> 测评分析模板配置';
-                loadAnalysisConfigs();
+                document.getElementById('currentConfigTitle').innerHTML = '<i class="bi bi-sliders me-2"></i> 测评说明文案配置';
             }
             
             // Toggle panels
@@ -281,52 +174,7 @@
                 document.getElementById('panel-global').classList.remove('d-none');
             } else if(menuId === 'desc') {
                 document.getElementById('panel-desc').classList.remove('d-none');
-            } else if(menuId === 'analysis') {
-                document.getElementById('panel-analysis').classList.remove('d-none');
             }
-        }
-
-        // Analysis Config Logic
-        function loadAnalysisConfigs() {
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                const parseAndFormat = val => {
-                    try { return JSON.stringify(JSON.parse(val), null, 2); }
-                    catch(e) { return val; }
-                };
-                if (pr.value) document.getElementById('readingAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('readingCauseTextarea').value = parseAndFormat(cr.value);
-            });
-        }
-
-        function saveAnalysisConfigs() {
-            const prText = document.getElementById('readingAnalysisTextarea').value.trim();
-            const crText = document.getElementById('readingCauseTextarea').value.trim();
-            
-            try {
-                JSON.parse(prText);
-                JSON.parse(crText);
-            } catch(e) {
-                alert("JSON 格式错误，请检查！\\n" + e.message);
-                return;
-            }
-
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING', {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({configValue: prText})
-                }),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING', {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({configValue: crText})
-                })
-            ]).then(resps => {
-                if (resps.every(r => r.ok)) alert('保存成功！前端工作台界面将即刻生效。');
-                else alert('保存失败！');
-            }).catch(e => {
-                console.error(e);
-                alert('网络错误');
-            });
         }
 
         // 0. Global Config Logic
@@ -337,7 +185,7 @@
             ]).then(([csvData, basicData]) => {
                 if (csvData.value) {
                     document.getElementById('globalMatrixTextarea').value = csvData.value;
-                    const firstLine = csvData.value.split('\n')[0];
+                    const firstLine = csvData.value.split('\\n')[0];
                     if (firstLine) {
                         globalCsvHeader = firstLine.split(',').map(s => s.replace(/^"|"$/g, '').trim());
                     }
@@ -492,74 +340,14 @@
             });
         }
 
-// 1. Types Logic
-        function loadTypes() {
-            fetch('/admin/api/types')
-            .then(res => res.json())
-            .then(data => {
-                adminTypes = data;
-                renderTypes(data);
-            });
-        }
+"""
+content = content[:js_start] + new_js + content[js_end:]
 
-        function renderTypes(types) {
-            const container = document.getElementById('studentTypeContainer');
-            container.innerHTML = '';
-            types.forEach(t => {
-                const isActive = currentSelectedType === t.typeCode ? 'active' : '';
-                const display = `
-                    <div class="list-group-item list-group-item-action p-3 type-list-item ${isActive}" onclick="selectType('${t.typeCode}', '${t.typeName}')">
-                        <div class="d-flex w-100 justify-content-between">
-                            <h6 class="mb-1 fw-bold">${t.typeName}</h6>
-                            <small class="text-muted"><code>${t.typeCode}</code></small>
-                        </div>
-                        <small class="text-muted d-block mt-1">状态: ${t.status} | 排序: ${t.sortOrder}</small>
-                        <button class="btn btn-sm btn-link text-danger p-0 mt-2" onclick="deleteType(event, ${t.id}, '${t.typeName}')">删除体系</button>
-                    </div>
-                `;
-                container.innerHTML += display;
-            });
-        }
+# 4. Modify 'selectType' and loadMatrix to adjust for the new panels 
+js_select_type_start = content.find('function selectType(typeCode, typeName) {')
+js_select_type_end = content.find('// 3. Matrix Logic', js_select_type_start)
 
-        function showAddTypeModal() {
-            document.getElementById('newTypeCode').value = '';
-            document.getElementById('newTypeName').value = '';
-            new bootstrap.Modal('#addTypeModal').show();
-        }
-
-        function saveType() {
-            const code = document.getElementById('newTypeCode').value.trim();
-            const name = document.getElementById('newTypeName').value.trim();
-            const sort = document.getElementById('newTypeSort').value;
-            if(!code || !name) return alert('请填入必填项');
-
-            fetch('/admin/api/types', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ typeCode: code, typeName: name, sortOrder: sort, status: 'ACTIVE' })
-            }).then(() => {
-                bootstrap.Modal.getInstance('#addTypeModal').hide();
-                loadTypes();
-            });
-        }
-
-        function deleteType(e, id, name) {
-            e.stopPropagation();
-            if(confirm(`谨慎：确定要彻底删除 [${name}] 及其所有配置好的表单吗？数据可能不兼容！`)) {
-                fetch(`/admin/api/types/${id}`, { method: 'DELETE' }).then(() => {
-                    if(currentSelectedType === adminTypes.find(x => x.id === id)?.typeCode) {
-                        currentSelectedType = null;
-                    }
-                    loadTypes();
-                    // Clear content if the deleted type was selected
-                    document.getElementById('configContentWrapper').classList.add('d-none');
-                    document.getElementById('fieldEmptyState').classList.remove('d-none');
-                    document.getElementById('fieldEmptyState').classList.add('d-flex');
-                });
-            }
-        }
-
-        function selectType(typeCode, typeName) {
+new_js_select_type = """function selectType(typeCode, typeName) {
             currentSelectedType = typeCode;
             document.getElementById('currentConfigTitle').innerHTML = `<i class="bi bi-sliders me-2"></i> 正在配置: ${typeName} 体系专属列`;
             
@@ -578,69 +366,8 @@
             loadMatrix(typeCode);
         }
 
-// 3. Matrix Logic (Associated Columns)
-        function loadMatrix(typeCode) {
-            const typeInfo = adminTypes.find(t => t.typeCode === typeCode);
-            if(typeInfo) {
-                document.getElementById('matrixSection').classList.remove('d-none');
-                
-                const container = document.getElementById('columnCheckboxesContainer');
-                container.innerHTML = '';
-                
-                let associated = [];
-                if (typeInfo.associatedColumns) {
-                    associated = typeInfo.associatedColumns.split(',').map(s => s.trim());
-                }
+"""
+content = content[:js_select_type_start] + new_js_select_type + content[js_select_type_end:]
 
-                if (globalCsvHeader.length === 0) {
-                    container.innerHTML = '<div class="col-12 text-danger small">无法加载全局 CSV 表头，请先配置全局能力矩阵。</div>';
-                    return;
-                }
-
-                globalCsvHeader.forEach((col, index) => {
-                    const isChecked = associated.includes(col) ? 'checked' : '';
-                    // First column (usually Lingoland) is often required, but let user decide. Or force checked.
-                    const isRequired = index === 0 ? 'disabled checked' : ''; 
-                    const reqHint = index === 0 ? '<span class="text-muted">(必需)</span>' : '';
-
-                    container.innerHTML += `
-                        <div class="col-md-4 col-sm-6">
-                            <div class="form-check border p-2 rounded bg-white">
-                                <input class="form-check-input column-checkbox" type="checkbox" value="${col}" id="col_${index}" ${isChecked} ${isRequired}>
-                                <label class="form-check-label w-100" style="cursor: pointer;" for="col_${index}">
-                                    ${col} ${reqHint}
-                                </label>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-        }
-
-        function saveAssociatedColumns() {
-            const typeInfo = adminTypes.find(t => t.typeCode === currentSelectedType);
-            if(!typeInfo) return;
-            
-            const checkboxes = document.querySelectorAll('.column-checkbox');
-            const selected = [];
-            checkboxes.forEach(cb => {
-                // If it's checked OR disabled (required first column)
-                if (cb.checked || cb.disabled) {
-                    selected.push(cb.value);
-                }
-            });
-
-            const newAssociated = selected.join(',');
-            
-            fetch(`/admin/api/types/${typeInfo.id}/matrix`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ associatedColumns: newAssociated })
-            }).then(() => {
-                alert('关联列配置已保存！');
-                loadTypes(); // reload to refresh memory state
-            });
-        }
-    </script>
-</body>
-</html>
+with open("src/main/resources/templates/admin-templates.html", "w") as f:
+    f.write(content)

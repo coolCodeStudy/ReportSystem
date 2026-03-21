@@ -125,6 +125,43 @@ class SystemInitRunner(
             println("=== Initialized global assessment descriptions in system config ===")
         }
 
+        // Initialize global basic columns
+        if (systemConfigRepository.findByConfigKey("GLOBAL_BASIC_COLUMNS") == null) {
+            val defaultBasicCols = "Lingoland,CEFR,蓝思值,词汇量,剑桥系考试,TOEFL Junior,托福,雅思"
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_BASIC_COLUMNS", configValue = defaultBasicCols))
+            println("=== Initialized global basic columns in system config ===")
+        }
+
+        // Initialize Assessment Analysis Templates
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_READING") == null) {
+            val readingAnalysisJson = """
+                [
+                  { "dimension": "时间分配", "positive": "能在规定时间内完成。", "negative": "" },
+                  { "dimension": "信息理解", "positive": "", "negative": "对于文章主要信息很难抓住，在细节理解上受生词影响，也无法依赖语境推测句意。" },
+                  { "dimension": "词汇量", "positive": "", "negative": "基础生活词汇及部分学术词汇掌握不足，阅读中出现多处不认识的关键词，影响理解深度；词性和词组固定搭配的知识点较薄弱。" },
+                  { "dimension": "考试技巧", "positive": "", "negative": "未明显体现出。不会主动圈划文章中的关键字或者是做笔记。" },
+                  { "dimension": "阅读速度", "positive": "能够在规定时间内完成整篇文章的阅读。", "negative": "" },
+                  { "dimension": "阅读策略（扫读，预测，跳读，推理等）", "positive": "", "negative": "缺乏阅读策略意识，推理能力较弱，需进一步训练信息筛选与逻辑推断能力。" },
+                  { "dimension": "背景知识", "positive": "", "negative": "对常见文学/修辞手法、文化及学科性主题了解有限，需积累更多英语语境下的知识。" },
+                  { "dimension": "专注力", "positive": "较为专注。", "negative": "" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_READING", configValue = readingAnalysisJson))
+            
+            val readingCauseJson = """
+                [
+                  "阅读量不足，缺乏语感",
+                  "长难句结构知识薄弱",
+                  "不熟悉常见的同义词替换考点",
+                  "做题时未能有效定位核心信息段落",
+                  "词汇储备未能覆盖试卷高频大纲词"
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_READING", configValue = readingCauseJson))
+            println("=== Initialized Assessment Analysis Templates (Reading) ===")
+        }
+
+
         // Initialize default student types if the table is empty
         if (studentTypeDictionaryRepository.count() == 0L) {
             val defaults = listOf(

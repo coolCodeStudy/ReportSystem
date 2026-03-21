@@ -41,6 +41,9 @@ class AssessmentRecord {
     @Column(columnDefinition = "jsonb", name = "assessment_results")
     var assessmentResults: String? = null
 
+    @Column(name = "selected_export_columns", columnDefinition = "TEXT")
+    var selectedExportColumns: String? = null
+
     @Column(name = "created_at")
     var createdAt: LocalDateTime = LocalDateTime.now()
 

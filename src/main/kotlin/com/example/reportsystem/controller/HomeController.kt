@@ -109,7 +109,9 @@ class HomeController(
             targetLevel,
             targetGrade,
             finalStudentType,
-            form?.assessmentType
+            form?.assessmentType,
+            null,
+            form?.otherAssessment
         )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
@@ -150,5 +152,6 @@ data class UserReportForm(
     val assessmentType: List<String>? = null,
     val otherAssessment: String? = null,
     val assessmentDate: String? = null,
-    val dynamicData: String? = null
+    val dynamicData: String? = null,
+    val selectedExportColumns: String? = null
 )

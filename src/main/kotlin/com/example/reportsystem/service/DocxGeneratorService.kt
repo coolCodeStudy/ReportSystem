@@ -42,7 +42,8 @@ G11,,1225L,17500,,,,,,
         targetGrade: String?,
         studentType: String? = null,
         assessmentTypes: List<String>? = null,
-        selectedColumns: List<String>? = null
+        selectedColumns: List<String>? = null,
+        otherAssessment: String? = null
     ): ByteArray {
         if (targetLevel != null && targetLevel.matches(Regex("^G([1-9]|10|11)$", RegexOption.IGNORE_CASE))) {
             throw IllegalArgumentException("系统不再支持旧版的 Lingoland 等级 (G1-G11)。请前往学生档案将其测评 Level 更新为对应的 CEFR 等级后再导出报告。")
@@ -55,8 +56,25 @@ G11,,1225L,17500,,,,,,
             rebuildAnalysisTable(document, targetLevel, targetGrade, studentType, assessmentTypes, selectedColumns)
         }
 
-        // --- Append Assessment Descriptions ---
+        // --- Interpolate Assessment Descriptions ---
         val descriptionsJson = systemConfigRepository.findByConfigKey("GLOBAL_ASSESSMENT_DESCRIPTIONS")?.configValue
+        
+        // Calculate the difficulty prefix automatically
+        val difficultyNames = mutableListOf<String>()
+        if (!otherAssessment.isNullOrBlank()) {
+            difficultyNames.add(otherAssessment.trim())
+        } else if (!assessmentTypes.isNullOrEmpty()) {
+            difficultyNames.addAll(assessmentTypes.map { it.trim() }.filter { it.isNotEmpty() })
+        }
+        
+        val prefixText = if (difficultyNames.isNotEmpty()) {
+            "本次测评难度为${difficultyNames.joinToString("、")}难度。"
+        } else {
+            ""
+        }
+
+        var parts: List<String> = emptyList()
+
         if (!descriptionsJson.isNullOrBlank() && !assessmentTypes.isNullOrEmpty()) {
             try {
                 val mapper = jacksonObjectMapper()
@@ -64,35 +82,84 @@ G11,,1225L,17500,,,,,,
                 
                 val matchedDescs = descs.filter { desc ->
                     val name = desc["name"]?.trim() ?: ""
-                    name.isNotEmpty() && assessmentTypes.any { it.trim().equals(name, ignoreCase = true) }
+                    if (name.isEmpty()) return@filter false
+                    
+                    val isMatch = assessmentTypes.any { type ->
+                        val t = type.trim()
+                        t.equals(name, ignoreCase = true) || 
+                        (t.equals("雅思", ignoreCase = true) && name.equals("IELTS", ignoreCase = true)) ||
+                        (t.equals("IELTS", ignoreCase = true) && name.equals("雅思", ignoreCase = true))
+                    }
+                    isMatch
                 }
                 
                 if (matchedDescs.isNotEmpty()) {
-                    val para = document.createParagraph()
-                    para.spacingBefore = 400
-                    
-                    val titleRun = para.createRun()
-                    titleRun.fontFamily = "微软雅黑"
-                    titleRun.fontSize = 10
-                    titleRun.isBold = true
-                    titleRun.setText("测评说明：")
-                    
-                    val combinedText = matchedDescs.joinToString("\n") { it["description"] ?: "" }.trim()
-                    val parts = combinedText.split("\n")
-                    
-                    parts.forEachIndexed { index, part ->
-                        if (index > 0) {
-                            val breakRun = para.createRun()
-                            breakRun.addBreak()
+                    var combinedText = matchedDescs.joinToString("\n") { it["description"] ?: "" }
+                    // Remove any existing manual difficulty prefix from JSON to avoid duplication
+                    combinedText = combinedText.replace(Regex("本次测评难度为.*?难度。\\s*"), "")
+                    combinedText = combinedText.replace("。", "。\n")
+                    parts = combinedText.split(Regex("\\r?\\n")).map { it.trim() }.filter { it.isNotEmpty() }
+                }
+            } catch (e: Exception) {
+                System.err.println("Failed to parse GLOBAL_ASSESSMENT_DESCRIPTIONS: ${e.message}")
+            }
+        }
+        
+        if (prefixText.isNotEmpty()) {
+            parts = listOf(prefixText) + parts
+        }
+
+        // Always replace the target paragraph to remove default 'KET' text
+        val targetPara = document.paragraphs.find { it.text.contains("测评说明") }
+        if (targetPara != null) {
+            // Completely clear runs to prevent leftover text (e.g. duplicate bullets like "■")
+            while (targetPara.runs.isNotEmpty()) {
+                targetPara.removeRun(0)
+            }
+            
+            if (parts.isNotEmpty()) {
+                var lastPara: XWPFParagraph = targetPara
+                parts.forEachIndexed { index, part ->
+                    if (index == 0) {
+                        val titleRun = targetPara.createRun()
+                        titleRun.fontFamily = "微软雅黑"
+                        titleRun.fontSize = 10
+                        titleRun.isBold = true
+                        titleRun.setText("测评说明：")
+                        
+                        val textRun = targetPara.createRun()
+                        textRun.fontFamily = "微软雅黑"
+                        textRun.fontSize = 10
+                        textRun.setText(part)
+                    } else {
+                        // Create a new paragraph for subsequent lines to ensure proper wrapping
+                        // Copy the formatting of the original paragraph to maintain indentation
+                        val cursor = lastPara.getCTP().newCursor()
+                        cursor.toNextSibling()
+                        val newPara = document.insertNewParagraph(cursor)
+                        if (targetPara.getCTP().pPr != null) {
+                            newPara.getCTP().pPr = targetPara.getCTP().pPr.copy() as org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPr
+                            // Remove numbering (bullet) so it doesn't add another dot
+                            if (newPara.getCTP().pPr.isSetNumPr) {
+                                newPara.getCTP().pPr.unsetNumPr()
+                            }
                         }
-                        val textRun = para.createRun()
+                        cursor.dispose()
+                        lastPara = newPara
+                        
+                        val textRun = newPara.createRun()
                         textRun.fontFamily = "微软雅黑"
                         textRun.fontSize = 10
                         textRun.setText(part)
                     }
                 }
-            } catch (e: Exception) {
-                System.err.println("Failed to parse GLOBAL_ASSESSMENT_DESCRIPTIONS: ${e.message}")
+            } else {
+                // If parts is empty but we still want the title
+                val titleRun = targetPara.createRun()
+                titleRun.fontFamily = "微软雅黑"
+                titleRun.fontSize = 10
+                titleRun.isBold = true
+                titleRun.setText("测评说明：")
             }
         }
 

@@ -41,6 +41,9 @@ class Student {
     @Column(name = "dynamic_data", columnDefinition = "TEXT")
     var dynamicData: String? = null
 
+    @Column(name = "selected_export_columns", columnDefinition = "TEXT")
+    var selectedExportColumns: String? = null
+
     @PrePersist
     fun prePersist() {
         createdAt = LocalDateTime.now()

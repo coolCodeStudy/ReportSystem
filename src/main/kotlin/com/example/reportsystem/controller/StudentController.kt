@@ -148,14 +148,16 @@ class StudentController(
             ?.map { it.trim() }
             ?.filter { it.isNotEmpty() }
 
-        val selectedColumns = columns?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+        val columnsSource = columns ?: record.selectedExportColumns
+        val selectedColumns = columnsSource?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
 
         val modifiedBytes = docxGeneratorService.generateDocx(
             record.lingolandLevel,
             record.targetGrade,
             record.student?.studentType,
             assessmentTypeList,
-            selectedColumns
+            selectedColumns,
+            record.otherAssessment
         )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")

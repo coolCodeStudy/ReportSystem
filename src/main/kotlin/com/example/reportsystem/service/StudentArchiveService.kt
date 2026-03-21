@@ -71,6 +71,7 @@ class StudentArchiveService(
             this.lingolandLevel = form.lingolandLevel
             this.studyGoal = form.studyGoal
             this.assessmentDate = parsedDate
+            this.selectedExportColumns = form.selectedExportColumns
         }
         assessmentRecordRepository.save(record)
         return student
