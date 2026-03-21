@@ -161,6 +161,134 @@ class SystemInitRunner(
             println("=== Initialized Assessment Analysis Templates (Reading) ===")
         }
 
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_SPEAKING") == null) {
+            val speakingAnalysisJson = """
+                [
+                  { "dimension": "发音", "positive": "没有问题，单词发音准确。", "negative": "" },
+                  { "dimension": "问题理解", "positive": "能够理解老师提出的不同时态的问题并作出回答。部分比较长的问题（如）第一遍会听不明白，老师用比较简单的语言拆解过后可以理解", "negative": "" },
+                  { "dimension": "句型和语法的多样性", "positive": "不错，能够用举例子、对比等方法来支撑自己的观点，并运用I think, first, because等连接词正确衔接语句。", "negative": "" },
+                  { "dimension": "流利", "positive": "非常流利，并且能够做到一边构思、一边表达，没有长时间的“额”这种停顿的情况。", "negative": "" },
+                  { "dimension": "语速", "positive": "适中，清晰，且能够支持自己边想边说，不会卡壳。", "negative": "" },
+                  { "dimension": "口音", "positive": "没有明显的母语口音，不会影响听者理解。", "negative": "" },
+                  { "dimension": "语法正确性", "positive": "", "negative": "时态、语态问题比较严重。首先，没有明确的时态标记，不管是现在、过去还是将来，都是I do的形式回答。其次，有系统性语法问题，比如表达现在进行时的句子，会出现She is make这样的错误表达。缺少三单标记。" },
+                  { "dimension": "词汇量", "positive": "日常用于词汇量是比较不错的，能够支持自己讲述和日常生活密切相关的话题。学术类词汇由于测试中没有涉及因此没有重点考察，但总体词汇量是比同龄体制内小朋友要多的，部分用词已经达到了初中的水平。", "negative": "" },
+                  { "dimension": "语音、语句现象", "positive": "整体表达清晰，没有明显的口音带来的歧义或理解问题。", "negative": "" },
+                  { "dimension": "互动和回应", "positive": "基本能够和老师做到一问一答有机衔接，老师抛出的所有问题，即使是yes/no可以回答的问题，也会用because...来给出具体的想法或原因。", "negative": "" },
+                  { "dimension": "思维能力", "positive": "不错，而且思维深度远超同龄人。这一点在写作中表现得更为明显。口语交谈中，能看到小朋友对家人展现出体贴共情能力，对于一些生活话题（比如自己对休闲娱乐的看法、对生日的看法等）都有自己的见解和理由去支持。", "negative": "" },
+                  { "dimension": "压力", "positive": "不太紧张。小朋友属于“淡人”，不管是思考中还是面对听不明白的问题时，都很少表现出情感上的波动，包括焦虑、压力、情绪等。从发言内容来看，小朋友还是更习惯于待在自己的“舒适圈”的。比如谈及不同的休闲娱乐方式，小朋友会更倾向于对自己熟悉的话题（cooking, reading）做出更多的阐述，而避开自己不那么熟悉话题。", "negative": "" },
+                  { "dimension": "突发情况应对", "positive": "会片刻思考，询问“pardon?”。", "negative": "" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_SPEAKING", configValue = speakingAnalysisJson))
+            
+            val speakingCauseJson = """
+                [
+                  "语法训练不规范导致语法问题较多，特别是时态语态等句型结构上基础语法的问题。"
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_SPEAKING", configValue = speakingCauseJson))
+        }
+
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_WRITING") == null) {
+            val writingAnalysisJson = """
+                [
+                  { "dimension": "内容", "positive": "能回应题目要求，有自己的想法，表达想法强烈。", "negative": "" },
+                  { "dimension": "结构（Intro-Body-Conclusion）", "positive": "结构意识好，会将分论点逐个说明。", "negative": "" },
+                  { "dimension": "写作惯例（Cohesion, Unity, Completeness）", "positive": "", "negative": "有逻辑衔接的意识，会用一些连词，如but, also等，但使用的准确性还需加强。如although和but不能连用。" },
+                  { "dimension": "词汇", "positive": "", "negative": "词汇使用的准确性有待提高，包括词性，如。以及词义辨析，如。" },
+                  { "dimension": "语法正确性", "positive": "", "negative": "存在多处基础语法错误（时态、主谓一致、复数、非谓语、比较级），例如。三单方面会注意，但是有些地方仍有疏漏。英文标点方面需要注意，断句意识不强。" },
+                  { "dimension": "语法多样性", "positive": "", "negative": "尝试使用复合句，但还未完全掌握，如未用动名词作主语，动名词作主语谓语动词应使用单数形式。" },
+                  { "dimension": "拼写", "positive": "单词拼写掌握的较好，无拼写错误。", "negative": "" },
+                  { "dimension": "标点符号", "positive": "", "negative": "不会正确地使用逗号和句号，与语法基础不扎实有关。" },
+                  { "dimension": "表达（清晰，简洁）", "positive": "", "negative": "思路清晰但表述冗余，部分句子结构模糊，影响可读性（如）。" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_WRITING", configValue = writingAnalysisJson))
+
+            val writingCauseJson = """
+                [
+                  "写作偏口语化，缺乏书面语结构和学术表达意识，无法正确使用逻辑连接词",
+                  "语法和词汇整合能力不足，影响句式完整性与表达准确性",
+                  "可能缺乏范文输入与模仿练习，导致表达生硬且语法规则未能内化为语感",
+                  "缺乏组织语言的策略和自我检查的习惯，导致表达冗余且错误遗留"
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_WRITING", configValue = writingCauseJson))
+        }
+
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_LISTENING") == null) {
+            val listeningAnalysisJson = """
+                [
+                  { "dimension": "时间分配", "positive": "能够在规定时间内完成。", "negative": "" },
+                  { "dimension": "信息理解", "positive": "", "negative": "理解有较大偏差，尤其是遇到生词和长句时，有较多生词不理解。" },
+                  { "dimension": "语速适应", "positive": "", "negative": "在关键信息抓取上需要锻炼，可能信息量大的时候有点点困难，或容易受干扰项影响。" },
+                  { "dimension": "单词辨音", "positive": "", "negative": "能够分辨已知单词的发音，对不常见单词以及长难句难以辨认。" },
+                  { "dimension": "专注力", "positive": "较为专注。", "negative": "" },
+                  { "dimension": "语法知识（如从句的理解）", "positive": "", "negative": "能够理解简单语法结构，但面对复杂句式时需要更多时间来反应。" },
+                  { "dimension": "语音变体（是否能适应口音）", "positive": "", "negative": "" },
+                  { "dimension": "语音现象", "positive": "", "negative": "" },
+                  { "dimension": "考试策略", "positive": "", "negative": "没有考试策略的意识，没有提前读题，圈划关键词的习惯。" },
+                  { "dimension": "焦虑与压力", "positive": "基本没有焦虑情绪。", "negative": "" },
+                  { "dimension": "词汇", "positive": "", "negative": "听音频填空完成得不错；但在理解性的题目中可能因为较多生词而影响题目分析。" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_LISTENING", configValue = listeningAnalysisJson))
+
+            val listeningCauseJson = """
+                [
+                  "词汇量匮乏。一些关键词汇的不理解会造成信息听取出现大面积空白",
+                  "语法结构掌握不扎实，造成长难句的理解偏差",
+                  "没有考试策略的意识，没有提前读题，圈划关键词的习惯。",
+                  "抓取关键信息的能力薄弱，易受干扰项影响"
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_LISTENING", configValue = listeningCauseJson))
+        }
+
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE") == null) {
+            val languageUseAnalysisJson = """
+                [
+                  { "dimension": "基础语法概念", "positive": "", "negative": "对主谓一致、时态和句型结构可能有基本认识，但在实际使用中仍混乱。时态辨析不强，特别是一般过去时和过去进行时。" },
+                  { "dimension": "句型结构与语法形式", "positive": "", "negative": "主要使用简单句，复合句结构掌握不足，连接词使用有限。" },
+                  { "dimension": "词汇量", "positive": "", "negative": "应该掌握的高频学术及生活词汇（如）明显欠缺，影响理解与产出。" },
+                  { "dimension": "语音与拼读", "positive": "语音与拼读没有问题。", "negative": "" },
+                  { "dimension": "词汇识别与语法迁移", "positive": "", "negative": "生词无法通过语法线索或词根推测含义，反映出未建立对词汇组成的概念和意识的运用。" },
+                  { "dimension": "语法意识与自我校正", "positive": "", "negative": "缺乏语法自检能力，对错误缺乏敏感度。" },
+                  { "dimension": "词形变化", "positive": "", "negative": "动词原形、三单、过去式及过去分词（如的变形）、非谓语等知识点未完全掌握，名词复数、比较级最高级的使用也有小问题。" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE", configValue = languageUseAnalysisJson))
+
+            val languageUseCauseJson = """
+                [
+                  "语法学习以记忆为主，缺乏语境化练习，导致“知规则但不会用”",
+                  "动词变化、句型连接、名词复数等语法点掌握零散，系统性不足",
+                  "词汇量有限，影响语法结构理解与句式表达",
+                  "缺乏语言运用规则意识，对词根、派生和词性变化不敏感"
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE", configValue = languageUseCauseJson))
+        }
+
+        if (systemConfigRepository.findByConfigKey("GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY") == null) {
+            val learningLiteracyAnalysisJson = """
+                [
+                  { "dimension": "学习态度", "positive": "专注度总体还可以。", "negative": "" },
+                  { "dimension": "依从性", "positive": "很好地落实老师的指令；能够基本完成测评任务。", "negative": "" },
+                  { "dimension": "思维", "positive": "", "negative": "思维活跃，善于思考，有辩证思考问题的能力。但是现有词汇量无法支持完成一些比较复杂的表达。" },
+                  { "dimension": "复习习惯", "positive": "学习状态好，推测复习习惯较好，能完成老师布置的复习任务。", "negative": "" },
+                  { "dimension": "学习策略", "positive": "学习习惯比较优秀。", "negative": "" },
+                  { "dimension": "畏难情绪", "positive": "能够按要求完成所有任务，即使觉得有点困难也能坚持完成。", "negative": "" },
+                  { "dimension": "笔记习惯", "positive": "", "negative": "有待加强(e.g.可以做笔记，写阅读的时候可以多划关键字)。" }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY", configValue = learningLiteracyAnalysisJson))
+
+            val learningLiteracyCauseJson = "[]" // As none were provided explicitly 
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY", configValue = learningLiteracyCauseJson))
+            println("=== Initialized ALL Assessment Analysis Templates ===")
+        }
+
 
         // Initialize default student types if the table is empty
         if (studentTypeDictionaryRepository.count() == 0L) {
