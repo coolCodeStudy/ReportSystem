@@ -231,42 +231,7 @@
         </div>
     </div>
 
-    <!-- Download Form Modal (For new assessment / Generate report) -->
-    <div class="modal fade" id="downloadFormModal" tabindex="-1" aria-labelledby="downloadFormModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <form id="workspaceCreateForm">
-                    <div class="modal-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%);">
-                        <h5 class="modal-title" id="downloadFormModalLabel"><i
-                                class="bi bi-rocket-takeoff me-2"></i>新建测评档案</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="mb-4">
-                            <label for="studentId" class="form-label fw-bold text-secondary mb-3">为哪位学生创建测评档案？</label>
-                            <select class="form-select form-select-lg shadow-sm border-primary" id="studentId" name="studentId" required>
-                                <option value="" selected disabled>-- 请选择已有学生 --</option>
-                                <th:block th:each="student : ${students}">
-                                    <option th:value="${student.id}" th:text="${student.name}"></option>
-                                </th:block>
-                            </select>
-                        </div>
-                        <div class="alert alert-light border small text-muted mb-0">
-                            <i class="bi bi-info-circle me-1 text-primary"></i> 确认后，将立刻进入 <strong>「沉浸式测评工作台」</strong>，您可以在那里从容填写测评时间、等级、系统模版及详细算分。
-                        </div>
-                    </div>
-                    <div class="modal-footer bg-light border-top-0 pt-0">
-                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">取消</button>
-                        <button type="submit" id="btnEnterWorkspace" class="btn btn-primary px-4 shadow-sm"
-                            style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
-                            进入工作台 <i class="bi bi-arrow-right ms-1"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Student Record Modal (For standalone student CRUD) -->
     <div class="modal fade" id="studentRecordModal" tabindex="-1" aria-labelledby="studentRecordModalLabel"
@@ -413,34 +378,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            // Rapid Create Empty Workspace Record
-            const workspaceCreateForm = document.getElementById('workspaceCreateForm');
-            if(workspaceCreateForm) {
-                workspaceCreateForm.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    const studentId = document.getElementById('studentId').value;
-                    const btn = document.getElementById('btnEnterWorkspace');
-                    btn.disabled = true;
-                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>进入中...';
 
-                    fetch('/api/workspace/create?studentId=' + studentId, { method: 'POST' })
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.success && data.recordId) {
-                                window.location.href = '/assessment/' + data.recordId + '/workspace';
-                            } else {
-                                alert('创建失败');
-                                btn.disabled = false;
-                                btn.innerHTML = '进入工作台 <i class="bi bi-arrow-right ms-1"></i>';
-                            }
-                        }).catch(err => {
-                            console.error(err);
-                            alert('网络错误');
-                            btn.disabled = false;
-                            btn.innerHTML = '进入工作台 <i class="bi bi-arrow-right ms-1"></i>';
-                        });
-                });
-            }
 
             // Functionality to open Student form modal for New
             const newStudentBtn = document.querySelector('[data-bs-target="#studentRecordModal"]');
@@ -607,49 +545,24 @@
 
             // Make triggerNewReport globally available
             window.triggerNewReport = function () {
-                var historyModal = bootstrap.Modal.getInstance(document.getElementById('assessmentHistoryModal'));
+                const historyModal = bootstrap.Modal.getInstance(document.getElementById('assessmentHistoryModal'));
                 if (historyModal) { historyModal.hide(); }
-
-                var downloadModal = new bootstrap.Modal(document.getElementById('downloadFormModal'));
-
-                // Pre-fill name if accessed from History Panel
-                const nameSelect = document.getElementById('name');
-                if (nameSelect && currentSelectedHistoryStudentName) {
-                    // Try to find the matching option
-                    for (let i = 0; i < nameSelect.options.length; i++) {
-                        if (nameSelect.options[i].value === currentSelectedHistoryStudentName) {
-                            nameSelect.selectedIndex = i;
-                            // Trigger change event to auto-fill grade
-                            nameSelect.dispatchEvent(new Event('change'));
-                            break;
-                        }
-                    }
+                if (window.currentSelectedHistoryStudentId) {
+                    const formData = new URLSearchParams();
+                    formData.append('studentId', window.currentSelectedHistoryStudentId);
+                    fetch('/api/workspace/create', { method: 'POST', body: formData })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                window.location.href = `/assessment/${data.recordId}/workspace`;
+                            } else { alert('创建测评档案失败，请稍后重试'); }
+                        })
+                        .catch(err => {
+                            console.error('Failed to create empty workspace', err);
+                            alert('网络错误，请稍后重试');
+                        });
                 }
-
-                downloadModal.show();
             };
-
-            // Handle automatic Grade filling when Name is selected
-            const nameSelectInput = document.getElementById('name');
-            const gradeReadOnlyInput = document.getElementById('grade');
-
-            if (nameSelectInput && gradeReadOnlyInput) {
-                nameSelectInput.addEventListener('change', function () {
-                    const selectedOption = this.options[this.selectedIndex];
-                    const gradeVal = selectedOption.getAttribute('data-grade');
-                    const studentTypeVal = selectedOption.getAttribute('data-type');
-                    
-                    if (gradeVal && gradeVal !== 'null' && gradeVal.trim() !== '') {
-                        gradeReadOnlyInput.value = gradeVal;
-                    } else {
-                        gradeReadOnlyInput.value = '暂无记录';
-                    }
-
-                    if (typeof loadExportColumnsForStudent === 'function') {
-                        loadExportColumnsForStudent(studentTypeVal);
-                    }
-                });
-            }
 
             // Student Deletion Logic
             document.querySelectorAll('.delete-student-btn').forEach(btn => {
