@@ -43,7 +43,8 @@ G11,,1225L,17500,,,,,,
         studentType: String? = null,
         assessmentTypes: List<String>? = null,
         selectedColumns: List<String>? = null,
-        otherAssessment: String? = null
+        otherAssessment: String? = null,
+        assessmentResultsJson: String? = null
     ): ByteArray {
         if (targetLevel != null && targetLevel.matches(Regex("^G([1-9]|10|11)$", RegexOption.IGNORE_CASE))) {
             throw IllegalArgumentException("系统不再支持旧版的 Lingoland 等级 (G1-G11)。请前往学生档案将其测评 Level 更新为对应的 CEFR 等级后再导出报告。")
@@ -163,11 +164,246 @@ G11,,1225L,17500,,,,,,
             }
         }
 
+        // --- Append Assessment Analysis Tables ---
+        appendAssessmentAnalysis(document, assessmentResultsJson)
+
         val out = ByteArrayOutputStream()
         document.write(out)
         val bytes = out.toByteArray()
         document.close()
         return bytes
+    }
+    
+    // ──────────────────────────────────────────────────────────────────────────
+    // Assessment Analysis Table Append
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private fun appendAssessmentAnalysis(document: XWPFDocument, assessmentResultsJson: String?) {
+        if (assessmentResultsJson.isNullOrBlank()) return
+        try {
+            val mapper = jacksonObjectMapper()
+            val analysis = mapper.readTree(assessmentResultsJson)
+            if (analysis.isMissingNode || analysis.isEmpty) return
+
+            // Find placeholder
+            var targetPara: XWPFParagraph? = null
+            for (p in document.paragraphs) {
+                if (p.text.contains("{assessment_analysis}")) {
+                    targetPara = p
+                    break
+                }
+            }
+
+            // Helper to create paragraph, either inserted or appended
+            fun createPara(): XWPFParagraph {
+                return if (targetPara != null) {
+                    val c = targetPara.ctp.newCursor()
+                    val p = document.insertNewParagraph(c)
+                    c.dispose()
+                    // The standard insert doesn't register it in doc.paragraphs list nicely,
+                    // but it works for layout.
+                    p
+                } else {
+                    document.createParagraph()
+                }
+            }
+
+            // Create Table helper
+            fun createTableWrappen(rows: Int, cols: Int): XWPFTable {
+                return if (targetPara != null) {
+                    val c = targetPara.ctp.newCursor()
+                    val t = document.insertNewTbl(c)
+                    c.dispose()
+                    // It creates 1x1 by default in raw XML, but XWPF wrapper expects layout matching
+                    // We must initialize the table structure manually for it to work.
+                    
+                    // Remove default row to let our loop handle it
+                    if (t.rows.isNotEmpty()) t.removeRow(0)
+                    for (r in 0 until rows) {
+                        val row = t.createRow()
+                        for (c in 1 until cols) { // First cell created by createRow usually? Wait, createRow creates 1 cell.
+                            row.addNewTableCell()
+                        }
+                    }
+                    t
+                } else {
+                    document.createTable(rows, cols)
+                }
+            }
+
+            // Add Header "二、 测评分析"
+            val titlePara = createPara()
+            titlePara.spacingBefore = 400
+            titlePara.spacingAfter = 150
+            val titleRun = titlePara.createRun()
+            titleRun.setText("二、 测评分析")
+            titleRun.fontFamily = "微软雅黑"
+            titleRun.fontSize = 16
+            titleRun.isBold = true
+
+            val subjectMap = mapOf(
+                "reading" to "阅读",
+                "listening" to "听力",
+                "speaking" to "口语",
+                "writing" to "写作",
+                "language_use" to "语言运用",
+                "learning_literacy" to "学习素养"
+            )
+
+            for ((key, displayName) in subjectMap) {
+                val subjNode = analysis.path(key)
+                if (subjNode.isMissingNode || subjNode.isEmpty) continue
+                
+                // Make sure it actually has data
+                if (subjNode.path("score").isMissingNode && subjNode.path("level").isMissingNode && 
+                    subjNode.path("paperAnalysis").isMissingNode && subjNode.path("causeAnalysis").isMissingNode) continue
+
+                val score = subjNode.path("score").asText()
+                val total = subjNode.path("total").asText()
+                val level = subjNode.path("level").asText()
+                val prefix = if (key in listOf("reading", "listening")) "正确率" else "得分"
+
+                var headerText = "●  $displayName"
+                if (score.isNotBlank() && total.isNotBlank()) headerText += "  $prefix $score/$total"
+                if (level.isNotBlank()) headerText += "  $level"
+
+                // Create Table wrapper
+                val table = createTableWrappen(1, 2)
+                table.removeBorders()
+                val tblPr = table.ctTbl.tblPr ?: table.ctTbl.addNewTblPr()
+                val tblW = tblPr.tblW ?: tblPr.addNewTblW()
+                tblW.type = STTblWidth.PCT
+                tblW.w = BigInteger.valueOf(5000)
+
+                // Row 0: Header
+                val r0 = table.getRow(0)
+                val c00 = r0.getCell(0)
+                val tcPr0 = c00.ctTc.tcPr ?: c00.ctTc.addNewTcPr()
+                tcPr0.addNewGridSpan().`val` = BigInteger.valueOf(2)
+                if (r0.tableCells.size > 1) r0.removeCell(1)
+
+                setCellText(c00, headerText, bold = true, color = "FFFFFF", fontSize = 11)
+                setCellShading(c00, "002060")
+                setWhiteBorders(c00)
+
+                // Row 1: Paper Analysis (卷面分析)
+                val paperNode = subjNode.path("paperAnalysis")
+                if (!paperNode.isMissingNode && paperNode.isObject && paperNode.size() > 0) {
+                    val r1 = table.createRow()
+                    if (r1.tableCells.size < 2) {
+                        while (r1.tableCells.size < 2) r1.addNewTableCell()
+                    }
+                    val c10 = r1.getCell(0)
+                    val c11 = r1.getCell(1)
+
+                    c10.ctTc.tcPr?.let { c10.ctTc.unsetTcPr() }
+                    c11.ctTc.tcPr?.let { c11.ctTc.unsetTcPr() }
+                    c10.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(1000); type = STTblWidth.PCT }
+                    c11.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(4000); type = STTblWidth.PCT }
+
+                    setCellText(c10, "A. 卷面分析", bold = false, color = "000000", fontSize = 10)
+                    setCellAlignment(c10, ParagraphAlignment.CENTER)
+                    setCellShading(c10, "F2F2F2")
+                    setWhiteBorders(c10)
+
+                    setCellShading(c11, "F9F9F9")
+                    setWhiteBorders(c11)
+                    if (c11.paragraphs.isNotEmpty()) {
+                        val firstPara = c11.paragraphs[0]
+                        c11.removeParagraph(0)
+                    }
+
+                    paperNode.fields().forEach { (dim, valNode) ->
+                        val status = valNode.path("status").asText()
+                        val text = valNode.path("text").asText()
+
+                        val p1 = c11.addParagraph()
+                        p1.spacingBefore = 100
+                        p1.spacingAfter = 50
+
+                        val rBullet = p1.createRun()
+                        rBullet.fontFamily = "微软雅黑"
+                        rBullet.fontSize = 10
+                        rBullet.setText("■  ")
+
+                        val rDim = p1.createRun()
+                        rDim.fontFamily = "微软雅黑"
+                        rDim.fontSize = 10
+                        rDim.isBold = true
+                        rDim.setText("$dim: ")
+
+                        val rDots = p1.createRun()
+                        val dotCount = maxOf(3, 25 - dim.length * 2)
+                        rDots.setText(".".repeat(dotCount) + " ")
+
+                        val rStatus = p1.createRun()
+                        rStatus.fontFamily = "Segoe UI Emoji"
+                        rStatus.setText(status)
+
+                        if (text.isNotBlank()) {
+                            val p2 = c11.addParagraph()
+                            p2.spacingBefore = 50
+                            p2.spacingAfter = 100
+                            p2.indentationLeft = 300
+                            val rText = p2.createRun()
+                            rText.fontFamily = "微软雅黑"
+                            rText.fontSize = 10
+                            rText.setText(text)
+                        }
+                    }
+                }
+
+                // Row 2: Cause Analysis (成因分析)
+                val causeNode = subjNode.path("causeAnalysis")
+                if (!causeNode.isMissingNode && causeNode.isArray && causeNode.size() > 0) {
+                    val r2 = table.createRow()
+                    if (r2.tableCells.size < 2) {
+                        while (r2.tableCells.size < 2) r2.addNewTableCell()
+                    }
+                    val c20 = r2.getCell(0)
+                    val c21 = r2.getCell(1)
+
+                    c20.ctTc.tcPr?.let { c20.ctTc.unsetTcPr() }
+                    c21.ctTc.tcPr?.let { c21.ctTc.unsetTcPr() }
+                    c20.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(1000); type = STTblWidth.PCT }
+                    c21.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(4000); type = STTblWidth.PCT }
+
+                    setCellText(c20, "B. 成因分析", bold = false, color = "000000", fontSize = 10)
+                    setCellAlignment(c20, ParagraphAlignment.CENTER)
+                    setCellShading(c20, "EFEFEF")
+                    setWhiteBorders(c20)
+
+                    setCellShading(c21, "F2F2F2")
+                    setWhiteBorders(c21)
+                    if (c21.paragraphs.isNotEmpty()) {
+                        c21.removeParagraph(0)
+                    }
+
+                    causeNode.forEach { causeStrNode ->
+                        val causeStr = causeStrNode.asText()
+                        val pCause = c21.addParagraph()
+                        pCause.spacingBefore = 100
+                        pCause.spacingAfter = 100
+                        pCause.indentationLeft = 150
+                        val rBullet = pCause.createRun()
+                        rBullet.fontFamily = "微软雅黑"
+                        rBullet.fontSize = 10
+                        rBullet.setText("●  $causeStr")
+                    }
+                }
+
+                createPara().spacingAfter = 200
+            }
+            
+            // Cleanup placeholder
+            if (targetPara != null) {
+                targetPara.runs.forEach { it.setText("", 0) }
+                // For a more complete remove: document.removeBodyElement(document.getPosOfParagraph(targetPara))
+            }
+            
+        } catch (e: Exception) {
+            System.err.println("Failed to parse assessment results for docx: ${e.message}")
+        }
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -341,14 +577,34 @@ G11,,1225L,17500,,,,,,
     // Cell helpers
     // ──────────────────────────────────────────────────────────────────────────
 
-    private fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean) {
+    private fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean, color: String? = null, fontSize: Int = 9) {
         val para = cell.paragraphs.firstOrNull() ?: cell.addParagraph()
         para.runs.forEach { it.setText("", 0) }
         val run = if (para.runs.isEmpty()) para.createRun() else para.runs[0]
         run.setText(text, 0)
         run.isBold = bold
-        run.fontSize = 9
+        run.fontSize = fontSize
         run.fontFamily = "微软雅黑"
+        if (color != null) {
+            run.setColor(color)
+        }
+    }
+
+    private fun setWhiteBorders(cell: XWPFTableCell) {
+        val tcPr = cell.ctTc.tcPr ?: cell.ctTc.addNewTcPr()
+        val tcBorders = tcPr.tcBorders ?: tcPr.addNewTcBorders()
+
+        fun setW(border: org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder) {
+            border.`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder.SINGLE
+            border.color = "FFFFFF"
+            border.sz = BigInteger.valueOf(12)
+            border.space = BigInteger.ZERO
+        }
+
+        setW(tcBorders.top ?: tcBorders.addNewTop())
+        setW(tcBorders.bottom ?: tcBorders.addNewBottom())
+        setW(tcBorders.left ?: tcBorders.addNewLeft())
+        setW(tcBorders.right ?: tcBorders.addNewRight())
     }
 
     private fun setCellShading(cell: XWPFTableCell, hexColor: String) {

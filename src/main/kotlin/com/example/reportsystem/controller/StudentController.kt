@@ -157,7 +157,8 @@ class StudentController(
             record.student?.studentType,
             assessmentTypeList,
             selectedColumns,
-            record.otherAssessment
+            record.otherAssessment,
+            record.assessmentResults
         )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")

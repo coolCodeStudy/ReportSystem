@@ -311,13 +311,19 @@
                     <button class="nav-link active fw-medium px-4" id="reading-tab" data-bs-toggle="pill" data-bs-target="#reading" type="button" role="tab">📖 阅读 (Reading)</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">🎧 听力 (Listening)</button>
+                    <button class="nav-link fw-medium px-4" id="listening-tab" data-bs-toggle="pill" data-bs-target="#listening" type="button" role="tab">🎧 听力 (Listening)</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">🗣️ 口语 (Speaking)</button>
+                    <button class="nav-link fw-medium px-4" id="speaking-tab" data-bs-toggle="pill" data-bs-target="#speaking" type="button" role="tab">🗣️ 口语 (Speaking)</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4 text-muted disabled" type="button" role="tab">✍️ 写作 (Writing)</button>
+                    <button class="nav-link fw-medium px-4" id="writing-tab" data-bs-toggle="pill" data-bs-target="#writing" type="button" role="tab">✍️ 写作 (Writing)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-medium px-4" id="language_use-tab" data-bs-toggle="pill" data-bs-target="#language_use" type="button" role="tab">🧩 语言运用 (Language Use)</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-medium px-4" id="learning_literacy-tab" data-bs-toggle="pill" data-bs-target="#learning_literacy" type="button" role="tab">🌟 学习素养 (Learning Literacy)</button>
                 </li>
             </ul>
 
@@ -383,7 +389,321 @@
                             </div>
                         </div>
                     </div>
+                </div>
 
+<!-- Listening Section -->
+                <div class="tab-pane fade " id="listening" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="listeningTestType" onchange="calculateListening()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="listeningScore" placeholder="得分" oninput="calculateListening()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="listeningTotal" placeholder="满分" value="30" oninput="calculateListening()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="listeningRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="listeningLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="listeningPaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="listeningCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Speaking Section -->
+                <div class="tab-pane fade " id="speaking" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="speakingTestType" onchange="calculateSpeaking()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="speakingScore" placeholder="得分" oninput="calculateSpeaking()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="speakingTotal" placeholder="满分" value="30" oninput="calculateSpeaking()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="speakingRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="speakingLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="speakingPaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="speakingCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- Writing Section -->
+                <div class="tab-pane fade " id="writing" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="writingTestType" onchange="calculateWriting()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="writingScore" placeholder="得分" oninput="calculateWriting()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="writingTotal" placeholder="满分" value="30" oninput="calculateWriting()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="writingRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="writingLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="writingPaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="writingCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- LanguageUse Section -->
+                <div class="tab-pane fade " id="language_use" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="language_useTestType" onchange="calculateLanguageUse()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="language_useScore" placeholder="得分" oninput="calculateLanguageUse()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="language_useTotal" placeholder="满分" value="30" oninput="calculateLanguageUse()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="language_useRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="language_useLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="language_usePaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="language_useCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+<!-- LearningLiteracy Section -->
+                <div class="tab-pane fade " id="learning_literacy" role="tabpanel" tabindex="0">
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                        </div>
+                        <div class="p-4">
+                            <div class="row g-4 align-items-center">
+                                <div class="col-md-3">
+                                    <label class="form-label fw-medium">测评卷种</label>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="learning_literacyTestType" onchange="calculateLearningLiteracy()">
+                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                        <option value="PET">PET (剑桥通用英语第二级)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" id="learning_literacyScore" placeholder="得分" oninput="calculateLearningLiteracy()" min="0">
+                                        <span class="input-group-text">/</span>
+                                        <input type="number" class="form-control text-center text-muted" id="learning_literacyTotal" placeholder="满分" value="30" oninput="calculateLearningLiteracy()" min="1">
+                                    </div>
+                                </div>
+                                <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                    <div class="me-4 text-end">
+                                        <div class="text-muted small mb-1">综合正确率</div>
+                                        <div class="fs-5 fw-bold" id="learning_literacyRateStr">- %</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="text-muted small mb-1">自动判定等级</div>
+                                        <div class="auto-grade-display" id="learning_literacyLevelStr">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Paper Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                        </div>
+                        <div class="p-4">
+                            <div id="learning_literacyPaperAnalysisContainer">
+                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cause Analysis (Dynamic UI) -->
+                    <div class="analysis-card">
+                        <div class="analysis-card-header">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
+                        </div>
+                        <div class="p-4">
+                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                            <div id="learning_literacyCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
+                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -434,6 +754,17 @@
         let dbState = {}; // The structured JSON data
         let readingPaperTemplate = [];
         let readingCauseTemplate = [];
+        let listeningPaperTemplate = [];
+        let listeningCauseTemplate = [];
+        let speakingPaperTemplate = [];
+        let speakingCauseTemplate = [];
+        let writingPaperTemplate = [];
+        let writingCauseTemplate = [];
+        let language_usePaperTemplate = [];
+        let language_useCauseTemplate = [];
+        let learning_literacyPaperTemplate = [];
+        let learning_literacyCauseTemplate = [];
+
 
         // Formatting utilities
         function numFormat(val) {
@@ -453,16 +784,44 @@
 
             Promise.all([
                 fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json())
-            ]).then(([pr, cr]) => {
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(r => r.json()),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(r => r.json())
+            ]).then(resps => {
                 try {
-                    readingPaperTemplate = JSON.parse(pr.value);
-                    readingCauseTemplate = JSON.parse(cr.value);
-                } catch(e) {
-                    console.error("Failed to parse templates", e);
-                }
+                    if(resps[0].value) readingPaperTemplate = JSON.parse(resps[0].value);
+                    if(resps[1].value) readingCauseTemplate = JSON.parse(resps[1].value);
+                    if(resps[2].value) listeningPaperTemplate = JSON.parse(resps[2].value);
+                    if(resps[3].value) listeningCauseTemplate = JSON.parse(resps[3].value);
+                    if(resps[4].value) speakingPaperTemplate = JSON.parse(resps[4].value);
+                    if(resps[5].value) speakingCauseTemplate = JSON.parse(resps[5].value);
+                    if(resps[6].value) writingPaperTemplate = JSON.parse(resps[6].value);
+                    if(resps[7].value) writingCauseTemplate = JSON.parse(resps[7].value);
+                    if(resps[8].value) language_usePaperTemplate = JSON.parse(resps[8].value);
+                    if(resps[9].value) language_useCauseTemplate = JSON.parse(resps[9].value);
+                    if(resps[10].value) learning_literacyPaperTemplate = JSON.parse(resps[10].value);
+                    if(resps[11].value) learning_literacyCauseTemplate = JSON.parse(resps[11].value);
+                } catch(e) { console.error('Failed to parse templates', e); }
                 renderReadingPaperAnalysis();
                 renderReadingCauseAnalysis();
+                renderListeningPaperAnalysis();
+                renderListeningCauseAnalysis();
+                renderSpeakingPaperAnalysis();
+                renderSpeakingCauseAnalysis();
+                renderWritingPaperAnalysis();
+                renderWritingCauseAnalysis();
+                renderLanguageUsePaperAnalysis();
+                renderLanguageUseCauseAnalysis();
+                renderLearningLiteracyPaperAnalysis();
+                renderLearningLiteracyCauseAnalysis();
                 hydrateFormFromState();
             });
         });
@@ -543,14 +902,14 @@
                             ${item.dimension}
                         </div>
                         <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_r_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setPaperState(${idx}, 'NA')">N/A</button>
+                            <div class="btn-group w-100" role="group" id="btnGroup_reading_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setReadingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setReadingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setReadingPaperState(${idx}, 'NA')">N/A</button>
                             </div>
                         </div>
                         <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_r_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                            <textarea class="form-control" rows="2" id="paperText_reading_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
                         </div>
                     </div>
                 `;
@@ -558,16 +917,16 @@
             });
         }
 
-        function setPaperState(idx, state) {
+        function setReadingPaperState(idx, state) {
             // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_r_${idx}`);
+            const btnGroup = document.getElementById(`btnGroup_reading_${idx}`);
             btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
             
             let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
             btnGroup.children[btnIndex].classList.add('active');
 
             // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_r_${idx}`);
+            const textArea = document.getElementById(`paperText_reading_${idx}`);
             if (state === '✅') {
                 textArea.value = readingPaperTemplate[idx].positive || '';
                 textArea.disabled = false;
@@ -594,44 +953,742 @@
             });
         }
 
+
+// --- 2. Auto Grade Engine : Listening ---
+        function calculateListening() {
+            const type = document.getElementById('listeningTestType').value;
+            const scoreStr = document.getElementById('listeningScore').value;
+            const totalStr = document.getElementById('listeningTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('listeningRateStr').innerText = rateStr;
+            document.getElementById('listeningLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('listeningLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderListeningPaperAnalysis() {
+            const container = document.getElementById('listeningPaperAnalysisContainer');
+            container.innerHTML = '';
+
+            listeningPaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_listening_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setListeningPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setListeningPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setListeningPaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_listening_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setListeningPaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_listening_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_listening_${idx}`);
+            if (state === '✅') {
+                textArea.value = listeningPaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = listeningPaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderListeningCauseAnalysis() {
+            const container = document.getElementById('listeningCauseAnalysisContainer');
+            container.innerHTML = '';
+            listeningCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
+
+// --- 2. Auto Grade Engine : Speaking ---
+        function calculateSpeaking() {
+            const type = document.getElementById('speakingTestType').value;
+            const scoreStr = document.getElementById('speakingScore').value;
+            const totalStr = document.getElementById('speakingTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('speakingRateStr').innerText = rateStr;
+            document.getElementById('speakingLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('speakingLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderSpeakingPaperAnalysis() {
+            const container = document.getElementById('speakingPaperAnalysisContainer');
+            container.innerHTML = '';
+
+            speakingPaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_speaking_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setSpeakingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setSpeakingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setSpeakingPaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_speaking_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setSpeakingPaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_speaking_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_speaking_${idx}`);
+            if (state === '✅') {
+                textArea.value = speakingPaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = speakingPaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderSpeakingCauseAnalysis() {
+            const container = document.getElementById('speakingCauseAnalysisContainer');
+            container.innerHTML = '';
+            speakingCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
+
+// --- 2. Auto Grade Engine : Writing ---
+        function calculateWriting() {
+            const type = document.getElementById('writingTestType').value;
+            const scoreStr = document.getElementById('writingScore').value;
+            const totalStr = document.getElementById('writingTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('writingRateStr').innerText = rateStr;
+            document.getElementById('writingLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('writingLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderWritingPaperAnalysis() {
+            const container = document.getElementById('writingPaperAnalysisContainer');
+            container.innerHTML = '';
+
+            writingPaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_writing_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setWritingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setWritingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setWritingPaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_writing_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setWritingPaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_writing_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_writing_${idx}`);
+            if (state === '✅') {
+                textArea.value = writingPaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = writingPaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderWritingCauseAnalysis() {
+            const container = document.getElementById('writingCauseAnalysisContainer');
+            container.innerHTML = '';
+            writingCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
+
+// --- 2. Auto Grade Engine : LanguageUse ---
+        function calculateLanguageUse() {
+            const type = document.getElementById('language_useTestType').value;
+            const scoreStr = document.getElementById('language_useScore').value;
+            const totalStr = document.getElementById('language_useTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('language_useRateStr').innerText = rateStr;
+            document.getElementById('language_useLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('language_useLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderLanguageUsePaperAnalysis() {
+            const container = document.getElementById('language_usePaperAnalysisContainer');
+            container.innerHTML = '';
+
+            language_usePaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_language_use_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setLanguageUsePaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setLanguageUsePaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setLanguageUsePaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_language_use_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setLanguageUsePaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_language_use_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_language_use_${idx}`);
+            if (state === '✅') {
+                textArea.value = language_usePaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = language_usePaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderLanguageUseCauseAnalysis() {
+            const container = document.getElementById('language_useCauseAnalysisContainer');
+            container.innerHTML = '';
+            language_useCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
+
+// --- 2. Auto Grade Engine : LearningLiteracy ---
+        function calculateLearningLiteracy() {
+            const type = document.getElementById('learning_literacyTestType').value;
+            const scoreStr = document.getElementById('learning_literacyScore').value;
+            const totalStr = document.getElementById('learning_literacyTotal').value;
+
+            const score = numFormat(scoreStr);
+            const total = numFormat(totalStr);
+
+            let rate = 0;
+            let level = '-';
+            let rateStr = '- %';
+
+            if (total > 0 && scoreStr !== '') {
+                rate = score / total;
+                rateStr = (rate * 100).toFixed(1) + '%';
+                
+                // PRD Rules
+                if (type === 'KET') {
+                    if (rate <= 0.40) level = '低于A1';
+                    else if (rate <= 0.65) level = 'A1';
+                    else if (rate <= 0.90) level = 'A2';
+                    else level = 'B1';
+                } else if (type === 'PET') {
+                    if (rate <= 0.375) level = '低于A2';
+                    else if (rate <= 0.6875) level = 'A2';
+                    else if (rate <= 0.875) level = 'B1';
+                    else level = 'B2';
+                }
+            }
+
+            document.getElementById('learning_literacyRateStr').innerText = rateStr;
+            document.getElementById('learning_literacyLevelStr').innerText = level;
+
+            // Optional: highlight styling based on level
+            const lvlEl = document.getElementById('learning_literacyLevelStr');
+            if (level.includes('低于') || level === 'A1') {
+                lvlEl.style.color = '#EF4444'; // Red
+                lvlEl.style.backgroundColor = '#FEE2E2';
+                lvlEl.style.borderColor = '#FECACA';
+            } else if (level === 'B1' || level === 'B2') {
+                lvlEl.style.color = '#10B981'; // Green
+                lvlEl.style.backgroundColor = '#D1FAE5';
+                lvlEl.style.borderColor = '#A7F3D0';
+            } else {
+                lvlEl.style.color = 'var(--primary)'; // Default
+                lvlEl.style.backgroundColor = '#EEF2FF';
+                lvlEl.style.borderColor = '#C7D2FE';
+            }
+        }
+
+        // --- 3. Dynamic UI Renderers ---
+        function renderLearningLiteracyPaperAnalysis() {
+            const container = document.getElementById('learning_literacyPaperAnalysisContainer');
+            container.innerHTML = '';
+
+            learning_literacyPaperTemplate.forEach((item, idx) => {
+                const domNode = document.createElement('div');
+                domNode.className = 'mb-4 border-bottom pb-3';
+                domNode.innerHTML = `
+                    <div class="row gx-3">
+                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
+                            ${item.dimension}
+                        </div>
+                        <div class="col-md-3">
+                            <div class="btn-group w-100" role="group" id="btnGroup_learning_literacy_${idx}">
+                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
+                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
+                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, 'NA')">N/A</button>
+                            </div>
+                        </div>
+                        <div class="col-md-7">
+                            <textarea class="form-control" rows="2" id="paperText_learning_literacy_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(domNode);
+            });
+        }
+
+        function setLearningLiteracyPaperState(idx, state) {
+            // Update UI buttons
+            const btnGroup = document.getElementById(`btnGroup_learning_literacy_${idx}`);
+            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            
+            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
+            btnGroup.children[btnIndex].classList.add('active');
+
+            // Auto-fill template if not N/A
+            const textArea = document.getElementById(`paperText_learning_literacy_${idx}`);
+            if (state === '✅') {
+                textArea.value = learning_literacyPaperTemplate[idx].positive || '';
+                textArea.disabled = false;
+            } else if (state === '❗') {
+                textArea.value = learning_literacyPaperTemplate[idx].negative || '';
+                textArea.disabled = false;
+            } else {
+                textArea.value = '';
+                // Optional: disable textarea if NA
+            }
+        }
+
+        function renderLearningLiteracyCauseAnalysis() {
+            const container = document.getElementById('learning_literacyCauseAnalysisContainer');
+            container.innerHTML = '';
+            learning_literacyCauseTemplate.forEach((cause, idx) => {
+                const span = document.createElement('span');
+                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
+                span.innerText = cause;
+                span.onclick = function() {
+                    this.classList.toggle('selected');
+                };
+                container.appendChild(span);
+            });
+        }
+
         // --- 4. State Management (Hydrate/Save) ---
         function hydrateFormFromState() {
-            // Hydrate Reading Score
-            const rData = dbState.reading || {};
-            if (rData.testType) document.getElementById('readingTestType').value = rData.testType;
-            if (rData.score !== undefined) document.getElementById('readingScore').value = rData.score;
-            if (rData.total !== undefined) document.getElementById('readingTotal').value = rData.total;
-            
-            calculateReading(); // Trigger auto-grade
+            const dt_reading = dbState.reading || {};
+            if (dt_reading.testType) document.getElementById('readingTestType').value = dt_reading.testType;
+            if (dt_reading.score !== undefined) document.getElementById('readingScore').value = dt_reading.score;
+            if (dt_reading.total !== undefined) document.getElementById('readingTotal').value = dt_reading.total;
+            calculateReading();
 
-            // Hydrate Paper Analysis
-            setTimeout(() => { // wait for render
-                if (rData.paperAnalysis) {
+            const dt_listening = dbState.listening || {};
+            if (dt_listening.testType) document.getElementById('listeningTestType').value = dt_listening.testType;
+            if (dt_listening.score !== undefined) document.getElementById('listeningScore').value = dt_listening.score;
+            if (dt_listening.total !== undefined) document.getElementById('listeningTotal').value = dt_listening.total;
+            calculateListening();
+
+            const dt_speaking = dbState.speaking || {};
+            if (dt_speaking.testType) document.getElementById('speakingTestType').value = dt_speaking.testType;
+            if (dt_speaking.score !== undefined) document.getElementById('speakingScore').value = dt_speaking.score;
+            if (dt_speaking.total !== undefined) document.getElementById('speakingTotal').value = dt_speaking.total;
+            calculateSpeaking();
+
+            const dt_writing = dbState.writing || {};
+            if (dt_writing.testType) document.getElementById('writingTestType').value = dt_writing.testType;
+            if (dt_writing.score !== undefined) document.getElementById('writingScore').value = dt_writing.score;
+            if (dt_writing.total !== undefined) document.getElementById('writingTotal').value = dt_writing.total;
+            calculateWriting();
+
+            const dt_language_use = dbState.language_use || {};
+            if (dt_language_use.testType) document.getElementById('language_useTestType').value = dt_language_use.testType;
+            if (dt_language_use.score !== undefined) document.getElementById('language_useScore').value = dt_language_use.score;
+            if (dt_language_use.total !== undefined) document.getElementById('language_useTotal').value = dt_language_use.total;
+            calculateLanguageUse();
+
+            const dt_learning_literacy = dbState.learning_literacy || {};
+            if (dt_learning_literacy.testType) document.getElementById('learning_literacyTestType').value = dt_learning_literacy.testType;
+            if (dt_learning_literacy.score !== undefined) document.getElementById('learning_literacyScore').value = dt_learning_literacy.score;
+            if (dt_learning_literacy.total !== undefined) document.getElementById('learning_literacyTotal').value = dt_learning_literacy.total;
+            calculateLearningLiteracy();
+
+            setTimeout(() => {
+                const rp_reading = dbState.reading || {};
+                if (rp_reading.paperAnalysis) {
                     readingPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rData.paperAnalysis[item.dimension];
+                        const savedItem = rp_reading.paperAnalysis[item.dimension];
                         if (savedItem) {
-                            setPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_r_${idx}`).value = savedItem.text || '';
+                            setReadingPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_reading_${idx}`).value = savedItem.text || '';
                         } else {
-                            // Default NA
-                            setPaperState(idx, 'NA');
+                            setReadingPaperState(idx, 'NA');
                         }
+                    });
+                }
+                if (rp_reading.causeAnalysis && Array.isArray(rp_reading.causeAnalysis)) {
+                    document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_reading.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
                     });
                 }
 
-                // Hydrate Cause Analysis
-                if (rData.causeAnalysis && Array.isArray(rData.causeAnalysis)) {
-                    document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rData.causeAnalysis.includes(tag.innerText)) {
-                            tag.classList.add('selected');
+                const rp_listening = dbState.listening || {};
+                if (rp_listening.paperAnalysis) {
+                    listeningPaperTemplate.forEach((item, idx) => {
+                        const savedItem = rp_listening.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setListeningPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_listening_${idx}`).value = savedItem.text || '';
+                        } else {
+                            setListeningPaperState(idx, 'NA');
                         }
                     });
                 }
+                if (rp_listening.causeAnalysis && Array.isArray(rp_listening.causeAnalysis)) {
+                    document.querySelectorAll('#listeningCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_listening.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
+                    });
+                }
+
+                const rp_speaking = dbState.speaking || {};
+                if (rp_speaking.paperAnalysis) {
+                    speakingPaperTemplate.forEach((item, idx) => {
+                        const savedItem = rp_speaking.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setSpeakingPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_speaking_${idx}`).value = savedItem.text || '';
+                        } else {
+                            setSpeakingPaperState(idx, 'NA');
+                        }
+                    });
+                }
+                if (rp_speaking.causeAnalysis && Array.isArray(rp_speaking.causeAnalysis)) {
+                    document.querySelectorAll('#speakingCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_speaking.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
+                    });
+                }
+
+                const rp_writing = dbState.writing || {};
+                if (rp_writing.paperAnalysis) {
+                    writingPaperTemplate.forEach((item, idx) => {
+                        const savedItem = rp_writing.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setWritingPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_writing_${idx}`).value = savedItem.text || '';
+                        } else {
+                            setWritingPaperState(idx, 'NA');
+                        }
+                    });
+                }
+                if (rp_writing.causeAnalysis && Array.isArray(rp_writing.causeAnalysis)) {
+                    document.querySelectorAll('#writingCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_writing.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
+                    });
+                }
+
+                const rp_language_use = dbState.language_use || {};
+                if (rp_language_use.paperAnalysis) {
+                    language_usePaperTemplate.forEach((item, idx) => {
+                        const savedItem = rp_language_use.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setLanguageUsePaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_language_use_${idx}`).value = savedItem.text || '';
+                        } else {
+                            setLanguageUsePaperState(idx, 'NA');
+                        }
+                    });
+                }
+                if (rp_language_use.causeAnalysis && Array.isArray(rp_language_use.causeAnalysis)) {
+                    document.querySelectorAll('#language_useCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_language_use.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
+                    });
+                }
+
+                const rp_learning_literacy = dbState.learning_literacy || {};
+                if (rp_learning_literacy.paperAnalysis) {
+                    learning_literacyPaperTemplate.forEach((item, idx) => {
+                        const savedItem = rp_learning_literacy.paperAnalysis[item.dimension];
+                        if (savedItem) {
+                            setLearningLiteracyPaperState(idx, savedItem.status);
+                            document.getElementById(`paperText_learning_literacy_${idx}`).value = savedItem.text || '';
+                        } else {
+                            setLearningLiteracyPaperState(idx, 'NA');
+                        }
+                    });
+                }
+                if (rp_learning_literacy.causeAnalysis && Array.isArray(rp_learning_literacy.causeAnalysis)) {
+                    document.querySelectorAll('#learning_literacyCauseAnalysisContainer .cause-tag').forEach(tag => {
+                        if (rp_learning_literacy.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
+                    });
+                }
+
             }, 100);
         }
 
         function saveWorkspaceData() {
-            // 1. Gather Reading Data
             const readingData = {
                 testType: document.getElementById('readingTestType').value,
                 score: numFormat(document.getElementById('readingScore').value),
@@ -641,31 +1698,150 @@
                 paperAnalysis: {},
                 causeAnalysis: []
             };
-
             readingPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_r_${idx}`);
+                const btnGroup = document.getElementById(`btnGroup_reading_${idx}`);
                 let status = 'NA';
-                if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-
-                const text = document.getElementById(`paperText_r_${idx}`).value.trim();
-                if (status !== 'NA' || text !== '') { // only save if not fully empty/NA
-                    readingData.paperAnalysis[item.dimension] = {
-                        status: status,
-                        text: text
-                    };
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
                 }
+                const textEl = document.getElementById(`paperText_reading_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { readingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
             });
-
             document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
                 readingData.causeAnalysis.push(tag.innerText);
             });
-
             dbState.reading = readingData;
+
+            const listeningData = {
+                testType: document.getElementById('listeningTestType').value,
+                score: numFormat(document.getElementById('listeningScore').value),
+                total: numFormat(document.getElementById('listeningTotal').value),
+                rate: document.getElementById('listeningRateStr').innerText,
+                level: document.getElementById('listeningLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+            listeningPaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_listening_${idx}`);
+                let status = 'NA';
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+                }
+                const textEl = document.getElementById(`paperText_listening_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { listeningData.paperAnalysis[item.dimension] = { status: status, text: text }; }
+            });
+            document.querySelectorAll('#listeningCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                listeningData.causeAnalysis.push(tag.innerText);
+            });
+            dbState.listening = listeningData;
+
+            const speakingData = {
+                testType: document.getElementById('speakingTestType').value,
+                score: numFormat(document.getElementById('speakingScore').value),
+                total: numFormat(document.getElementById('speakingTotal').value),
+                rate: document.getElementById('speakingRateStr').innerText,
+                level: document.getElementById('speakingLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+            speakingPaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_speaking_${idx}`);
+                let status = 'NA';
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+                }
+                const textEl = document.getElementById(`paperText_speaking_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { speakingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
+            });
+            document.querySelectorAll('#speakingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                speakingData.causeAnalysis.push(tag.innerText);
+            });
+            dbState.speaking = speakingData;
+
+            const writingData = {
+                testType: document.getElementById('writingTestType').value,
+                score: numFormat(document.getElementById('writingScore').value),
+                total: numFormat(document.getElementById('writingTotal').value),
+                rate: document.getElementById('writingRateStr').innerText,
+                level: document.getElementById('writingLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+            writingPaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_writing_${idx}`);
+                let status = 'NA';
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+                }
+                const textEl = document.getElementById(`paperText_writing_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { writingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
+            });
+            document.querySelectorAll('#writingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                writingData.causeAnalysis.push(tag.innerText);
+            });
+            dbState.writing = writingData;
+
+            const language_useData = {
+                testType: document.getElementById('language_useTestType').value,
+                score: numFormat(document.getElementById('language_useScore').value),
+                total: numFormat(document.getElementById('language_useTotal').value),
+                rate: document.getElementById('language_useRateStr').innerText,
+                level: document.getElementById('language_useLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+            language_usePaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_language_use_${idx}`);
+                let status = 'NA';
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+                }
+                const textEl = document.getElementById(`paperText_language_use_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { language_useData.paperAnalysis[item.dimension] = { status: status, text: text }; }
+            });
+            document.querySelectorAll('#language_useCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                language_useData.causeAnalysis.push(tag.innerText);
+            });
+            dbState.language_use = language_useData;
+
+            const learning_literacyData = {
+                testType: document.getElementById('learning_literacyTestType').value,
+                score: numFormat(document.getElementById('learning_literacyScore').value),
+                total: numFormat(document.getElementById('learning_literacyTotal').value),
+                rate: document.getElementById('learning_literacyRateStr').innerText,
+                level: document.getElementById('learning_literacyLevelStr').innerText,
+                paperAnalysis: {},
+                causeAnalysis: []
+            };
+            learning_literacyPaperTemplate.forEach((item, idx) => {
+                const btnGroup = document.getElementById(`btnGroup_learning_literacy_${idx}`);
+                let status = 'NA';
+                if (btnGroup && btnGroup.children.length >= 2) {
+                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
+                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
+                }
+                const textEl = document.getElementById(`paperText_learning_literacy_${idx}`);
+                const text = textEl ? textEl.value.trim() : '';
+                if (status !== 'NA' || text !== '') { learning_literacyData.paperAnalysis[item.dimension] = { status: status, text: text }; }
+            });
+            document.querySelectorAll('#learning_literacyCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
+                learning_literacyData.causeAnalysis.push(tag.innerText);
+            });
+            dbState.learning_literacy = learning_literacyData;
 
             // 2. Put to Backend
             const recordId = document.getElementById('recordIdSpan').innerText;
-            fetch(`/api/assessment/${recordId}/results`, {
+            return fetch(`/api/assessment/${recordId}/results`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(dbState)
@@ -674,24 +1850,33 @@
             .then(data => {
                 const indicator = document.getElementById('saveSuccessIndicator');
                 const timeSpan = document.getElementById('lastSaveTime');
-                indicator.classList.remove('d-none');
-                
-                const now = new Date();
-                timeSpan.innerText = `最后保存: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-                
-                setTimeout(() => indicator.classList.add('d-none'), 3000);
+                if (indicator && timeSpan) {
+                    indicator.classList.remove('d-none');
+                    const now = new Date();
+                    timeSpan.innerText = `最后保存: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+                    setTimeout(() => indicator.classList.add('d-none'), 3000);
+                }
             })
             .catch(err => {
                 alert("保存失败，请检查网络！");
                 console.error(err);
+                throw err;
             });
         }
 
         function exportWord() {
             // Best practice: save before exporting
-            saveWorkspaceData();
-            const recordId = document.getElementById('recordIdSpan').innerText;
-            window.location.href = `/student/history/${recordId}/export`;
+            const btn = document.querySelector('button[onclick="exportWord()"]');
+            const origText = btn ? btn.innerHTML : '';
+            if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在生成...';
+            
+            saveWorkspaceData().then(() => {
+                const recordId = document.getElementById('recordIdSpan').innerText;
+                window.location.href = `/student/history/${recordId}/export`;
+                if (btn) setTimeout(() => { btn.innerHTML = origText; }, 2000); // restore after a short wait
+            }).catch(e => {
+                if (btn) btn.innerHTML = origText;
+            });
         }
 
         // --- 5. Step 1 Logic (Export Columns & Assessment Types) ---
