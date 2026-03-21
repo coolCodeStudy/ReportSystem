@@ -447,6 +447,8 @@
                     const studentId = this.getAttribute('data-id');
                     const studentName = this.getAttribute('data-name');
                     currentSelectedHistoryStudentName = studentName;
+                    window.currentSelectedHistoryStudentId = studentId;
+
 
                     document.getElementById('historyStudentName').textContent = studentName;
 
