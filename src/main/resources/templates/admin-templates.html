@@ -49,7 +49,7 @@
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
                             <a class="nav-link active" href="/admin/templates">
-                                <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
+                                <i class="bi bi-gear-wide-connected"></i> 测评报告配置
                             </a>
                         </li>
                         <li class="nav-item mt-1">
@@ -272,43 +272,43 @@
                 catch(e) { return val; }
             };
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('readingAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('readingCauseTextarea').value = parseAndFormat(cr.value);
             });
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('listeningAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('listeningCauseTextarea').value = parseAndFormat(cr.value);
             });
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('speakingAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('speakingCauseTextarea').value = parseAndFormat(cr.value);
             });
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('writingAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('writingCauseTextarea').value = parseAndFormat(cr.value);
             });
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('languageUseAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('languageUseCauseTextarea').value = parseAndFormat(cr.value);
             });
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(res => res.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([pr, cr]) => {
                 if (pr.value) document.getElementById('learningLiteracyAnalysisTextarea').value = parseAndFormat(pr.value);
                 if (cr.value) document.getElementById('learningLiteracyCauseTextarea').value = parseAndFormat(cr.value);
@@ -346,8 +346,8 @@
         // 0. Global Config Logic
         function loadGlobalCsvHeader() {
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_BASIC_COLUMNS').then(res => res.json()).catch(() => ({value: ''}))
+                fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_BASIC_COLUMNS').then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)).catch(() => ({value: ''}))
             ]).then(([csvData, basicData]) => {
                 if (csvData.value) {
                     document.getElementById('globalMatrixTextarea').value = csvData.value;
@@ -432,7 +432,7 @@
 
         function loadAssessmentDescs() {
             fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS')
-            .then(res => res.json())
+            .then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             .then(data => {
                 try {
                     assessmentDescs = data.value ? JSON.parse(data.value) : [];
@@ -509,7 +509,7 @@
 // 1. Types Logic
         function loadTypes() {
             fetch('/admin/api/types')
-            .then(res => res.json())
+            .then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             .then(data => {
                 adminTypes = data;
                 renderTypes(data);

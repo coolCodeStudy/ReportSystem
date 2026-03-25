@@ -49,7 +49,7 @@
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
                             <a class="nav-link" href="/admin/templates">
-                                <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
+                                <i class="bi bi-gear-wide-connected"></i> 测评报告配置
                             </a>
                         </li>
                         <li class="nav-item mt-1">
@@ -69,24 +69,11 @@
                 </div>
 
                                 <div class="row" style="height: calc(100vh - 120px);">
-                    <!-- Left: Navigation & Student Types List -->
-                    <div class="col-md-3 h-100">
-                        <div class="card shadow-sm border-0 h-100 d-flex flex-column">
-                            <div class="list-group list-group-flush flex-grow-1 overflow-auto" id="mainSidebarList">
-                                <!-- Global Tabs -->
-                                <div class="p-3 bg-light border-bottom text-muted small fw-bold">核心配置</div>
-                                <div class="list-group-item list-group-item-action p-3 type-list-item active" id="menu-analysis" onclick="selectMainMenu('analysis')">
-                                    <h6 class="mb-0 fw-bold"><i class="bi bi-bar-chart-steps text-warning me-2"></i>测评分析模板配置</h6>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Right: Content Panels -->
-                    <div class="col-md-9 h-100">
+                    <div class="col-12 h-100">
                         <div class="card shadow-sm border-0 h-100 d-flex flex-column">
                             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
-                                <h6 class="mb-0 fw-bold text-secondary" id="currentConfigTitle"><i class="bi bi-sliders me-2"></i> 全局矩阵与基础标化配置</h6>
+                                <h6 class="mb-0 fw-bold text-secondary" id="currentConfigTitle"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 测评分析模板配置</h6>
                             </div>
                             <div class="card-body bg-light flex-grow-1 overflow-auto p-4" id="mainContentContainer">
                                 
@@ -98,84 +85,100 @@
                                     <p class="text-muted mt-2">请在左侧点击选择需要查看或更改的配置项目。</p>
                                 </div>
 
-                                <!-- Panel: Analysis Config -->
-                                <div id="panel-analysis" class="config-panel d-block">
+                                <!-- Panel: Analysis Config via Alpine.js -->
+                                <div id="panel-analysis" class="config-panel d-block" x-data="analysisConfigManager()" x-init="initData()">
                                     <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 阅读测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="readingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="readingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 听力测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="listeningAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="listeningCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 口语测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="speakingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="speakingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 写作测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="writingAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="writingCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 语言运用测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="languageUseAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="languageUseCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
-                                        <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom mt-4">
-                                            <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-bar-chart-steps text-warning me-2"></i> 学习素养测评分析模板 (JSON)</h6>
-                                        </div>
-                                        <div class="alert alert-info py-2 small">
-                                            配置【卷面分析】各个维度及对应的 ✅ (positive) 和 ❗ (negative) 默认预设文案。必须是合法的 JSON 数组格式。
-                                        </div>
-                                        <textarea id="learningLiteracyAnalysisTextarea" class="form-control matrix-textarea mb-3" rows="10"></textarea>
-                                        
-                                        <div class="alert alert-info py-2 small mt-4">
-                                            配置【成因分析】的标签句子库。必须是合法的 JSON 字符串数组格式。
-                                        </div>
-                                        <textarea id="learningLiteracyCauseTextarea" class="form-control matrix-textarea mb-3" rows="6"></textarea>
+                                        <!-- Tab Headers -->
+                                        <ul class="nav nav-tabs mb-4 px-2 pt-2 bg-light rounded-top" role="tablist">
+                                            <template x-for="tab in tabs" :key="tab.id">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link fw-bold" 
+                                                            :class="activeTab === tab.id ? 'active text-primary' : 'text-secondary'"
+                                                            @click="activeTab = tab.id" 
+                                                            type="button" role="tab">
+                                                        <i class="bi me-1" :class="tab.icon"></i><span x-text="tab.name"></span>
+                                                    </button>
+                                                </li>
+                                            </template>
+                                        </ul>
 
-                                        <div class="text-end border-top pt-3 mt-2">
-                                            <button class="btn btn-success px-4 shadow-sm rounded-pill" onclick="saveAnalysisConfigs()">保存模板配置</button>
+                                        <!-- Tab Contents -->
+                                        <div class="tab-content px-2" style="min-height: 400px; position: relative;">
+                                            
+                                            <!-- Loading overlay -->
+                                            <div x-show="loading" class="position-absolute top-0 start-0 w-100 h-100 bg-white z-3" style="opacity: 0.85; border-radius: 8px;">
+                                                <div class="d-flex flex-column justify-content-center align-items-center h-100">
+                                                    <div class="spinner-border text-primary fs-4" role="status" style="width: 3rem; height: 3rem;"></div>
+                                                    <span class="mt-3 fw-bold text-muted" style="letter-spacing: 1px;">正在载入最新配置架构...</span>
+                                                </div>
+                                            </div>
+
+                                            <template x-for="tab in tabs" :key="tab.id">
+                                                <div x-show="activeTab === tab.id" style="display: none;" x-transition.opacity.duration.300ms>
+                                                    
+                                                    <div class="alert alert-info py-2 small mb-3 border-0 bg-opacity-10 bg-info pb-2"><i class="bi bi-ui-checks-grid me-1 text-info fs-6"></i>配置【<span x-text="tab.name"></span>】的卷面分析维度。</div>
+                                                    
+                                                    <div class="mb-4">
+                                                        <template x-for="(item, index) in configs[tab.id].analysis" :key="index">
+                                                            <div class="card bg-white shadow-sm border mb-3 border-top-0 border-start-0 border-end-0 border-bottom border-secondary border-opacity-25 rounded-0 pb-2">
+                                                                <div class="card-body py-1 px-1 position-relative">
+                                                                    <button class="btn btn-sm btn-link text-danger position-absolute top-0 end-0 p-0" @click="removeAnalysisRow(tab.id, index)" title="删除此维度">
+                                                                        <i class="bi bi-trash fs-5"></i>
+                                                                    </button>
+                                                                    <div class="row g-3 pe-4">
+                                                                        <div class="col-md-3">
+                                                                            <label class="form-label small fw-bold text-muted mb-1">维度名称</label>
+                                                                            <input type="text" class="form-control form-control-sm bg-light" x-model="item.dimension" placeholder="如: 时间分配">
+                                                                        </div>
+                                                                        <div class="col-md-4">
+                                                                            <label class="form-label small fw-bold text-success mb-1">✅ 达标评语</label>
+                                                                            <textarea class="form-control form-control-sm" rows="2" x-model="item.positive" placeholder="预设达标评语..."></textarea>
+                                                                        </div>
+                                                                        <div class="col-md-5">
+                                                                            <label class="form-label small fw-bold text-danger mb-1">❗ 未达标评语</label>
+                                                                            <textarea class="form-control form-control-sm" rows="2" x-model="item.negative" placeholder="预设未达标评语..."></textarea>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                        <div class="mt-3">
+                                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="addAnalysisRow(tab.id)">
+                                                                <i class="bi bi-plus me-1"></i>添加新考评维度
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <hr class="text-muted opacity-25 my-4">
+
+                                                    <div class="alert alert-secondary py-2 small mb-3 border-0 bg-opacity-10 bg-secondary pb-2"><i class="bi bi-tags me-1 text-secondary fs-6"></i>配置【<span x-text="tab.name"></span>】的成因分析标签库。</div>
+                                                    
+                                                    <div class="row g-2 mb-3">
+                                                        <template x-for="(c, index) in configs[tab.id].cause" :key="index">
+                                                            <div class="col-md-6 col-lg-4">
+                                                                <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden">
+                                                                    <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-tag"></i></span>
+                                                                    <input type="text" class="form-control border-start-0 ps-0" x-model="c.val" placeholder="填写成因标签句式...">
+                                                                    <button class="btn btn-outline-danger border-start-0" @click="removeCauseRow(tab.id, index)"><i class="bi bi-x fs-5"></i></button>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                    <div class="mt-2 text-start">
+                                                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" @click="addCauseRow(tab.id)">
+                                                            <i class="bi bi-plus me-1"></i>扩展成因标签
+                                                        </button>
+                                                    </div>
+                                                    
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <div class="text-end border-top pt-4 mt-4">
+                                            <button class="btn btn-success px-4 shadow rounded-pill" @click="saveAll()" :disabled="saving">
+                                                <span x-show="!saving"><i class="bi bi-save me-2"></i>保存所有模板配置</span>
+                                                <span x-show="saving"><i class="spinner-border spinner-border-sm me-2"></i>处理中...</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -187,96 +190,110 @@
                 </div>
             </main>
         </div>
-    </div>    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    </div>    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-             selectMainMenu('analysis');
-        });
+        // Alpine.js component definition
+        function analysisConfigManager() {
+            return {
+                activeTab: 'reading',
+                loading: true,
+                saving: false,
+                tabs: [
+                    { id: 'reading', name: '阅读理解', icon: 'bi-book', key: 'READING' },
+                    { id: 'listening', name: '听力理解', icon: 'bi-earbuds', key: 'LISTENING' },
+                    { id: 'speaking', name: '口语表达', icon: 'bi-mic', key: 'SPEAKING' },
+                    { id: 'writing', name: '写作表达', icon: 'bi-pencil-square', key: 'WRITING' },
+                    { id: 'language_use', name: '语言运用', icon: 'bi-translate', key: 'LANGUAGE_USE' },
+                    { id: 'learning_literacy', name: '学习素养', icon: 'bi-lightning-charge', key: 'LEARNING_LITERACY' }
+                ],
+                configs: {
+                    reading: { analysis: [], cause: [] },
+                    listening: { analysis: [], cause: [] },
+                    speaking: { analysis: [], cause: [] },
+                    writing: { analysis: [], cause: [] },
+                    language_use: { analysis: [], cause: [] },
+                    learning_literacy: { analysis: [], cause: [] }
+                },
+                
+                async initData() {
+                    this.loading = true;
+                    // Run requests concurrently
+                    const allTypes = this.tabs.map(tab => tab.key);
+                    for (const tab of this.tabs) {
+                        try {
+                            const [aRes, cRes] = await Promise.all([
+                                fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                                fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
+                            ]);
+                            this.configs[tab.id].analysis = this.parseJsonAsArray(aRes.value);
+                            
+                            // For primitive arrays, map to objects so Alpine x-model works
+                            const causeArr = this.parseJsonAsArray(cRes.value);
+                            this.configs[tab.id].cause = causeArr.map(s => ({val: typeof s === 'string' ? s : ''}));
+                            
+                        } catch(e) {
+                            console.error('Failed fetching data for', tab.key, e);
+                        }
+                    }
+                    this.loading = false;
+                },
 
-        function selectMainMenu(menuId) {
-            document.querySelectorAll('.type-list-item').forEach(el => el.classList.remove('active'));
-            if(menuId === 'analysis') {
-                document.getElementById('menu-analysis').classList.add('active');
-                document.getElementById('currentConfigTitle').innerHTML = '<i class="bi bi-bar-chart-steps text-warning me-2"></i> 测评分析模板配置';
-                loadAnalysisConfigs();
+                parseJsonAsArray(val) {
+                    if (!val) return [];
+                    try { 
+                        const parsed = JSON.parse(val); 
+                        return Array.isArray(parsed) ? parsed : [];
+                    } catch(e) { return []; }
+                },
+
+                addAnalysisRow(type) {
+                    this.configs[type].analysis.push({ dimension: '', positive: '', negative: '' });
+                },
+                removeAnalysisRow(type, index) {
+                    this.configs[type].analysis.splice(index, 1);
+                },
+                addCauseRow(type) {
+                    this.configs[type].cause.push({val: ''});
+                },
+                removeCauseRow(type, index) {
+                    this.configs[type].cause.splice(index, 1);
+                },
+
+                async saveAll() {
+                    this.saving = true;
+                    const promises = [];
+                    for (const tab of this.tabs) {
+                        try {
+                            // Serialize state back to pure JSON strings. Filter empty/blank dimensions.
+                            const cleanAnalysis = this.configs[tab.id].analysis.filter(a => a.dimension.trim() !== '');
+                            const cleanCause = this.configs[tab.id].cause.map(c => c.val.trim()).filter(v => v !== '');
+                            
+                            promises.push(fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tab.key}`, {
+                                method: 'PUT', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({configValue: JSON.stringify(cleanAnalysis)})
+                            }));
+                            promises.push(fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tab.key}`, {
+                                method: 'PUT', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({configValue: JSON.stringify(cleanCause)})
+                            }));
+                        } catch(e) {
+                            console.error('Error stringifying state', tab.id, e);
+                        }
+                    }
+                    
+                    try {
+                        const results = await Promise.all(promises);
+                        if (results.every(r => r.ok)) alert('✅ 模板配置保存成功！所有的改动已转化为规范JSON并存入系统，前端测评工作台将即刻生效。');
+                        else alert('❌ 保存部分失败，请重试！');
+                    } catch(e) {
+                        console.error('网络异常:', e);
+                        alert('保存遇到网络异常');
+                    }
+                    this.saving = false;
+                }
             }
-        }
-
-        function loadAnalysisConfigs() {
-            const parseAndFormat = val => {
-                try { return JSON.stringify(JSON.parse(val), null, 2); }
-                catch(e) { return val; }
-            };
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('readingAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('readingCauseTextarea').value = parseAndFormat(cr.value);
-            });
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('listeningAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('listeningCauseTextarea').value = parseAndFormat(cr.value);
-            });
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('speakingAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('speakingCauseTextarea').value = parseAndFormat(cr.value);
-            });
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('writingAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('writingCauseTextarea').value = parseAndFormat(cr.value);
-            });
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('languageUseAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('languageUseCauseTextarea').value = parseAndFormat(cr.value);
-            });
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(res => res.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(res => res.json())
-            ]).then(([pr, cr]) => {
-                if (pr.value) document.getElementById('learningLiteracyAnalysisTextarea').value = parseAndFormat(pr.value);
-                if (cr.value) document.getElementById('learningLiteracyCauseTextarea').value = parseAndFormat(cr.value);
-            });
-        }
-
-        function saveAnalysisConfigs() {
-            const prText = document.getElementById('readingAnalysisTextarea').value.trim();
-            const crText = document.getElementById('readingCauseTextarea').value.trim();
-            
-            try {
-                JSON.parse(prText);
-                JSON.parse(crText);
-            } catch(e) {
-                alert("JSON 格式错误，请检查！\\n" + e.message);
-                return;
-            }
-
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING', {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({configValue: prText})
-                }),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING', {
-                    method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({configValue: crText})
-                })
-            ]).then(resps => {
-                if (resps.every(r => r.ok)) alert('保存成功！前端工作台界面将即刻生效。');
-                else alert('保存失败！');
-            }).catch(e => {
-                console.error(e);
-                alert('网络错误');
-            });
         }
     </script>
 </body>

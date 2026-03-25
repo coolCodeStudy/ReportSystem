@@ -26,3 +26,4 @@ description: 提供在开发 ReportSystem 时的专属 Kotlin & Spring 架构指
 ## 4. 强制工作流约束 (Workflow Protocol)
 - **极度严格执行：Whenever you are asked to commit or push code, you MUST ALWAYS run the `/test_all` workflow first.**
 - 在发起 `git push` 给远端之前，必须无条件执行 `run_command` 来跑一遍 `./gradlew test` 以确保主干稳定性。如果测试报错，必须停下来修复。
+- **绝对静默原则**：除非用户明确且直接地向你下达了“push”、“推送代码”的指令，否则在你写完代码、测试通过后，绝对不允许擅自运行 `git push` 等相关的代码推送动作！你只需在本地改好代码并告知用户。

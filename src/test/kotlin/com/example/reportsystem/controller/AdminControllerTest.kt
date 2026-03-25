@@ -31,7 +31,8 @@ class AdminControllerTest {
         mockMvc.perform(get("/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS"))
             .andExpect(status().isOk)
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$.value").value("""[{"name":"KET","description":"Desc"}]"""))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(jsonPath("$.data.value").value("""[{"name":"KET","description":"Desc"}]"""))
     }
 
     @Test
@@ -41,7 +42,8 @@ class AdminControllerTest {
 
         mockMvc.perform(get("/admin/api/config/MISSING_KEY"))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.value").value(""))
+            .andExpect(jsonPath("$.code").value(200))
+            .andExpect(jsonPath("$.data.value").value(""))
     }
 
     @Test

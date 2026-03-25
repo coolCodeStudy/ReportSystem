@@ -65,7 +65,7 @@
                     <ul class="nav flex-column sidebar-nav">
                         <li class="nav-item">
                             <a class="nav-link text-secondary" href="/admin/templates">
-                                <i class="bi bi-gear-wide-connected"></i> 学生类型及表单配置
+                                <i class="bi bi-gear-wide-connected"></i> 测评报告配置
                             </a>
                         </li>
                     </ul>
@@ -351,7 +351,6 @@
                                     <th scope="col">测评类型</th>
                                     <th scope="col">Level / 级别</th>
                                     <th scope="col">当前/目标年级</th>
-                                    <th scope="col" style="max-width: 200px;">学习重点/目标</th>
                                     <th scope="col" class="text-end pe-4">操作</th>
                                 </tr>
                             </thead>
@@ -464,13 +463,13 @@
                     myModal.show();
 
                     fetch(`/student/${studentId}/history`)
-                        .then(response => response.json())
+                        .then(response => response.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
                         .then(data => {
                             loadingIndicator.classList.add('d-none');
                             historyTable.classList.remove('d-none');
 
                             if (data.length === 0) {
-                                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">暂无任何测评历史数据</td></tr>';
+                                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">暂无任何测评历史数据</td></tr>';
                                 return;
                             }
 
@@ -492,7 +491,6 @@
                                     <td class="align-middle"><span class="badge bg-light text-dark border">${item.type}</span></td>
                                     <td class="align-middle"><span class="text-primary fw-medium">${item.level}</span></td>
                                     <td class="align-middle"><span class="text-muted">${item.targetGrade}</span></td>
-                                    <td class="align-middle"><span class="text-truncate d-inline-block" style="max-width: 200px;" title="${item.goal}">${item.goal}</span></td>
                                     <td class="text-end pe-4 align-middle text-nowrap">
                                         ${exportBtnHtml}${deleteBtnHtml}
                                     </td>
@@ -553,11 +551,11 @@
                     const formData = new URLSearchParams();
                     formData.append('studentId', window.currentSelectedHistoryStudentId);
                     fetch('/api/workspace/create', { method: 'POST', body: formData })
-                        .then(r => r.json())
+                        .then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
                         .then(data => {
-                            if (data.success) {
+                            if (data.recordId) {
                                 window.location.href = `/assessment/${data.recordId}/workspace`;
-                            } else { alert('创建测评档案失败，请稍后重试'); }
+                            } else { alert('创建测评档案失败，数据结构异常'); }
                         })
                         .catch(err => {
                             console.error('Failed to create empty workspace', err);
@@ -605,7 +603,7 @@
                 }
 
                 fetch(`/admin/api/fields/${typeCode}`)
-                    .then(res => res.json())
+                    .then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
                     .then(fields => {
                         if (fields.length === 0) {
                             container.style.display = 'none';

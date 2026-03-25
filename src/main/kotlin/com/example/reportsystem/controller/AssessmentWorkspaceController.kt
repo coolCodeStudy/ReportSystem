@@ -3,8 +3,10 @@ package com.example.reportsystem.controller
 import com.example.reportsystem.entity.AssessmentRecord
 import com.example.reportsystem.repository.AssessmentRecordRepository
 import com.example.reportsystem.repository.StudentRepository
-import org.springframework.http.ResponseEntity
+import com.example.reportsystem.common.api.ResponseResult
+import com.example.reportsystem.dto.AssessmentRecordStep1UpdateRequest
 import org.springframework.stereotype.Controller
+import javax.validation.Valid
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
 import java.time.LocalDate
@@ -17,7 +19,7 @@ class AssessmentWorkspaceController(
 
     @PostMapping("/api/workspace/create")
     @ResponseBody
-    fun createEmptyWorkspace(@RequestParam studentId: Long): ResponseEntity<Map<String, Any>> {
+    fun createEmptyWorkspace(@RequestParam studentId: Long): ResponseResult<Map<String, Any>> {
         val student = studentRepository.findById(studentId).orElseThrow {
             IllegalArgumentException("Student not found")
         }
@@ -27,7 +29,7 @@ class AssessmentWorkspaceController(
             this.targetGrade = student.grade
         }
         val saved = assessmentRecordRepository.save(record)
-        return ResponseEntity.ok(mapOf("success" to true, "recordId" to saved.id!!))
+        return ResponseResult.success(mapOf("recordId" to saved.id!!))
     }
 
     @GetMapping("/assessment/{id}/workspace")
@@ -52,7 +54,7 @@ class AssessmentWorkspaceController(
     fun updateAssessmentResults(
         @PathVariable("id") id: Long,
         @RequestBody resultsJson: String
-    ): ResponseEntity<Map<String, Any>> {
+    ): ResponseResult<Nothing> {
         val record = assessmentRecordRepository.findById(id).orElseThrow {
             IllegalArgumentException("Assessment Record not found for id $id")
         }
@@ -60,27 +62,27 @@ class AssessmentWorkspaceController(
         record.assessmentResults = resultsJson
         assessmentRecordRepository.save(record)
         
-        return ResponseEntity.ok(mapOf("success" to true, "message" to "Results saved successfully"))
+        return ResponseResult.success(null, "Results saved successfully")
     }
 
     @PutMapping("/api/assessment/{id}/step1")
     @ResponseBody
     fun updateStep1(
         @PathVariable("id") id: Long,
-        @RequestBody data: Map<String, String?>
-    ): ResponseEntity<Map<String, Any>> {
+        @Valid @RequestBody data: AssessmentRecordStep1UpdateRequest
+    ): ResponseResult<Nothing> {
         val record = assessmentRecordRepository.findById(id).orElseThrow {
             IllegalArgumentException("Assessment Record not found for id $id")
         }
         
-        data["lingolandLevel"]?.let { record.lingolandLevel = it }
-        data["assessmentDate"]?.let { 
+        data.lingolandLevel?.let { record.lingolandLevel = it }
+        data.assessmentDate?.let { 
             if (it.isNotBlank()) record.assessmentDate = LocalDate.parse(it)
         }
-        data["assessmentType"]?.let { record.assessmentType = it }
-        data["selectedExportColumns"]?.let { record.selectedExportColumns = it }
+        data.assessmentType?.let { record.assessmentType = it }
+        data.selectedExportColumns?.let { record.selectedExportColumns = it }
 
         assessmentRecordRepository.save(record)
-        return ResponseEntity.ok(mapOf("success" to true))
+        return ResponseResult.success(null)
     }
 }

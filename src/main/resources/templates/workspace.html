@@ -192,6 +192,7 @@
             border-color: var(--primary) !important;
         }
     </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body>
 
@@ -297,7 +298,7 @@
             </div>
         </div>
 
-        <div class="content-body" id="step2-content">
+        <div class="content-body" id="step2-content" x-data="workspaceManager()" x-init="initData()">
             <div class="d-flex justify-content-between align-items-end mb-4">
                 <div>
                     <h5 class="fw-bold mb-1">各科表现深度剖析</h5>
@@ -330,6 +331,7 @@
             <div class="tab-content" id="subjectTabContent">
                 <!-- Reading Section -->
                 <div class="tab-pane fade show active" id="reading" role="tabpanel" tabindex="0">
+
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
@@ -338,61 +340,84 @@
                             <div class="row g-4 align-items-center">
                                 <div class="col-md-3">
                                     <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="readingTestType" onchange="calculateReading()">
-                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.reading.examType" @change="calculateGrade('reading')">
+                                        <option value="KET">KET (剑桥通用英语第一级)</option>
                                         <option value="PET">PET (剑桥通用英语第二级)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label fw-medium">阅读正确数 / 总题量</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control text-center" id="readingScore" placeholder="得分" oninput="calculateReading()" min="0">
+                                        <input type="number" class="form-control text-center" x-model.number="assessments.reading.score" @input="calculateGrade('reading')" min="0">
                                         <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" id="readingTotal" placeholder="满分" value="30" oninput="calculateReading()" min="1">
+                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.reading.total" @input="calculateGrade('reading')" min="1">
                                     </div>
                                 </div>
                                 <div class="col-md-5 d-flex justify-content-end align-items-center">
                                     <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率</div>
-                                        <div class="fs-5 fw-bold" id="readingRateStr">- %</div>
+                                        <div class="text-muted small mb-1">综合正确率/得分</div>
+                                        <div class="fs-5 fw-bold" x-text="assessments.reading.rate || '-'"></div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" id="readingLevelStr">-</div>
+                                        <div class="auto-grade-display" x-text="assessments.reading.level || '-'"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Paper Analysis (Dynamic UI) -->
+                    <!-- Paper Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
                         </div>
                         <div class="p-4">
-                            <div id="readingPaperAnalysisContainer">
-                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                            <div x-show="!loading">
+                                <template x-for="(item, index) in assessments.reading.paperAnalysis" :key="index">
+                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
+                                        <div class="col-md-3">
+                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
+                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
+                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
+                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
+                                                </div>
+                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="assessments.reading.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Cause Analysis (Dynamic UI) -->
+                    <!-- Cause Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
                         </div>
                         <div class="p-4">
                             <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div id="readingCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
-                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
+                                <template x-for="(cause, index) in assessments.reading.causeOptions" :key="index">
+                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
+                                          :class="assessments.reading.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
+                                          @click="toggleCause('reading', cause)"
+                                          x-text="cause"></span>
+                                </template>
+                                <div x-show="assessments.reading.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
 <!-- Listening Section -->
                 <div class="tab-pane fade " id="listening" role="tabpanel" tabindex="0">
+
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
@@ -401,122 +426,157 @@
                             <div class="row g-4 align-items-center">
                                 <div class="col-md-3">
                                     <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="listeningTestType" onchange="calculateListening()">
-                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
+                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.listening.examType" @change="calculateGrade('listening')">
+                                        <option value="KET">KET (剑桥通用英语第一级)</option>
                                         <option value="PET">PET (剑桥通用英语第二级)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
+                                    <label class="form-label fw-medium">听力正确数 / 总题量</label>
                                     <div class="input-group">
-                                        <input type="number" class="form-control text-center" id="listeningScore" placeholder="得分" oninput="calculateListening()" min="0">
+                                        <input type="number" class="form-control text-center" x-model.number="assessments.listening.score" @input="calculateGrade('listening')" min="0">
                                         <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" id="listeningTotal" placeholder="满分" value="30" oninput="calculateListening()" min="1">
+                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.listening.total" @input="calculateGrade('listening')" min="1">
                                     </div>
                                 </div>
                                 <div class="col-md-5 d-flex justify-content-end align-items-center">
                                     <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率</div>
-                                        <div class="fs-5 fw-bold" id="listeningRateStr">- %</div>
+                                        <div class="text-muted small mb-1">综合正确率/得分</div>
+                                        <div class="fs-5 fw-bold" x-text="assessments.listening.rate || '-'"></div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" id="listeningLevelStr">-</div>
+                                        <div class="auto-grade-display" x-text="assessments.listening.level || '-'"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Paper Analysis (Dynamic UI) -->
+                    <!-- Paper Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
                         </div>
                         <div class="p-4">
-                            <div id="listeningPaperAnalysisContainer">
-                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                            <div x-show="!loading">
+                                <template x-for="(item, index) in assessments.listening.paperAnalysis" :key="index">
+                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
+                                        <div class="col-md-3">
+                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
+                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
+                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
+                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
+                                                </div>
+                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="assessments.listening.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Cause Analysis (Dynamic UI) -->
+                    <!-- Cause Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
                         </div>
                         <div class="p-4">
                             <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div id="listeningCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
-                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
+                                <template x-for="(cause, index) in assessments.listening.causeOptions" :key="index">
+                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
+                                          :class="assessments.listening.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
+                                          @click="toggleCause('listening', cause)"
+                                          x-text="cause"></span>
+                                </template>
+                                <div x-show="assessments.listening.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
 <!-- Speaking Section -->
                 <div class="tab-pane fade " id="speaking" role="tabpanel" tabindex="0">
+
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
                         </div>
                         <div class="p-4">
                             <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" id="speakingTestType" onchange="calculateSpeaking()">
-                                        <option value="KET" selected>KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
                                 <div class="col-md-4">
-                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" id="speakingScore" placeholder="得分" oninput="calculateSpeaking()" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" id="speakingTotal" placeholder="满分" value="30" oninput="calculateSpeaking()" min="1">
-                                    </div>
+                                    <label class="form-label fw-medium">口语得分</label>
+                                    <input type="number" step="0.5" class="form-control" x-model.number="assessments.speaking.score" @input="calculateGrade('speaking')" min="0">
+                                    <small class="text-muted mt-1 d-block">参考雅思评分标准（0-9分）</small>
                                 </div>
                                 <div class="col-md-5 d-flex justify-content-end align-items-center">
                                     <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率</div>
-                                        <div class="fs-5 fw-bold" id="speakingRateStr">- %</div>
+                                        <div class="text-muted small mb-1">综合正确率/得分</div>
+                                        <div class="fs-5 fw-bold" x-text="assessments.speaking.rate || '-'"></div>
                                     </div>
                                     <div class="text-center">
                                         <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" id="speakingLevelStr">-</div>
+                                        <div class="auto-grade-display" x-text="assessments.speaking.level || '-'"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Paper Analysis (Dynamic UI) -->
+                    <!-- Paper Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
                         </div>
                         <div class="p-4">
-                            <div id="speakingPaperAnalysisContainer">
-                                <div class="text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在从服务器拉取分析维度模板...</div>
+                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                            <div x-show="!loading">
+                                <template x-for="(item, index) in assessments.speaking.paperAnalysis" :key="index">
+                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
+                                        <div class="col-md-3">
+                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
+                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
+                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
+                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
+                                                </div>
+                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                <div x-show="assessments.speaking.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Cause Analysis (Dynamic UI) -->
+                    <!-- Cause Analysis -->
                     <div class="analysis-card">
                         <div class="analysis-card-header">
                             <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
                         </div>
                         <div class="p-4">
                             <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div id="speakingCauseAnalysisContainer" class="d-flex flex-wrap gap-2">
-                                <div class="text-center text-muted py-2 w-100"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
+                                <template x-for="(cause, index) in assessments.speaking.causeOptions" :key="index">
+                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
+                                          :class="assessments.speaking.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
+                                          @click="toggleCause('speaking', cause)"
+                                          x-text="cause"></span>
+                                </template>
+                                <div x-show="assessments.speaking.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
                             </div>
                         </div>
                     </div>
                 </div>
-
 <!-- Writing Section -->
                 <div class="tab-pane fade " id="writing" role="tabpanel" tabindex="0">
                     <div class="analysis-card">
@@ -783,18 +843,18 @@
             }
 
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(r => r.json())
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(resps => {
                 try {
                     if(resps[0].value) readingPaperTemplate = JSON.parse(resps[0].value);
@@ -837,1032 +897,186 @@
             document.getElementById(step + '-content').style.display = 'block';
         }
 
-        // --- 2. Auto Grade Engine : Reading ---
-        function calculateReading() {
-            const type = document.getElementById('readingTestType').value;
-            const scoreStr = document.getElementById('readingScore').value;
-            const totalStr = document.getElementById('readingTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('readingRateStr').innerText = rateStr;
-            document.getElementById('readingLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('readingLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderReadingPaperAnalysis() {
-            const container = document.getElementById('readingPaperAnalysisContainer');
-            container.innerHTML = '';
-
-            readingPaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_reading_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setReadingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setReadingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setReadingPaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_reading_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setReadingPaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_reading_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_reading_${idx}`);
-            if (state === '✅') {
-                textArea.value = readingPaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = readingPaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderReadingCauseAnalysis() {
-            const container = document.getElementById('readingCauseAnalysisContainer');
-            container.innerHTML = '';
-            readingCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-
-// --- 2. Auto Grade Engine : Listening ---
-        function calculateListening() {
-            const type = document.getElementById('listeningTestType').value;
-            const scoreStr = document.getElementById('listeningScore').value;
-            const totalStr = document.getElementById('listeningTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('listeningRateStr').innerText = rateStr;
-            document.getElementById('listeningLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('listeningLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderListeningPaperAnalysis() {
-            const container = document.getElementById('listeningPaperAnalysisContainer');
-            container.innerHTML = '';
-
-            listeningPaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_listening_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setListeningPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setListeningPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setListeningPaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_listening_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setListeningPaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_listening_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_listening_${idx}`);
-            if (state === '✅') {
-                textArea.value = listeningPaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = listeningPaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderListeningCauseAnalysis() {
-            const container = document.getElementById('listeningCauseAnalysisContainer');
-            container.innerHTML = '';
-            listeningCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-
-// --- 2. Auto Grade Engine : Speaking ---
-        function calculateSpeaking() {
-            const type = document.getElementById('speakingTestType').value;
-            const scoreStr = document.getElementById('speakingScore').value;
-            const totalStr = document.getElementById('speakingTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('speakingRateStr').innerText = rateStr;
-            document.getElementById('speakingLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('speakingLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderSpeakingPaperAnalysis() {
-            const container = document.getElementById('speakingPaperAnalysisContainer');
-            container.innerHTML = '';
-
-            speakingPaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_speaking_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setSpeakingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setSpeakingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setSpeakingPaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_speaking_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setSpeakingPaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_speaking_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_speaking_${idx}`);
-            if (state === '✅') {
-                textArea.value = speakingPaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = speakingPaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderSpeakingCauseAnalysis() {
-            const container = document.getElementById('speakingCauseAnalysisContainer');
-            container.innerHTML = '';
-            speakingCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-
-// --- 2. Auto Grade Engine : Writing ---
-        function calculateWriting() {
-            const type = document.getElementById('writingTestType').value;
-            const scoreStr = document.getElementById('writingScore').value;
-            const totalStr = document.getElementById('writingTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('writingRateStr').innerText = rateStr;
-            document.getElementById('writingLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('writingLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderWritingPaperAnalysis() {
-            const container = document.getElementById('writingPaperAnalysisContainer');
-            container.innerHTML = '';
-
-            writingPaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_writing_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setWritingPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setWritingPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setWritingPaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_writing_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setWritingPaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_writing_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_writing_${idx}`);
-            if (state === '✅') {
-                textArea.value = writingPaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = writingPaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderWritingCauseAnalysis() {
-            const container = document.getElementById('writingCauseAnalysisContainer');
-            container.innerHTML = '';
-            writingCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-
-// --- 2. Auto Grade Engine : LanguageUse ---
-        function calculateLanguageUse() {
-            const type = document.getElementById('language_useTestType').value;
-            const scoreStr = document.getElementById('language_useScore').value;
-            const totalStr = document.getElementById('language_useTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('language_useRateStr').innerText = rateStr;
-            document.getElementById('language_useLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('language_useLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderLanguageUsePaperAnalysis() {
-            const container = document.getElementById('language_usePaperAnalysisContainer');
-            container.innerHTML = '';
-
-            language_usePaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_language_use_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setLanguageUsePaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setLanguageUsePaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setLanguageUsePaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_language_use_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setLanguageUsePaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_language_use_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_language_use_${idx}`);
-            if (state === '✅') {
-                textArea.value = language_usePaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = language_usePaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderLanguageUseCauseAnalysis() {
-            const container = document.getElementById('language_useCauseAnalysisContainer');
-            container.innerHTML = '';
-            language_useCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-
-// --- 2. Auto Grade Engine : LearningLiteracy ---
-        function calculateLearningLiteracy() {
-            const type = document.getElementById('learning_literacyTestType').value;
-            const scoreStr = document.getElementById('learning_literacyScore').value;
-            const totalStr = document.getElementById('learning_literacyTotal').value;
-
-            const score = numFormat(scoreStr);
-            const total = numFormat(totalStr);
-
-            let rate = 0;
-            let level = '-';
-            let rateStr = '- %';
-
-            if (total > 0 && scoreStr !== '') {
-                rate = score / total;
-                rateStr = (rate * 100).toFixed(1) + '%';
-                
-                // PRD Rules
-                if (type === 'KET') {
-                    if (rate <= 0.40) level = '低于A1';
-                    else if (rate <= 0.65) level = 'A1';
-                    else if (rate <= 0.90) level = 'A2';
-                    else level = 'B1';
-                } else if (type === 'PET') {
-                    if (rate <= 0.375) level = '低于A2';
-                    else if (rate <= 0.6875) level = 'A2';
-                    else if (rate <= 0.875) level = 'B1';
-                    else level = 'B2';
-                }
-            }
-
-            document.getElementById('learning_literacyRateStr').innerText = rateStr;
-            document.getElementById('learning_literacyLevelStr').innerText = level;
-
-            // Optional: highlight styling based on level
-            const lvlEl = document.getElementById('learning_literacyLevelStr');
-            if (level.includes('低于') || level === 'A1') {
-                lvlEl.style.color = '#EF4444'; // Red
-                lvlEl.style.backgroundColor = '#FEE2E2';
-                lvlEl.style.borderColor = '#FECACA';
-            } else if (level === 'B1' || level === 'B2') {
-                lvlEl.style.color = '#10B981'; // Green
-                lvlEl.style.backgroundColor = '#D1FAE5';
-                lvlEl.style.borderColor = '#A7F3D0';
-            } else {
-                lvlEl.style.color = 'var(--primary)'; // Default
-                lvlEl.style.backgroundColor = '#EEF2FF';
-                lvlEl.style.borderColor = '#C7D2FE';
-            }
-        }
-
-        // --- 3. Dynamic UI Renderers ---
-        function renderLearningLiteracyPaperAnalysis() {
-            const container = document.getElementById('learning_literacyPaperAnalysisContainer');
-            container.innerHTML = '';
-
-            learning_literacyPaperTemplate.forEach((item, idx) => {
-                const domNode = document.createElement('div');
-                domNode.className = 'mb-4 border-bottom pb-3';
-                domNode.innerHTML = `
-                    <div class="row gx-3">
-                        <div class="col-md-2 fw-medium text-dark d-flex align-items-center">
-                            ${item.dimension}
-                        </div>
-                        <div class="col-md-3">
-                            <div class="btn-group w-100" role="group" id="btnGroup_learning_literacy_${idx}">
-                                <button type="button" class="btn btn-outline-success three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, '✅')"><i class="bi bi-check-lg"></i> 达成</button>
-                                <button type="button" class="btn btn-outline-danger three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, '❗')"><i class="bi bi-exclamation-lg"></i> 薄弱</button>
-                                <button type="button" class="btn btn-outline-secondary three-state-btn" onclick="setLearningLiteracyPaperState(${idx}, 'NA')">N/A</button>
-                            </div>
-                        </div>
-                        <div class="col-md-7">
-                            <textarea class="form-control" rows="2" id="paperText_learning_literacy_${idx}" placeholder="点击左侧评价状态自动填入参考评语，或在此自己书写..."></textarea>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(domNode);
-            });
-        }
-
-        function setLearningLiteracyPaperState(idx, state) {
-            // Update UI buttons
-            const btnGroup = document.getElementById(`btnGroup_learning_literacy_${idx}`);
-            btnGroup.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            
-            let btnIndex = state === '✅' ? 0 : (state === '❗' ? 1 : 2);
-            btnGroup.children[btnIndex].classList.add('active');
-
-            // Auto-fill template if not N/A
-            const textArea = document.getElementById(`paperText_learning_literacy_${idx}`);
-            if (state === '✅') {
-                textArea.value = learning_literacyPaperTemplate[idx].positive || '';
-                textArea.disabled = false;
-            } else if (state === '❗') {
-                textArea.value = learning_literacyPaperTemplate[idx].negative || '';
-                textArea.disabled = false;
-            } else {
-                textArea.value = '';
-                // Optional: disable textarea if NA
-            }
-        }
-
-        function renderLearningLiteracyCauseAnalysis() {
-            const container = document.getElementById('learning_literacyCauseAnalysisContainer');
-            container.innerHTML = '';
-            learning_literacyCauseTemplate.forEach((cause, idx) => {
-                const span = document.createElement('span');
-                span.className = 'badge border text-dark bg-white cause-tag px-3 py-2 fw-normal';
-                span.innerText = cause;
-                span.onclick = function() {
-                    this.classList.toggle('selected');
-                };
-                container.appendChild(span);
-            });
-        }
-
-        // --- 4. State Management (Hydrate/Save) ---
-        function hydrateFormFromState() {
-            const dt_reading = dbState.reading || {};
-            if (dt_reading.testType) document.getElementById('readingTestType').value = dt_reading.testType;
-            if (dt_reading.score !== undefined) document.getElementById('readingScore').value = dt_reading.score;
-            if (dt_reading.total !== undefined) document.getElementById('readingTotal').value = dt_reading.total;
-            calculateReading();
-
-            const dt_listening = dbState.listening || {};
-            if (dt_listening.testType) document.getElementById('listeningTestType').value = dt_listening.testType;
-            if (dt_listening.score !== undefined) document.getElementById('listeningScore').value = dt_listening.score;
-            if (dt_listening.total !== undefined) document.getElementById('listeningTotal').value = dt_listening.total;
-            calculateListening();
-
-            const dt_speaking = dbState.speaking || {};
-            if (dt_speaking.testType) document.getElementById('speakingTestType').value = dt_speaking.testType;
-            if (dt_speaking.score !== undefined) document.getElementById('speakingScore').value = dt_speaking.score;
-            if (dt_speaking.total !== undefined) document.getElementById('speakingTotal').value = dt_speaking.total;
-            calculateSpeaking();
-
-            const dt_writing = dbState.writing || {};
-            if (dt_writing.testType) document.getElementById('writingTestType').value = dt_writing.testType;
-            if (dt_writing.score !== undefined) document.getElementById('writingScore').value = dt_writing.score;
-            if (dt_writing.total !== undefined) document.getElementById('writingTotal').value = dt_writing.total;
-            calculateWriting();
-
-            const dt_language_use = dbState.language_use || {};
-            if (dt_language_use.testType) document.getElementById('language_useTestType').value = dt_language_use.testType;
-            if (dt_language_use.score !== undefined) document.getElementById('language_useScore').value = dt_language_use.score;
-            if (dt_language_use.total !== undefined) document.getElementById('language_useTotal').value = dt_language_use.total;
-            calculateLanguageUse();
-
-            const dt_learning_literacy = dbState.learning_literacy || {};
-            if (dt_learning_literacy.testType) document.getElementById('learning_literacyTestType').value = dt_learning_literacy.testType;
-            if (dt_learning_literacy.score !== undefined) document.getElementById('learning_literacyScore').value = dt_learning_literacy.score;
-            if (dt_learning_literacy.total !== undefined) document.getElementById('learning_literacyTotal').value = dt_learning_literacy.total;
-            calculateLearningLiteracy();
-
-            setTimeout(() => {
-                const rp_reading = dbState.reading || {};
-                if (rp_reading.paperAnalysis) {
-                    readingPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_reading.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setReadingPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_reading_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setReadingPaperState(idx, 'NA');
+        
+        // Alpine.js workspace manager
+        let globalWorkspaceManager = null;
+        
+        function workspaceManager() {
+            return {
+                loading: true,
+                assessments: {
+                    reading: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
+                    listening: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
+                    speaking: { examType: 'KET', score: null, total: null, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
+                    writing: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
+                    language_use: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
+                    learning_literacy: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] }
+                },
+                initData() {
+                    globalWorkspaceManager = this;
+                    const rawJson = document.getElementById('initAssessmentResults').value;
+                    let dbState = {};
+                    try { dbState = JSON.parse(rawJson || '{}'); } catch(e) {}
+
+                    const configs = [
+                        'GLOBAL_ANALYSIS_CONFIG_READING', 'GLOBAL_CAUSE_ANALYSIS_READING',
+                        'GLOBAL_ANALYSIS_CONFIG_LISTENING', 'GLOBAL_CAUSE_ANALYSIS_LISTENING',
+                        'GLOBAL_ANALYSIS_CONFIG_SPEAKING', 'GLOBAL_CAUSE_ANALYSIS_SPEAKING',
+                        'GLOBAL_ANALYSIS_CONFIG_WRITING', 'GLOBAL_CAUSE_ANALYSIS_WRITING',
+                        'GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE', 'GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE',
+                        'GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY', 'GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY'
+                    ];
+
+                    Promise.all(configs.map(key => 
+                        fetch(`/admin/api/config/${key}`).then(r => r.json()).then(j => j.code === 200 ? j.data.value : '')
+                    )).then(resps => {
+                        const subjects = ['reading', 'listening', 'speaking', 'writing', 'language_use', 'learning_literacy'];
+                        subjects.forEach((subj, i) => {
+                            // Parse templates
+                            let pTpl = [], cTpl = [];
+                            try { if(resps[2*i]) pTpl = JSON.parse(resps[2*i]); } catch(e){}
+                            try { if(resps[2*i+1]) cTpl = JSON.parse(resps[2*i+1]); } catch(e){}
+                            
+                            this.assessments[subj].causeOptions = cTpl;
+                            
+                            // Initialize paperAnalysis array with defaults
+                            this.assessments[subj].paperAnalysis = pTpl.map(t => ({
+                                dimension: t.dimension,
+                                positiveText: t.positive || '',
+                                negativeText: t.negative || '',
+                                status: 'NA',
+                                text: ''
+                            }));
+
+                            // Hydrate from dbState
+                            const saved = dbState[subj];
+                            if (saved) {
+                                if (saved.testType) this.assessments[subj].examType = saved.testType;
+                                if (saved.score !== undefined) this.assessments[subj].score = saved.score;
+                                if (saved.total !== undefined) this.assessments[subj].total = saved.total;
+                                this.calculateGrade(subj);
+                                
+                                // Hydrate paper analysis
+                                if (saved.paperAnalysis) {
+                                    this.assessments[subj].paperAnalysis.forEach(row => {
+                                        const r = saved.paperAnalysis[row.dimension];
+                                        if (r) {
+                                            row.status = r.status;
+                                            row.text = r.text || '';
+                                        }
+                                    });
+                                }
+                                
+                                // Hydrate cause analysis
+                                if (saved.causeAnalysis && Array.isArray(saved.causeAnalysis)) {
+                                    this.assessments[subj].causeAnalysis = saved.causeAnalysis;
+                                }
+                            } else {
+                                this.calculateGrade(subj);
+                            }
+                        });
+                        this.loading = false;
+                    });
+                },
+                calculateGrade(subj) {
+                    const data = this.assessments[subj];
+                    let score = parseFloat(data.score);
+                    let total = parseFloat(data.total) || 0;
+                    if (isNaN(score)) {
+                        data.rate = '- %';
+                        data.level = '-';
+                        return;
+                    }
+
+                    if (subj === 'speaking') {
+                        data.rate = score; // Just echo score
+                        // Approximate IELTS bands mapped loosely to CEFR
+                        if (score >= 8.5) data.level = 'C2';
+                        else if (score >= 7.0) data.level = 'C1';
+                        else if (score >= 5.5) data.level = 'B2';
+                        else if (score >= 4.0) data.level = 'B1';
+                        else data.level = 'A2';
+                        return;
+                    }
+                    
+                    if (total > 0) {
+                        const rate = score / total;
+                        data.rate = (rate * 100).toFixed(1) + '%';
+                        
+                        // KET/PET Logic
+                        if (data.examType === 'KET') {
+                            if (rate <= 0.40) data.level = '低于A1';
+                            else if (rate <= 0.65) data.level = 'A1';
+                            else if (rate <= 0.90) data.level = 'A2';
+                            else data.level = 'B1';
+                        } else if (data.examType === 'PET') {
+                            if (rate <= 0.375) data.level = '低于A2';
+                            else if (rate <= 0.6875) data.level = 'A2';
+                            else if (rate <= 0.875) data.level = 'B1';
+                            else data.level = 'B2';
                         }
-                    });
-                }
-                if (rp_reading.causeAnalysis && Array.isArray(rp_reading.causeAnalysis)) {
-                    document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_reading.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
+                    } else {
+                        data.rate = '- %';
+                        data.level = '-';
+                    }
+                },
+                toggleCause(subj, cause) {
+                    const arr = this.assessments[subj].causeAnalysis;
+                    const idx = arr.indexOf(cause);
+                    if (idx > -1) arr.splice(idx, 1);
+                    else arr.push(cause);
+                },
+                saveWorkspaceData() {
+                    const payload = {};
+                    for (const subj in this.assessments) {
+                        const src = this.assessments[subj];
+                        const subjData = {
+                            testType: src.examType,
+                            score: parseFloat(src.score) || 0,
+                            total: parseFloat(src.total) || 0,
+                            rate: src.rate,
+                            level: src.level,
+                            causeAnalysis: src.causeAnalysis,
+                            paperAnalysis: {}
+                        };
+                        src.paperAnalysis.forEach(row => {
+                            if (row.status !== 'NA' || row.text.trim() !== '') {
+                                subjData.paperAnalysis[row.dimension] = { status: row.status, text: row.text.trim() };
+                            }
+                        });
+                        payload[subj] = subjData;
+                    }
 
-                const rp_listening = dbState.listening || {};
-                if (rp_listening.paperAnalysis) {
-                    listeningPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_listening.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setListeningPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_listening_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setListeningPaperState(idx, 'NA');
+                    const recordId = document.getElementById('recordIdSpan').innerText;
+                    return fetch(`/api/assessment/${recordId}/results`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json()).then(j => j.code === 200 ? j.data : (j.data !== undefined ? j.data : j))
+                    .then(() => {
+                        const indicator = document.getElementById('saveSuccessIndicator');
+                        const timeSpan = document.getElementById('lastSaveTime');
+                        if (indicator && timeSpan) {
+                            indicator.classList.remove('d-none');
+                            const now = new Date();
+                            timeSpan.innerText = `最后保存: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
+                            setTimeout(() => indicator.classList.add('d-none'), 3000);
                         }
+                    })
+                    .catch(err => {
+                        alert("保存失败，请检查网络！");
+                        throw err;
                     });
                 }
-                if (rp_listening.causeAnalysis && Array.isArray(rp_listening.causeAnalysis)) {
-                    document.querySelectorAll('#listeningCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_listening.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
-
-                const rp_speaking = dbState.speaking || {};
-                if (rp_speaking.paperAnalysis) {
-                    speakingPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_speaking.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setSpeakingPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_speaking_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setSpeakingPaperState(idx, 'NA');
-                        }
-                    });
-                }
-                if (rp_speaking.causeAnalysis && Array.isArray(rp_speaking.causeAnalysis)) {
-                    document.querySelectorAll('#speakingCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_speaking.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
-
-                const rp_writing = dbState.writing || {};
-                if (rp_writing.paperAnalysis) {
-                    writingPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_writing.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setWritingPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_writing_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setWritingPaperState(idx, 'NA');
-                        }
-                    });
-                }
-                if (rp_writing.causeAnalysis && Array.isArray(rp_writing.causeAnalysis)) {
-                    document.querySelectorAll('#writingCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_writing.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
-
-                const rp_language_use = dbState.language_use || {};
-                if (rp_language_use.paperAnalysis) {
-                    language_usePaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_language_use.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setLanguageUsePaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_language_use_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setLanguageUsePaperState(idx, 'NA');
-                        }
-                    });
-                }
-                if (rp_language_use.causeAnalysis && Array.isArray(rp_language_use.causeAnalysis)) {
-                    document.querySelectorAll('#language_useCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_language_use.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
-
-                const rp_learning_literacy = dbState.learning_literacy || {};
-                if (rp_learning_literacy.paperAnalysis) {
-                    learning_literacyPaperTemplate.forEach((item, idx) => {
-                        const savedItem = rp_learning_literacy.paperAnalysis[item.dimension];
-                        if (savedItem) {
-                            setLearningLiteracyPaperState(idx, savedItem.status);
-                            document.getElementById(`paperText_learning_literacy_${idx}`).value = savedItem.text || '';
-                        } else {
-                            setLearningLiteracyPaperState(idx, 'NA');
-                        }
-                    });
-                }
-                if (rp_learning_literacy.causeAnalysis && Array.isArray(rp_learning_literacy.causeAnalysis)) {
-                    document.querySelectorAll('#learning_literacyCauseAnalysisContainer .cause-tag').forEach(tag => {
-                        if (rp_learning_literacy.causeAnalysis.includes(tag.innerText)) tag.classList.add('selected');
-                    });
-                }
-
-            }, 100);
+            };
         }
 
-        function saveWorkspaceData() {
-            const readingData = {
-                testType: document.getElementById('readingTestType').value,
-                score: numFormat(document.getElementById('readingScore').value),
-                total: numFormat(document.getElementById('readingTotal').value),
-                rate: document.getElementById('readingRateStr').innerText,
-                level: document.getElementById('readingLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            readingPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_reading_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_reading_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { readingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#readingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                readingData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.reading = readingData;
-
-            const listeningData = {
-                testType: document.getElementById('listeningTestType').value,
-                score: numFormat(document.getElementById('listeningScore').value),
-                total: numFormat(document.getElementById('listeningTotal').value),
-                rate: document.getElementById('listeningRateStr').innerText,
-                level: document.getElementById('listeningLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            listeningPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_listening_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_listening_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { listeningData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#listeningCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                listeningData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.listening = listeningData;
-
-            const speakingData = {
-                testType: document.getElementById('speakingTestType').value,
-                score: numFormat(document.getElementById('speakingScore').value),
-                total: numFormat(document.getElementById('speakingTotal').value),
-                rate: document.getElementById('speakingRateStr').innerText,
-                level: document.getElementById('speakingLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            speakingPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_speaking_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_speaking_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { speakingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#speakingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                speakingData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.speaking = speakingData;
-
-            const writingData = {
-                testType: document.getElementById('writingTestType').value,
-                score: numFormat(document.getElementById('writingScore').value),
-                total: numFormat(document.getElementById('writingTotal').value),
-                rate: document.getElementById('writingRateStr').innerText,
-                level: document.getElementById('writingLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            writingPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_writing_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_writing_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { writingData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#writingCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                writingData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.writing = writingData;
-
-            const language_useData = {
-                testType: document.getElementById('language_useTestType').value,
-                score: numFormat(document.getElementById('language_useScore').value),
-                total: numFormat(document.getElementById('language_useTotal').value),
-                rate: document.getElementById('language_useRateStr').innerText,
-                level: document.getElementById('language_useLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            language_usePaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_language_use_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_language_use_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { language_useData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#language_useCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                language_useData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.language_use = language_useData;
-
-            const learning_literacyData = {
-                testType: document.getElementById('learning_literacyTestType').value,
-                score: numFormat(document.getElementById('learning_literacyScore').value),
-                total: numFormat(document.getElementById('learning_literacyTotal').value),
-                rate: document.getElementById('learning_literacyRateStr').innerText,
-                level: document.getElementById('learning_literacyLevelStr').innerText,
-                paperAnalysis: {},
-                causeAnalysis: []
-            };
-            learning_literacyPaperTemplate.forEach((item, idx) => {
-                const btnGroup = document.getElementById(`btnGroup_learning_literacy_${idx}`);
-                let status = 'NA';
-                if (btnGroup && btnGroup.children.length >= 2) {
-                    if (btnGroup.children[0].classList.contains('active')) status = '✅';
-                    else if (btnGroup.children[1].classList.contains('active')) status = '❗';
-                }
-                const textEl = document.getElementById(`paperText_learning_literacy_${idx}`);
-                const text = textEl ? textEl.value.trim() : '';
-                if (status !== 'NA' || text !== '') { learning_literacyData.paperAnalysis[item.dimension] = { status: status, text: text }; }
-            });
-            document.querySelectorAll('#learning_literacyCauseAnalysisContainer .cause-tag.selected').forEach(tag => {
-                learning_literacyData.causeAnalysis.push(tag.innerText);
-            });
-            dbState.learning_literacy = learning_literacyData;
-
-            // 2. Put to Backend
-            const recordId = document.getElementById('recordIdSpan').innerText;
-            return fetch(`/api/assessment/${recordId}/results`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dbState)
-            })
-            .then(res => res.json())
-            .then(data => {
-                const indicator = document.getElementById('saveSuccessIndicator');
-                const timeSpan = document.getElementById('lastSaveTime');
-                if (indicator && timeSpan) {
-                    indicator.classList.remove('d-none');
-                    const now = new Date();
-                    timeSpan.innerText = `最后保存: ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-                    setTimeout(() => indicator.classList.add('d-none'), 3000);
-                }
-            })
-            .catch(err => {
-                alert("保存失败，请检查网络！");
-                console.error(err);
-                throw err;
-            });
-        }
+        // Helper override for save button in action bar
+        window.saveWorkspaceData = function() {
+            if (globalWorkspaceManager) return globalWorkspaceManager.saveWorkspaceData();
+            return Promise.resolve();
+        };
 
         function exportWord() {
             // Best practice: save before exporting
@@ -1884,7 +1098,7 @@
             const container = document.getElementById('dynamicAssessmentTypesContainer');
             if (!container) return;
             fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS')
-                .then(r => r.json())
+                .then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
                 .then(data => {
                     container.innerHTML = '';
                     if (data && data.value) {
@@ -1919,9 +1133,9 @@
             checkboxContainer.innerHTML = '<div class="col-12 text-center text-muted py-3"><div class="spinner-border spinner-border-sm me-2"></div>正在加载...</div>';
 
             Promise.all([
-                fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(r => r.json()),
-                fetch('/admin/api/config/GLOBAL_BASIC_COLUMNS').then(r => r.json()).catch(() => ({value: ''})),
-                fetch('/admin/api/types').then(r => r.json())
+                fetch('/admin/api/config/GLOBAL_CAPABILITY_MATRIX_CSV').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                fetch('/admin/api/config/GLOBAL_BASIC_COLUMNS').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)).catch(() => ({value: ''})),
+                fetch('/admin/api/types').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             ]).then(([configData, basicData, allTypes]) => {
                 const csvValue = configData.value || '';
                 const firstLine = csvValue.split('\n')[0] || '';
@@ -2065,7 +1279,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(res => res.json())
+            .then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
             .then(data => {
                 btn.disabled = false;
                 btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
