@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <!-- Custom Styles -->
     <link href="/css/style.css" rel="stylesheet">
     <style>
@@ -65,69 +67,187 @@
             </aside>
 
             <!-- Main Content -->
-            <main class="app-main">
+            <main class="app-main" x-data="teachingConfigApp()">
                 <div class="main-header mb-4">
                      <h4 class="fw-bold mb-1">语言教学安排配置</h4>
-                     <p class="text-muted">集中管理教材（如 NEF）的各单元教学大纲，提供结构化导入能力。</p>
+                     <p class="text-muted">集中管理教材（如 NEF）的各项配置，以及测评报告第3步的全局文案。</p>
                 </div>
 
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card shadow-sm border-0 mb-4">
-                            <div class="card-body p-4 bg-light">
-                                <div class="alert alert-info py-2 small mb-3">
-                                    <strong>注意：</strong> 上传新的 <code>.xlsx</code> 文件会自动覆盖/更新相同单元编号的数据。表头必须紧接包含这几项内容，第二行起会被识别成大纲数据。教材名称会自动识别为您 Excel 的 <b>底栏页签（Sheet）名称</b>，并会一次性导入文件中包含的所有页签。<br/>
-                                    所需列：【单元编号(必须在第1列)】【课程内容】【学习目标】【授课时长】
-                                </div>
-                                <div class="d-flex align-items-center gap-3">
-                                    <input type="file" id="excelFile" class="form-control" accept=".xlsx" style="max-width: 300px;">
-                                    <button id="uploadBtn" class="btn btn-primary shadow-sm" onclick="uploadExcel(this)">
-                                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> 上传并导入
-                                    </button>
-                                    <button class="btn btn-outline-danger ms-auto shadow-sm" onclick="clearPlans()">
-                                        <i class="bi bi-trash-fill me-1"></i> 清空所有数据
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mb-4" id="teachingPlanTabs" role="tablist">
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="import-tab" data-bs-toggle="tab" data-bs-target="#import" type="button" role="tab">
+                        <i class="bi bi-cloud-arrow-up"></i> 教学大纲导入
+                    </button>
+                  </li>
+                  <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#config" type="button" role="tab">
+                        <i class="bi bi-sliders"></i> 工作台文案配置
+                    </button>
+                  </li>
+                </ul>
 
+                <div class="tab-content" id="teachingPlanTabContent">
+                    <!-- Tab 1: 教学大纲导入 -->
+                    <div class="tab-pane fade show active" id="import" role="tabpanel">
                         <div class="row">
-                            <div class="col-md-3 mb-4 mb-md-0">
-                                <div class="card shadow-sm border-0 h-100">
-                                    <div class="card-header bg-white py-3 border-bottom">
-                                        <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-journal-bookmark me-2"></i> 选择教材</h6>
+                            <div class="col-12">
+                                <div class="card shadow-sm border-0 mb-4">
+                                    <div class="card-body p-4 bg-light">
+                                        <div class="alert alert-info py-2 small mb-3">
+                                            <strong>注意：</strong> 上传新的 <code>.xlsx</code> 文件会自动覆盖/更新相同单元编号的数据。表头必须紧接包含这几项内容，第二行起会被识别成大纲数据。教材名称会自动识别为您 Excel 的 <b>底栏页签（Sheet）名称</b>，并会一次性导入文件中包含的所有页签。<br/>
+                                            所需列：【单元编号(必须在第1列)】【课程内容】【学习目标】【授课时长】
+                                        </div>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <input type="file" id="excelFile" class="form-control" accept=".xlsx" style="max-width: 300px;">
+                                            <button id="uploadBtn" class="btn btn-primary shadow-sm" onclick="uploadExcel(this)">
+                                                <i class="bi bi-cloud-arrow-up-fill me-1"></i> 上传并导入
+                                            </button>
+                                            <button class="btn btn-outline-danger ms-auto shadow-sm" onclick="clearPlans()">
+                                                <i class="bi bi-trash-fill me-1"></i> 清空所有数据
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="card-body p-0" style="max-height: 60vh; overflow-y: auto;">
-                                        <div class="list-group list-group-flush rounded-bottom" id="bookSidebar">
-                                            <div class="p-4 text-center text-muted"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                                </div>
+
+                                <div class="row">
+                                    <div class="col-md-3 mb-4 mb-md-0">
+                                        <div class="card shadow-sm border-0 h-100">
+                                            <div class="card-header bg-white py-3 border-bottom">
+                                                <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-journal-bookmark me-2"></i> 选择教材</h6>
+                                            </div>
+                                            <div class="card-body p-0" style="max-height: 60vh; overflow-y: auto;">
+                                                <div class="list-group list-group-flush rounded-bottom" id="bookSidebar">
+                                                    <div class="p-4 text-center text-muted"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9">
+                                        <div class="card shadow-sm border-0 h-100">
+                                            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-0 fw-bold text-secondary" id="tableTitle"><i class="bi bi-table me-2"></i> 全部教学大纲</h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover table-bordered mb-0">
+                                                        <thead class="sticky-header">
+                                                            <tr>
+                                                                <th width="12%">教材名称</th>
+                                                                <th width="12%">单元编号</th>
+                                                                <th width="28%">课程内容</th>
+                                                                <th width="35%">学习目标</th>
+                                                                <th width="13%">授课时长</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="planTableBody">
+                                                            <tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-9">
-                                <div class="card shadow-sm border-0 h-100">
-                                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0 fw-bold text-secondary" id="tableTitle"><i class="bi bi-table me-2"></i> 全部教学大纲</h6>
-                                    </div>
-                                    <div class="card-body p-0">
-                                        <div class="table-responsive">
-                                            <table class="table table-hover table-bordered mb-0">
-                                        <thead class="sticky-header">
-                                            <tr>
-                                                <th width="12%">教材名称</th>
-                                                <th width="12%">单元编号</th>
-                                                <th width="28%">课程内容</th>
-                                                <th width="35%">学习目标</th>
-                                                <th width="13%">授课时长</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="planTableBody">
-                                            <tr><td colspan="5" class="text-center py-4 text-muted"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</td></tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
                         </div>
+                    </div>
+                    
+                    <!-- Tab 2: 工作台文案配置 -->
+                    <div class="tab-pane fade" id="config" role="tabpanel" x-cloak>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card shadow-sm border-0 mb-4">
+                                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-sliders"></i> 测评工作台第3步 - 全局文案模板设置</h6>
+                                        <button class="btn btn-sm btn-success" @click="saveAllConfigs()" :disabled="saving">
+                                            <i class="bi bi-save me-1"></i> <span x-text="saving ? '保存中...' : '保存全部文案配置'"></span>
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-4 bg-light">
+                                        <div x-show="alertMsg" class="alert alert-success py-2 small mb-4" x-text="alertMsg"></div>
+
+                                        <div class="row mt-2">
+                                            <!-- 师资简介池 -->
+                                            <div class="col-md-6 mb-4">
+                                                <div class="card h-100">
+                                                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold">师资简介配置</span>
+                                                        <button class="btn btn-sm btn-outline-primary" @click="addTeacherIntro()">+ 添加级别</button>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <template x-for="(item, index) in teacherIntros" :key="index">
+                                                            <div class="mb-3 border p-3 rounded bg-white position-relative">
+                                                                <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 border-0" @click="teacherIntros.splice(index, 1)"><i class="bi bi-x-lg"></i></button>
+                                                                <div class="mb-2 pe-4">
+                                                                    <label class="form-label small mb-1">教师级别 (如 A级别)</label>
+                                                                    <input type="text" class="form-control form-control-sm" x-model="item.level" placeholder="输入级别名称">
+                                                                </div>
+                                                                <div>
+                                                                    <label class="form-label small mb-1">简介文案</label>
+                                                                    <textarea class="form-control form-control-sm" rows="3" x-model="item.desc" placeholder="输入详细描述"></textarea>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                        <div x-show="teacherIntros.length === 0" class="text-center text-muted small py-3">暂无师资简介配置，请点击右上角添加。</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 教材简介池 -->
+                                            <div class="col-md-6 mb-4">
+                                                <div class="card h-100">
+                                                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                                        <span class="fw-bold">教材库简介配置</span>
+                                                        <button class="btn btn-sm btn-outline-primary" @click="addBookIntro()">+ 添加教材</button>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <template x-for="(item, index) in bookIntros" :key="index">
+                                                            <div class="mb-3 border p-3 rounded bg-white position-relative">
+                                                                <button class="btn btn-sm btn-outline-danger position-absolute top-0 end-0 m-2 border-0" @click="bookIntros.splice(index, 1)"><i class="bi bi-x-lg"></i></button>
+                                                                <div class="mb-2 pe-4">
+                                                                    <label class="form-label small mb-1">教材名称 (如 NEF)</label>
+                                                                    <input type="text" class="form-control form-control-sm" x-model="item.name" placeholder="输入教材名称">
+                                                                </div>
+                                                                <div>
+                                                                    <label class="form-label small mb-1">简介文案</label>
+                                                                    <textarea class="form-control form-control-sm" rows="3" x-model="item.desc" placeholder="输入详细描述"></textarea>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                        <div x-show="bookIntros.length === 0" class="text-center text-muted small py-3">暂无教材简介配置，请点击右上角添加。</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 教学思路模板 -->
+                                            <div class="col-md-12 mb-4">
+                                                <div class="card">
+                                                    <div class="card-header bg-white">
+                                                        <span class="fw-bold">默认教学思路模板</span> 
+                                                        <span class="text-muted small ms-2">当老师进入单次报告生成时，此文案将作为默认值全文填充，老师可基于此模版手动增删。</span>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <textarea class="form-control" rows="8" x-model="teachingApproachTemplate" placeholder="在此输入所有教学思路条目..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 方案风险模板 -->
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header bg-white">
+                                                        <span class="fw-bold">默认方案风险模板</span>
+                                                        <span class="text-muted small ms-2">同上，作为默认的风险提示大纲呈现给前线老师。</span>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <textarea class="form-control" rows="8" x-model="planRiskTemplate" placeholder="在此输入所有预估风险条目..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -305,6 +425,75 @@
                         loadPlans();
                     }
                 });
+            }
+        }
+
+        function teachingConfigApp() {
+            return {
+                teacherIntros: [],
+                bookIntros: [],
+                teachingApproachTemplate: '',
+                planRiskTemplate: '',
+                alertMsg: '',
+                saving: false,
+
+                init() {
+                    const fetchConfig = async (key) => {
+                        try {
+                            const res = await fetch(`/admin/api/config/${key}`);
+                            const data = await res.json();
+                            return data.code === 200 ? data.data.value : '';
+                        } catch (e) { return ''; }
+                    };
+
+                    Promise.all([
+                        fetchConfig('GLOBAL_TEACHER_INTRODUCTIONS'),
+                        fetchConfig('GLOBAL_TEXTBOOK_INTRODUCTIONS'),
+                        fetchConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE'),
+                        fetchConfig('GLOBAL_PLAN_RISK_TEMPLATE')
+                    ]).then(([teacherData, bookData, approachData, riskData]) => {
+                        try { this.teacherIntros = teacherData ? JSON.parse(teacherData) : []; } catch (e) { this.teacherIntros = []; }
+                        try { this.bookIntros = bookData ? JSON.parse(bookData) : []; } catch (e) { this.bookIntros = []; }
+                        this.teachingApproachTemplate = approachData || '';
+                        this.planRiskTemplate = riskData || '';
+                    });
+                },
+
+                addTeacherIntro() {
+                    this.teacherIntros.push({ level: '', desc: '' });
+                },
+
+                addBookIntro() {
+                    this.bookIntros.push({ name: '', desc: '' });
+                },
+
+                async saveAllConfigs() {
+                    this.saving = true;
+                    this.alertMsg = '';
+
+                    const saveConfig = async (key, value) => {
+                        await fetch(`/admin/api/config/${key}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ value: value })
+                        });
+                    };
+
+                    try {
+                        await Promise.all([
+                            saveConfig('GLOBAL_TEACHER_INTRODUCTIONS', this.teacherIntros.length ? JSON.stringify(this.teacherIntros) : ''),
+                            saveConfig('GLOBAL_TEXTBOOK_INTRODUCTIONS', this.bookIntros.length ? JSON.stringify(this.bookIntros) : ''),
+                            saveConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE', this.teachingApproachTemplate),
+                            saveConfig('GLOBAL_PLAN_RISK_TEMPLATE', this.planRiskTemplate)
+                        ]);
+                        this.alertMsg = '配置已成功保存！';
+                        setTimeout(() => this.alertMsg = '', 3000);
+                    } catch (e) {
+                        alert('保存失败，请检查网络。');
+                    } finally {
+                        this.saving = false;
+                    }
+                }
             }
         }
     </script>

@@ -41,6 +41,10 @@ class AssessmentRecord {
     @Column(columnDefinition = "jsonb", name = "assessment_results")
     var assessmentResults: String? = null
 
+    @Type(type = "jsonb")
+    @Column(columnDefinition = "jsonb", name = "teaching_plan_data")
+    var teachingPlanData: String? = null
+
     @Column(name = "selected_export_columns", columnDefinition = "TEXT")
     var selectedExportColumns: String? = null
 

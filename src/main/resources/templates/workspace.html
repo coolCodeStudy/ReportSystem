@@ -213,9 +213,9 @@
                 <span class="menu-step-number">2</span>
                 <span>测评分析</span>
             </div>
-            <div class="menu-item text-muted" style="cursor:not-allowed;" title="正在开发中...">
-                <span class="menu-step-number text-muted">3</span>
-                <span>语言教学安排 <i class="bi bi-lock-fill ms-1"></i></span>
+            <div class="menu-item" onclick="switchTab('step3')" id="tab-step3">
+                <span class="menu-step-number">3</span>
+                <span>语言教学安排</span>
             </div>
         </div>
     </aside>
@@ -780,6 +780,181 @@
                 </button>
             </div>
         </footer>
+
+        <!-- Step 3: Language Teaching Plan -->
+        <div id="step3-content" class="step-content" style="display: none;" x-data="workspaceStep3()">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold mb-0"><i class="bi bi-book-half text-primary me-2"></i>语言教学安排</h5>
+                <button class="btn btn-primary" @click="saveStep3" :disabled="saving">
+                    <i class="bi bi-save me-1"></i> <span x-text="saving ? '保存中...' : '保存此页'"></span>
+                </button>
+            </div>
+            <div x-show="alertMsg" class="alert alert-success py-2 small mb-4" x-text="alertMsg"></div>
+
+            <div class="row">
+                <!-- 1. 师资简介 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>师资简介</h6>
+                            <select class="form-select form-select-sm ms-3" style="width: auto;" @change="applyTeacherIntro($event.target.value)">
+                                <option value="">快速填入预设模版...</option>
+                                <template x-for="t in sysConfig.teacherIntros">
+                                    <option :value="t.desc" x-text="t.level"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <textarea class="form-control" rows="4" x-model="data.teacherIntro" placeholder="在此编辑或补充师资简介文案..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. 教材简介库引用 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-journal-text me-2"></i>教材简介</h6>
+                            <div class="dropdown ms-3">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    选择以追加预设模版...
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <template x-for="b in sysConfig.bookIntros">
+                                        <li><a class="dropdown-item" href="#" @click.prevent="appendBookIntro(b.desc)" x-text="b.name"></a></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <textarea class="form-control" rows="4" x-model="data.bookIntro" placeholder="在此编辑教材简介文案..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. 教材大纲选择 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-list-check me-2"></i>教学计划大纲选择</h6>
+                        </div>
+                        <div class="card-body bg-light">
+                            <div class="mb-3">
+                                <label class="fw-bold small mb-2">步骤1：选择所需教材 (可多选)</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <template x-for="book in availableBooks">
+                                        <label class="btn btn-sm" :class="data.selectedBooks.includes(book) ? 'btn-primary' : 'btn-outline-secondary'">
+                                            <input type="checkbox" class="d-none" :value="book" x-model="data.selectedBooks" @change="updateSyllabusList()">
+                                            <span x-text="book"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                            </div>
+                            
+                            <div x-show="data.selectedBooks.length > 0">
+                                <label class="fw-bold small mb-2 d-flex justify-content-between">
+                                    <span>步骤2：勾选需输出到报告的单元</span>
+                                    <a href="#" class="text-decoration-none small" @click.prevent="selectAllSyllabus()">全选/清空</a>
+                                </label>
+                                <div class="table-responsive bg-white border rounded">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 40px;" class="text-center">#</th>
+                                                <th>教材名称</th>
+                                                <th>单元</th>
+                                                <th>短内容简介</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template x-for="plan in currentSyllabusList" :key="plan.id">
+                                                <tr :class="data.selectedPlanIds.includes(plan.id) ? 'table-primary' : ''">
+                                                    <td class="text-center align-middle">
+                                                        <input class="form-check-input" type="checkbox" :value="plan.id" x-model="data.selectedPlanIds">
+                                                    </td>
+                                                    <td class="align-middle fw-bold text-secondary" style="font-size: 0.85rem;" x-text="plan.bookName"></td>
+                                                    <td class="align-middle" style="font-size: 0.85rem;" x-text="plan.unitCode + ': ' + plan.courseContent"></td>
+                                                    <td class="align-middle" style="font-size: 0.8rem;" x-text="plan.learningObjectives ? (plan.learningObjectives.substring(0, 40) + '...') : ''"></td>
+                                                </tr>
+                                            </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. 课时规划表 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2"></i>课时规划表</h6>
+                            <button class="btn btn-sm btn-outline-primary" @click="addCoursePlanRow()">+ 添加一行</button>
+                        </div>
+                        <div class="card-body p-0">
+                            <table class="table table-borderless table-striped mb-0">
+                                <thead class="bg-light border-bottom">
+                                    <tr>
+                                        <th>阶段名称</th>
+                                        <th>段落时长</th>
+                                        <th>目标描述</th>
+                                        <th style="width: 25%">主要教材</th>
+                                        <th>预计课时</th>
+                                        <th style="width: 60px;">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(row, idx) in data.coursePlans" :key="idx">
+                                        <tr class="border-bottom">
+                                            <td><input type="text" class="form-control form-control-sm" x-model="row.phase" placeholder="如 第一阶段"></td>
+                                            <td><input type="text" class="form-control form-control-sm" x-model="row.duration" placeholder="如 2h"></td>
+                                            <td><textarea class="form-control form-control-sm" rows="1" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
+                                            <td><input type="text" class="form-control form-control-sm" x-model="row.textbook" placeholder="如 NEF-PI"></td>
+                                            <td><input type="text" class="form-control form-control-sm" x-model="row.hours" placeholder="如 8h"></td>
+                                            <td class="text-center align-middle">
+                                                <button class="btn btn-sm btn-outline-danger border-0" @click="data.coursePlans.splice(idx, 1)"><i class="bi bi-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                            <div class="p-3 border-top bg-light">
+                                <label class="form-label small fw-bold">课时浮动影响因素 (可选说明)</label>
+                                <textarea class="form-control form-control-sm" rows="2" x-model="data.coursePlanNote" placeholder="如 *第一阶段的课时浮动是由于..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. 教学思路 & 风险提示 -->
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-lightbulb me-2"></i>教学思路总结</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @click="resetToTemplate('approach')"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认模版</button>
+                        </div>
+                        <div class="card-body">
+                            <textarea class="form-control" rows="12" x-model="data.teachingApproach" style="font-size: 0.85rem; line-height: 1.6;"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm border-0 h-100">
+                        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle me-2"></i>方案风险提示</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @click="resetToTemplate('risk')"><i class="bi bi-arrow-counterclockwise"></i> 恢复默认模版</button>
+                        </div>
+                        <div class="card-body">
+                            <textarea class="form-control" rows="12" x-model="data.planRisk" style="font-size: 0.85rem; line-height: 1.6;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <input type="hidden" id="initTeachingPlanData" th:value="${teachingPlanData}">
+        </div>
+
     </main>
 
     <!-- Export Columns Modal -->
@@ -893,6 +1068,7 @@
             
             document.getElementById('step1-content').style.display = 'none';
             document.getElementById('step2-content').style.display = 'none';
+            if (document.getElementById('step3-content')) document.getElementById('step3-content').style.display = 'none';
             
             document.getElementById(step + '-content').style.display = 'block';
         }
@@ -1311,6 +1487,147 @@
                 switchTab('step1');
             }
         });
+
+        function workspaceStep3() {
+            return {
+                saving: false,
+                alertMsg: '',
+                sysConfig: {
+                    teacherIntros: [],
+                    bookIntros: [],
+                    approachTemplate: '',
+                    riskTemplate: ''
+                },
+                allSyllabusDB: [],
+                availableBooks: [],
+                currentSyllabusList: [],
+                
+                data: {
+                    teacherIntro: '',
+                    bookIntro: '',
+                    selectedBooks: [],
+                    selectedPlanIds: [],
+                    coursePlans: [
+                        {phase: '', duration: '', goal: '', textbook: '', hours: ''}
+                    ],
+                    coursePlanNote: '',
+                    teachingApproach: '',
+                    planRisk: ''
+                },
+
+                async init() {
+                    const existingDataRaw = document.getElementById('initTeachingPlanData').value;
+                    if (existingDataRaw && existingDataRaw !== '{}') {
+                        try {
+                            const parsed = JSON.parse(existingDataRaw);
+                            this.data = { ...this.data, ...parsed };
+                            if (!this.data.coursePlans || this.data.coursePlans.length===0) this.data.coursePlans = [{phase: '', duration: '', goal: '', textbook: '', hours: ''}];
+                            if (!this.data.selectedBooks) this.data.selectedBooks = [];
+                            if (!this.data.selectedPlanIds) this.data.selectedPlanIds = [];
+                        } catch(e) {}
+                    }
+
+                    const fetchConfig = async (key) => {
+                        try {
+                            const res = await fetch(`/admin/api/config/${key}`);
+                            const data = await res.json();
+                            return data.code === 200 ? data.data.value : '';
+                        } catch (e) { return ''; }
+                    };
+
+                    await Promise.all([
+                        fetch('/admin/api/teaching-plan/list').then(r=>r.json()),
+                        fetchConfig('GLOBAL_TEACHER_INTRODUCTIONS'),
+                        fetchConfig('GLOBAL_TEXTBOOK_INTRODUCTIONS'),
+                        fetchConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE'),
+                        fetchConfig('GLOBAL_PLAN_RISK_TEMPLATE')
+                    ]).then(([syllabusRes, teacherData, bookData, approachData, riskData]) => {
+                        if (syllabusRes.code === 200 && syllabusRes.data) {
+                            this.allSyllabusDB = syllabusRes.data;
+                            this.availableBooks = [...new Set(this.allSyllabusDB.map(s => s.bookName))].filter(Boolean);
+                            this.updateSyllabusList();
+                        }
+                        
+                        try { this.sysConfig.teacherIntros = teacherData ? JSON.parse(teacherData) : []; } catch(e){}
+                        try { this.sysConfig.bookIntros = bookData ? JSON.parse(bookData) : []; } catch(e){}
+                        this.sysConfig.approachTemplate = approachData || '';
+                        this.sysConfig.riskTemplate = riskData || '';
+
+                        if (!this.data.teachingApproach && this.sysConfig.approachTemplate) {
+                            this.data.teachingApproach = this.sysConfig.approachTemplate;
+                        }
+                        if (!this.data.planRisk && this.sysConfig.riskTemplate) {
+                            this.data.planRisk = this.sysConfig.riskTemplate;
+                        }
+                    });
+                },
+
+                applyTeacherIntro(text) {
+                    if (text) this.data.teacherIntro = text;
+                },
+
+                appendBookIntro(text) {
+                    if (text) {
+                        this.data.bookIntro = this.data.bookIntro ? this.data.bookIntro + '\n\n' + text : text;
+                    }
+                },
+
+                updateSyllabusList() {
+                    if (this.data.selectedBooks.length === 0) {
+                        this.currentSyllabusList = [];
+                        return;
+                    }
+                    this.currentSyllabusList = this.allSyllabusDB.filter(s => this.data.selectedBooks.includes(s.bookName));
+                },
+
+                selectAllSyllabus() {
+                    const allIds = this.currentSyllabusList.map(s => s.id);
+                    if (this.data.selectedPlanIds.length === allIds.length) {
+                        this.data.selectedPlanIds = [];
+                    } else {
+                        const existing = new Set(this.data.selectedPlanIds);
+                        allIds.forEach(id => existing.add(id));
+                        this.data.selectedPlanIds = Array.from(existing);
+                    }
+                },
+
+                addCoursePlanRow() {
+                    this.data.coursePlans.push({phase: '', duration: '', goal: '', textbook: '', hours: ''});
+                },
+
+                resetToTemplate(type) {
+                    if (confirm('确定要重置覆盖当前的修改吗？')) {
+                        if (type === 'approach') this.data.teachingApproach = this.sysConfig.approachTemplate;
+                        if (type === 'risk') this.data.planRisk = this.sysConfig.riskTemplate;
+                    }
+                },
+
+                async saveStep3() {
+                    this.saving = true;
+                    this.alertMsg = '';
+                    const recordId = document.getElementById('recordIdSpan').innerText;
+                    
+                    try {
+                        const res = await fetch(`/api/assessment/${recordId}/step3`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(this.data)
+                        });
+                        const resData = await res.json();
+                        if (resData.code === 200) {
+                            this.alertMsg = '教学安排内容已保存成功！';
+                            setTimeout(() => this.alertMsg='', 3000);
+                        } else {
+                            alert('保存失败: ' + resData.message);
+                        }
+                    } catch (e) {
+                        alert('网络错误');
+                    } finally {
+                        this.saving = false;
+                    }
+                }
+            }
+        }
     </script>
 </body>
 </html>

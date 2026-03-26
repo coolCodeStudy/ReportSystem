@@ -43,6 +43,7 @@ class AssessmentWorkspaceController(
         model.addAttribute("studentName", record.student?.name ?: "未知学生")
         model.addAttribute("targetAssessment", record.assessmentType ?: "未指定")
         model.addAttribute("assessmentResults", record.assessmentResults ?: "{}")
+        model.addAttribute("teachingPlanData", record.teachingPlanData ?: "{}")
         model.addAttribute("record", record)
         model.addAttribute("student", record.student)
         
@@ -84,5 +85,21 @@ class AssessmentWorkspaceController(
 
         assessmentRecordRepository.save(record)
         return ResponseResult.success(null)
+    }
+
+    @PutMapping("/api/assessment/{id}/step3")
+    @ResponseBody
+    fun updateStep3(
+        @PathVariable("id") id: Long,
+        @RequestBody dataJson: String
+    ): ResponseResult<Nothing> {
+        val record = assessmentRecordRepository.findById(id).orElseThrow {
+            IllegalArgumentException("Assessment Record not found for id $id")
+        }
+        
+        record.teachingPlanData = dataJson
+        assessmentRecordRepository.save(record)
+        
+        return ResponseResult.success(null, "Teaching plan data saved successfully")
     }
 }

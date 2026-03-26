@@ -111,7 +111,9 @@ class HomeController(
             finalStudentType,
             form?.assessmentType,
             null,
-            form?.otherAssessment
+            form?.otherAssessment,
+            null,
+            null
         )
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")

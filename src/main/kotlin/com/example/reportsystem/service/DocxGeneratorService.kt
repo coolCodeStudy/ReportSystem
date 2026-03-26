@@ -18,7 +18,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 @Service
 class DocxGeneratorService(
     private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository,
-    private val systemConfigRepository: SystemConfigRepository
+    private val systemConfigRepository: SystemConfigRepository,
+    private val teachingPlanRepository: com.example.reportsystem.repository.TeachingPlanRepository
 ) {
 
     private val DEFAULT_CSV = """
@@ -44,7 +45,8 @@ G11,,1225L,17500,,,,,,
         assessmentTypes: List<String>? = null,
         selectedColumns: List<String>? = null,
         otherAssessment: String? = null,
-        assessmentResultsJson: String? = null
+        assessmentResultsJson: String? = null,
+        teachingPlanDataJson: String? = null
     ): ByteArray {
         if (targetLevel != null && targetLevel.matches(Regex("^G([1-9]|10|11)$", RegexOption.IGNORE_CASE))) {
             throw IllegalArgumentException("系统不再支持旧版的 Lingoland 等级 (G1-G11)。请前往学生档案将其测评 Level 更新为对应的 CEFR 等级后再导出报告。")
@@ -165,6 +167,10 @@ G11,,1225L,17500,,,,,,
 
         // --- Append Assessment Analysis Tables ---
         com.example.reportsystem.service.docx.DocxAssessmentAnalysisRenderer.render(document, assessmentResultsJson)
+
+        if (!teachingPlanDataJson.isNullOrBlank() && teachingPlanDataJson != "{}") {
+            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository)
+        }
 
         val out = ByteArrayOutputStream()
         document.write(out)
