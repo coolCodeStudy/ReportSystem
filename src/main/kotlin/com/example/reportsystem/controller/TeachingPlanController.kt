@@ -27,19 +27,22 @@ class TeachingPlanController(
     @ResponseBody
     @PostMapping("/admin/api/teaching-plan/import")
     fun importPlans(
-        @RequestParam("file") file: MultipartFile,
-        @RequestParam("bookName") bookName: String
+        @RequestParam("file") file: MultipartFile
     ): ResponseEntity<Map<String, Any>> {
-        if (bookName.isBlank()) {
-            return ResponseEntity.badRequest().body(mapOf("code" to 400, "message" to "导入失败: 教材名称不能为空"))
-        }
         return try {
-            teachingPlanService.importTeachingPlans(file, bookName.trim())
+            teachingPlanService.importTeachingPlans(file)
             ResponseEntity.ok(mapOf("code" to 200, "message" to "导入成功"))
         } catch (e: Exception) {
             e.printStackTrace()
             ResponseEntity.badRequest().body(mapOf("code" to 400, "message" to "导入失败: ${e.message}"))
         }
+    }
+
+    @ResponseBody
+    @DeleteMapping("/admin/api/teaching-plan/book/{bookName}")
+    fun deletePlansByBookName(@PathVariable bookName: String): ResponseEntity<Map<String, Any>> {
+        teachingPlanService.deletePlansByBookName(bookName)
+        return ResponseEntity.ok(mapOf("code" to 200, "message" to "删除教材 $bookName 成功"))
     }
 
     @ResponseBody

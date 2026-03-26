@@ -76,13 +76,12 @@
                         <div class="card shadow-sm border-0 mb-4">
                             <div class="card-body p-4 bg-light">
                                 <div class="alert alert-info py-2 small mb-3">
-                                    <strong>注意：</strong> 上传新的 <code>.xlsx</code> 文件会自动覆盖/更新相同单元编号的数据。表头必须紧接包含这几项内容，第二行起会被识别成大纲数据。<br/>
+                                    <strong>注意：</strong> 上传新的 <code>.xlsx</code> 文件会自动覆盖/更新相同单元编号的数据。表头必须紧接包含这几项内容，第二行起会被识别成大纲数据。教材名称会自动识别为您 Excel 的 <b>底栏页签（Sheet）名称</b>，并会一次性导入文件中包含的所有页签。<br/>
                                     所需列：【单元编号(必须在第1列)】【课程内容】【学习目标】【授课时长】
                                 </div>
                                 <div class="d-flex align-items-center gap-3">
-                                    <input type="text" id="bookNameInput" class="form-control" placeholder="输入教材名称 (如: NEF)" style="max-width: 200px;">
                                     <input type="file" id="excelFile" class="form-control" accept=".xlsx" style="max-width: 300px;">
-                                    <button class="btn btn-primary shadow-sm" onclick="uploadExcel()">
+                                    <button id="uploadBtn" class="btn btn-primary shadow-sm" onclick="uploadExcel(this)">
                                         <i class="bi bi-cloud-arrow-up-fill me-1"></i> 上传并导入
                                     </button>
                                     <button class="btn btn-outline-danger ms-auto shadow-sm" onclick="clearPlans()">
@@ -92,16 +91,27 @@
                             </div>
                         </div>
 
-                        <div class="card shadow-sm border-0">
-                            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-table me-2"></i> 已导入的教学计划大纲内容</h6>
-                                <select id="bookSelector" class="form-select form-select-sm w-auto" onchange="renderTable()">
-                                    <option value="">全部教材</option>
-                                </select>
+                        <div class="row">
+                            <div class="col-md-3 mb-4 mb-md-0">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white py-3 border-bottom">
+                                        <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-journal-bookmark me-2"></i> 选择教材</h6>
+                                    </div>
+                                    <div class="card-body p-0" style="max-height: 60vh; overflow-y: auto;">
+                                        <div class="list-group list-group-flush rounded-bottom" id="bookSidebar">
+                                            <div class="p-4 text-center text-muted"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="card-body p-0">
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-bordered mb-0">
+                            <div class="col-md-9">
+                                <div class="card shadow-sm border-0 h-100">
+                                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 fw-bold text-secondary" id="tableTitle"><i class="bi bi-table me-2"></i> 全部教学大纲</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-bordered mb-0">
                                         <thead class="sticky-header">
                                             <tr>
                                                 <th width="12%">教材名称</th>
@@ -116,6 +126,8 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        </div>
                             </div>
                         </div>
                     </div>
@@ -138,35 +150,82 @@
                 .then(res => {
                     if (res.code === 200 && res.data && res.data.length > 0) {
                         allPlans = res.data;
-                        updateBookSelector();
+                        renderBookSidebar();
                         renderTable();
                     } else {
                         allPlans = [];
-                        updateBookSelector();
+                        renderBookSidebar();
                         document.getElementById('planTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-2 d-block mb-3"></i> 暂无教学计划大纲数据，请在上方导入Excel。</td></tr>';
                     }
                 })
-                .catch(() => {
+                .catch(err => {
+                    console.error("Failed to load plans:", err);
                     allPlans = [];
-                    document.getElementById('planTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">数据加载失败</td></tr>';
+                    document.getElementById('bookSidebar').innerHTML = '<div class="p-4 text-center text-danger"><i class="bi bi-x-circle fs-4 d-block mb-2"></i>加载失败</div>';
+                    document.getElementById('planTableBody').innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">数据加载失败: ${err.message || '网络错误'}</td></tr>`;
                 });
         }
 
-        function updateBookSelector() {
-            const selector = document.getElementById('bookSelector');
-            const currentSelected = selector.value;
-            
+        let currentSelectedBook = 'ALL';
+
+        function renderBookSidebar() {
+            const sidebar = document.getElementById('bookSidebar');
+            if (allPlans.length === 0) {
+                sidebar.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-inbox fs-4 d-block mb-2"></i>暂无教材</div>';
+                return;
+            }
+
             const books = [...new Set(allPlans.map(p => p.bookName))].filter(Boolean);
             
-            let html = '<option value="">全部教材</option>';
+            if (currentSelectedBook !== 'ALL' && !books.includes(currentSelectedBook)) {
+                currentSelectedBook = 'ALL';
+            }
+
+            let html = `
+                <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${currentSelectedBook === 'ALL' ? 'active' : ''}" 
+                   onclick="selectBook('ALL', event)">
+                    <span>全部教材</span>
+                </a>
+            `;
+
             books.forEach(book => {
-                const selected = book === currentSelected ? 'selected' : '';
-                html += `<option value="${book}" ${selected}>${book}</option>`;
+                const isActive = book === currentSelectedBook ? 'active' : '';
+                html += `
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center ${isActive}" 
+                         style="cursor: pointer;" onclick="selectBook('${book}', event)">
+                        <span>${book}</span>
+                        <button class="btn btn-sm btn-outline-danger border-0 p-1" title="删除该教材" onclick="deleteBook('${book}', event)">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                `;
             });
-            selector.innerHTML = html;
-            
-            if (currentSelected && !books.includes(currentSelected)) {
-                selector.value = '';
+            sidebar.innerHTML = html;
+        }
+
+        function selectBook(bookName, event) {
+            if(event) event.preventDefault();
+            currentSelectedBook = bookName;
+            renderBookSidebar();
+            renderTable();
+        }
+
+        function deleteBook(bookName, event) {
+            if(event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            if (confirm(`确定要彻底删除教材【${bookName}】的所有大纲数据吗？此操作不可恢复！`)) {
+                fetch(`/admin/api/teaching-plan/book/${bookName}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(res => {
+                    if (res.code === 200) {
+                        alert(`已删除教材 ${bookName}`);
+                        loadPlans();
+                    } else {
+                        alert(res.message || '删除出错');
+                    }
+                });
             }
         }
 
@@ -174,8 +233,7 @@
             const tbody = document.getElementById('planTableBody');
             tbody.innerHTML = '';
             
-            const selectedBook = document.getElementById('bookSelector').value;
-            const filteredPlans = selectedBook ? allPlans.filter(p => p.bookName === selectedBook) : allPlans;
+            const filteredPlans = currentSelectedBook === 'ALL' ? allPlans : allPlans.filter(p => p.bookName === currentSelectedBook);
 
             if (filteredPlans.length > 0) {
                 filteredPlans.forEach(p => {
@@ -192,15 +250,14 @@
             } else {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="bi bi-inbox fs-2 d-block mb-3"></i> 没有找到相关的教学计划大纲数据</td></tr>';
             }
+            
+            const tableTitle = document.getElementById('tableTitle');
+            if (tableTitle) {
+                tableTitle.innerHTML = `<i class="bi bi-table me-2"></i> ${currentSelectedBook === 'ALL' ? '全部教学大纲' : currentSelectedBook + ' 大纲'}`;
+            }
         }
 
-        function uploadExcel() {
-            const bookInput = document.getElementById('bookNameInput').value.trim();
-            if (!bookInput) {
-                alert('请填写教材名称！');
-                return;
-            }
-
+        function uploadExcel(btn) {
             const fileInput = document.getElementById('excelFile');
             if (!fileInput.files.length) {
                 alert('请先选择一个 .xlsx 文件！');
@@ -209,9 +266,8 @@
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            formData.append('bookName', bookInput);
 
-            const btn = event.currentTarget;
+            btn = btn || document.getElementById('uploadBtn');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 导入中...';
             btn.disabled = true;
