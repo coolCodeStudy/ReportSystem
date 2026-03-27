@@ -116,7 +116,7 @@ G11,,1225L,17500,,,,,,
         }
 
         // Always replace the target paragraph to remove default 'KET' text
-        val targetPara = document.paragraphs.find { it.text.contains("测评说明") }
+        val targetPara = document.paragraphs.find { it.text.contains("{assessment_introduction}") }
         if (targetPara != null) {
             // Completely clear runs to prevent leftover text (e.g. duplicate bullets like "■")
             while (targetPara.runs.isNotEmpty()) {

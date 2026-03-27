@@ -41,7 +41,7 @@ object DocxAssessmentAnalysisRenderer {
                     if (t.rows.isNotEmpty()) t.removeRow(0)
                     for (r in 0 until rows) {
                         val row = t.createRow()
-                        for (cIdx in 1 until cols) {
+                        while (row.tableCells.size < cols) {
                             row.addNewTableCell()
                         }
                     }
@@ -50,15 +50,6 @@ object DocxAssessmentAnalysisRenderer {
                     document.createTable(rows, cols)
                 }
             }
-
-            val titlePara = createPara()
-            titlePara.spacingBefore = 400
-            titlePara.spacingAfter = 150
-            val titleRun = titlePara.createRun()
-            titleRun.setText("二、 测评分析")
-            titleRun.fontFamily = "微软雅黑"
-            titleRun.fontSize = 16
-            titleRun.isBold = true
 
             val subjectMap = mapOf(
                 "reading" to "阅读",
@@ -73,8 +64,12 @@ object DocxAssessmentAnalysisRenderer {
                 val subjNode = analysis.path(key)
                 if (subjNode.isMissingNode || subjNode.isEmpty) continue
                 
-                if (subjNode.path("score").isMissingNode && subjNode.path("level").isMissingNode && 
-                    subjNode.path("paperAnalysis").isMissingNode && subjNode.path("causeAnalysis").isMissingNode) continue
+                val scoreNode = subjNode.path("score")
+                val isScoreEmptyOrZero = scoreNode.isMissingNode || scoreNode.asText().isBlank() || scoreNode.asDouble(0.0) == 0.0
+                val isPaperEmpty = subjNode.path("paperAnalysis").isMissingNode || subjNode.path("paperAnalysis").isEmpty
+                val isCauseEmpty = subjNode.path("causeAnalysis").isMissingNode || subjNode.path("causeAnalysis").isEmpty
+
+                if (isScoreEmptyOrZero && isPaperEmpty && isCauseEmpty) continue
 
                 val score = subjNode.path("score").asText()
                 val total = subjNode.path("total").asText()

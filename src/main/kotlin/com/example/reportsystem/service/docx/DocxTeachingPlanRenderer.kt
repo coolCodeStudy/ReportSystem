@@ -18,25 +18,53 @@ object DocxTeachingPlanRenderer {
         
         if (data.isMissingNode || data.isEmpty) return
         
-        val titlePara = document.createParagraph()
-        titlePara.spacingBefore = 400
-        titlePara.spacingAfter = 150
-        val titleRun = titlePara.createRun()
-        titleRun.setText("三、 语言教学安排")
-        titleRun.fontFamily = "微软雅黑"
-        titleRun.fontSize = 16
-        titleRun.isBold = true
+        var targetPara: XWPFParagraph? = null
+        for (p in document.paragraphs) {
+            if (p.text.contains("{course_schedule}")) {
+                targetPara = p
+                break
+            }
+        }
+
+        val createPara: () -> XWPFParagraph = {
+            if (targetPara != null) {
+                val c = targetPara!!.ctp.newCursor()
+                val p = document.insertNewParagraph(c)
+                c.dispose()
+                p
+            } else {
+                document.createParagraph()
+            }
+        }
+
+        val createTableWrappen: (Int, Int) -> XWPFTable = { rows, cols ->
+            if (targetPara != null) {
+                val c = targetPara!!.ctp.newCursor()
+                val t = document.insertNewTbl(c)
+                c.dispose()
+                if (t.rows.isNotEmpty()) t.removeRow(0)
+                for (r in 0 until rows) {
+                    val row = t.createRow()
+                    while (row.tableCells.size < cols) {
+                        row.addNewTableCell()
+                    }
+                }
+                t
+            } else {
+                document.createTable(rows, cols)
+            }
+        }
 
         val teacherIntro = data.path("teacherIntro").asText()
         if (teacherIntro.isNotBlank()) {
-            addSectionTitle(document, "1. 师资简介")
-            addTextParagraphs(document, teacherIntro)
+            addSectionTitle(createPara, "1. 师资简介")
+            addTextParagraphs(createPara, teacherIntro)
         }
 
         val bookIntro = data.path("bookIntro").asText()
         if (bookIntro.isNotBlank()) {
-            addSectionTitle(document, "2. 教材简介")
-            addTextParagraphs(document, bookIntro)
+            addSectionTitle(createPara, "2. 教材简介")
+            addTextParagraphs(createPara, bookIntro)
         }
 
         val selectedPlanIdsArray = data.path("selectedPlanIds")
@@ -45,9 +73,9 @@ object DocxTeachingPlanRenderer {
             if (ids.isNotEmpty()) {
                 val plans = teachingPlanRepository.findAllById(ids)
                 if (plans.isNotEmpty()) {
-                    addSectionTitle(document, "3. 教学计划大纲")
+                    addSectionTitle(createPara, "3. 教学计划大纲")
                     
-                    val table = document.createTable(plans.size + 1, 4)
+                    val table = createTableWrappen(plans.size + 1, 4)
                     val tblW = table.ctTbl.tblPr?.addNewTblW() ?: table.ctTbl.addNewTblPr().addNewTblW()
                     tblW.type = STTblWidth.PCT
                     tblW.w = BigInteger.valueOf(5000)
@@ -76,7 +104,7 @@ object DocxTeachingPlanRenderer {
                             DocxStyleUtils.setCellAlignment(it, ParagraphAlignment.LEFT)
                         }
                     }
-                    document.createParagraph().spacingAfter = 200
+                    createPara().spacingAfter = 200
                 }
             }
         }
@@ -87,8 +115,8 @@ object DocxTeachingPlanRenderer {
                 row.path("phase").asText().isNotBlank() || row.path("goal").asText().isNotBlank()
             }
             if (validRowData.isNotEmpty()) {
-                addSectionTitle(document, "4. 课时规划表")
-                val table = document.createTable(validRowData.size + 1, 5)
+                addSectionTitle(createPara, "4. 课时规划表")
+                val table = createTableWrappen(validRowData.size + 1, 5)
                 val tblW = table.ctTbl.tblPr?.addNewTblW() ?: table.ctTbl.addNewTblPr().addNewTblW()
                 tblW.type = STTblWidth.PCT
                 tblW.w = BigInteger.valueOf(5000)
@@ -116,13 +144,13 @@ object DocxTeachingPlanRenderer {
                         DocxStyleUtils.setWhiteBorders(row.getCell(col))
                     }
                 }
-                document.createParagraph().spacingAfter = 100
+                createPara().spacingAfter = 100
             }
         }
         
         val coursePlanNote = data.path("coursePlanNote").asText()
         if (coursePlanNote.isNotBlank()) {
-            val pNote = document.createParagraph()
+            val pNote = createPara()
             pNote.spacingAfter = 200
             val rNote = pNote.createRun()
             rNote.fontFamily = "微软雅黑"
@@ -133,19 +161,23 @@ object DocxTeachingPlanRenderer {
 
         val teachingApproach = data.path("teachingApproach").asText()
         if (teachingApproach.isNotBlank()) {
-            addSectionTitle(document, "5. 教学思路总结")
-            addTextParagraphs(document, teachingApproach)
+            addSectionTitle(createPara, "5. 教学思路总结")
+            addTextParagraphs(createPara, teachingApproach)
         }
 
         val planRisk = data.path("planRisk").asText()
         if (planRisk.isNotBlank()) {
-            addSectionTitle(document, "6. 方案风险提示")
-            addTextParagraphs(document, planRisk)
+            addSectionTitle(createPara, "6. 方案风险提示")
+            addTextParagraphs(createPara, planRisk)
+        }
+        
+        if (targetPara != null) {
+            targetPara!!.runs.forEach { it.setText("", 0) }
         }
     }
 
-    private fun addSectionTitle(document: XWPFDocument, title: String) {
-        val p = document.createParagraph()
+    private fun addSectionTitle(createPara: () -> XWPFParagraph, title: String) {
+        val p = createPara()
         p.spacingBefore = 200
         p.spacingAfter = 100
         val r = p.createRun()
@@ -155,10 +187,10 @@ object DocxTeachingPlanRenderer {
         r.isBold = true
     }
 
-    private fun addTextParagraphs(document: XWPFDocument, text: String) {
+    private fun addTextParagraphs(createPara: () -> XWPFParagraph, text: String) {
         text.split("\n").forEach { line ->
             if (line.isNotBlank()) {
-                val p = document.createParagraph()
+                val p = createPara()
                 p.spacingAfter = 100
                 p.indentationLeft = 300
                 val r = p.createRun()

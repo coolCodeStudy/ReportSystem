@@ -1206,9 +1206,24 @@
                     const payload = {};
                     for (const subj in this.assessments) {
                         const src = this.assessments[subj];
+                        
+                        let hasPaper = false;
+                        src.paperAnalysis.forEach(row => {
+                            if ((row.status !== 'NA' && row.status !== 'N/A') || row.text.trim() !== '') {
+                                hasPaper = true;
+                            }
+                        });
+                        
+                        let hasCause = src.causeAnalysis && src.causeAnalysis.length > 0;
+                        
+                        // If completely untouched, skip entirely so backend knows it's skipped
+                        if ((src.score === null || src.score === '') && !hasPaper && !hasCause) {
+                            continue;
+                        }
+
                         const subjData = {
                             testType: src.examType,
-                            score: parseFloat(src.score) || 0,
+                            score: src.score === null || src.score === '' ? null : (parseFloat(src.score) || 0),
                             total: parseFloat(src.total) || 0,
                             rate: src.rate,
                             level: src.level,
