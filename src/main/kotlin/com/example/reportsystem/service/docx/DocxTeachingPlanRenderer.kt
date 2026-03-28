@@ -4,12 +4,13 @@ import org.apache.poi.xwpf.usermodel.*
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth
 import java.math.BigInteger
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.example.reportsystem.repository.SystemConfigRepository
 import com.example.reportsystem.repository.TeachingPlanRepository
 import com.example.reportsystem.repository.TextbookConfigRepository
 
 object DocxTeachingPlanRenderer {
 
-    fun render(document: XWPFDocument, teachingPlanDataJson: String, teachingPlanRepository: TeachingPlanRepository, textbookConfigRepository: TextbookConfigRepository) {
+    fun render(document: XWPFDocument, teachingPlanDataJson: String, teachingPlanRepository: TeachingPlanRepository, textbookConfigRepository: TextbookConfigRepository, systemConfigRepository: SystemConfigRepository) {
         val mapper = jacksonObjectMapper()
         val data = try {
             mapper.readTree(teachingPlanDataJson)
@@ -179,6 +180,67 @@ object DocxTeachingPlanRenderer {
             }
         }
 
+        // --- 师资简介：从全局配置读取 ---
+        val teacherIntrosJson = systemConfigRepository.findByConfigKey("GLOBAL_TEACHER_INTRODUCTIONS")?.configValue
+        if (!teacherIntrosJson.isNullOrBlank()) {
+            try {
+                val items = mapper.readTree(teacherIntrosJson)
+                if (items.isArray && items.size() > 0) {
+                    addSectionTitle(createPara, "师资简介")
+                    items.forEach { item ->
+                        val level = item.path("level").asText()
+                        val desc = item.path("desc").asText()
+                        if (level.isNotBlank()) {
+                            // 级别名称：加粗小标题
+                            val lp = createPara()
+                            lp.spacingBefore = 150
+                            lp.spacingAfter = 60
+                            lp.indentationLeft = 300
+                            val lr = lp.createRun()
+                            lr.setText(level)
+                            lr.fontFamily = "微软雅黑"
+                            lr.fontSize = 10
+                            lr.isBold = true
+                        }
+                        if (desc.isNotBlank()) {
+                            addTextParagraphs(createPara, desc)
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                System.err.println("Failed to render teacher intros: ${e.message}")
+            }
+        }
+
+        fun addStarredSectionTitle(title: String) {
+            val tp = createPara()
+            tp.spacingBefore = 200
+            tp.spacingAfter = 100
+            val starRun = tp.createRun()
+            starRun.setText("★ ")
+            starRun.fontFamily = "微软雅黑"
+            starRun.fontSize = 12
+            starRun.isBold = true
+            starRun.color = "ED7D31" // Orange-red star
+            val titleRun = tp.createRun()
+            titleRun.setText(title)
+            titleRun.fontFamily = "微软雅黑"
+            titleRun.fontSize = 12
+            titleRun.isBold = true
+            titleRun.color = "000000"
+        }
+
+        // --- 教学思路：优先使用该学生的教学思路数据，若为空则从全局模板配置兜底读取 ---
+        var finalTeachingApproach = data.path("teachingApproach").asText()
+        if (finalTeachingApproach.isBlank()) {
+            finalTeachingApproach = systemConfigRepository.findByConfigKey("GLOBAL_TEACHING_APPROACH_TEMPLATE")?.configValue ?: ""
+        }
+        
+        if (finalTeachingApproach.isNotBlank()) {
+            addStarredSectionTitle("教学思路")
+            addTextParagraphs(createPara, finalTeachingApproach)
+        }
+
         val selectedPlanIdsArray = data.path("selectedPlanIds")
         if (selectedPlanIdsArray.isArray && selectedPlanIdsArray.size() > 0) {
             val ids = selectedPlanIdsArray.map { it.asLong() }
@@ -221,15 +283,27 @@ object DocxTeachingPlanRenderer {
             }
         }
 
-        val teachingApproach = data.path("teachingApproach").asText()
-        if (teachingApproach.isNotBlank()) {
-            addSectionTitle(createPara, "教学思路总结")
-            addTextParagraphs(createPara, teachingApproach)
+        // --- 助教课打卡清单：从全局配置读取 ---
+        val teachingChecklistTemplate = systemConfigRepository.findByConfigKey("GLOBAL_TEACHING_CHECKLIST_TEMPLATE")?.configValue
+        if (!teachingChecklistTemplate.isNullOrBlank()) {
+            addStarredSectionTitle("助教课打卡清单")
+            addTextParagraphs(createPara, teachingChecklistTemplate.removePrefix("助教课打卡清单").trim())
         }
 
-        val planRisk = data.path("planRisk").asText()
+        // --- 课程频次：从全局配置读取 ---
+        val courseFrequencyTemplate = systemConfigRepository.findByConfigKey("GLOBAL_COURSE_FREQUENCY_TEMPLATE")?.configValue
+        if (!courseFrequencyTemplate.isNullOrBlank()) {
+            addStarredSectionTitle("课程频次")
+            addTextParagraphs(createPara, courseFrequencyTemplate.removePrefix("课程频次").trim())
+        }
+
+        var planRisk = data.path("planRisk").asText()
+        if (planRisk.isBlank()) {
+            planRisk = systemConfigRepository.findByConfigKey("GLOBAL_PLAN_RISK_TEMPLATE")?.configValue ?: ""
+        }
+        
         if (planRisk.isNotBlank()) {
-            addSectionTitle(createPara, "方案风险提示")
+            addStarredSectionTitle("方案风险提示")
             addTextParagraphs(createPara, planRisk)
         }
         

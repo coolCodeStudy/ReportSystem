@@ -290,6 +290,123 @@ class SystemInitRunner(
         }
 
 
+        // Initialize global teacher introductions
+        if (systemConfigRepository.findByConfigKey("GLOBAL_TEACHER_INTRODUCTIONS") == null) {
+            val defaultTeacherIntros = """
+                [
+                  {
+                    "level": "A级别老师/储备老师",
+                    "desc": "1.专业背景：海外QS TOP10院校相关英语，二语习得，教育学或TESOL专业硕士。具备师范类专业背景，或211/985学校本科学历。具备教师资质（教师资格证，CELTA等）\n2.教龄：1-2年"
+                  },
+                  {
+                    "level": "AA级别老师",
+                    "desc": "1.专业背景：海外QS TOP10院校相关英语，二语习得，教育学或TESOL专业硕士。具备师范类专业背景，或211/985学校本科学历。具备教师资质（教师资格证，CELTA等）\n2. 教龄：3年及以上国际课程授课经验，擅长基础英语教学"
+                  },
+                  {
+                    "level": "AAA级别老师",
+                    "desc": "1.专业背景：海外QS TOP10院校相关英语，二语习得，教育学或TESOL专业硕士。具备师范类专业背景，或211/985学校本科学历。具备教师资质（教师资格证，CELTA等）\n2. 教龄：8年及以上国际课程授课经验，具备丰富的国际学校入学备考经验，陪伴超过50名学生顺利拿到国际高中入学考试offer"
+                  }
+                ]
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_TEACHER_INTRODUCTIONS", configValue = defaultTeacherIntros))
+            println("=== Initialized global teacher introductions ===")
+        }
+
+        // Initialize default teaching checklist template
+        if (systemConfigRepository.findByConfigKey("GLOBAL_TEACHING_CHECKLIST_TEMPLATE") == null) {
+            val defaultChecklist = """
+助教课打卡清单
+A. Quizlet 单词打卡
+B. Reading Explorer 2 阅读打卡
+C. 听力听写与跟读打卡
+D. 口语打卡
+E. 精听打卡
+每课学习词汇：50-70
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_TEACHING_CHECKLIST_TEMPLATE", configValue = defaultChecklist))
+            println("=== Initialized global teaching checklist template ===")
+        }
+
+        // Initialize default course frequency template
+        if (systemConfigRepository.findByConfigKey("GLOBAL_COURSE_FREQUENCY_TEMPLATE") == null) {
+            val defaultFrequency = "课程频次\n根据备考节奏确定"
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_COURSE_FREQUENCY_TEMPLATE", configValue = defaultFrequency))
+            println("=== Initialized global course frequency template ===")
+        }
+
+        // Initialize default plan risk template
+        if (systemConfigRepository.findByConfigKey("GLOBAL_PLAN_RISK_TEMPLATE") == null) {
+            val defaultPlanRisk = """
+1. 课堂参与度低，缺乏互动
+原因：由于学生不积极参与课堂互动，通常只用单个词汇和短语回答问题，他们可能没有意识到英语学习不仅仅是做作业，更多的是通过交流和实践来掌握语言。如果课堂上学生不参与讨论或互动，也没有积极主动地提问或回答问题，老师很难通过互动了解学生的真正水平和理解情况。
+
+影响：学生没有通过实际应用英语来巩固所学的知识，因此，尽管可能学了一些词汇和语法，实际上他们并没有真正内化这些内容，导致学习效果不佳。
+
+解决方案：
+·  采用互动式教学法：通过小组讨论、角色扮演、模拟场景等方式，增加学生的课堂互动和参与感。这样可以鼓励学生主动开口说英语，逐步提高他们的语言输出能力。
+·  鼓励学生提问：让学生感到课堂是一个开放和友好的空间，鼓励他们提问，并给予充分的时间和耐心回答。
+
+2. 对学习目标和内容的认知不清
+原因：如果课程目标不够明确或没有与学生的需求和兴趣紧密结合，学生可能无法理解学习内容对自己未来的价值，导致他们缺乏学习的动力和目标感。尤其是学术英语的引入，如果没有适当的过渡，学生可能觉得这些内容过于遥远或者不相关。
+
+影响：学生无法看到自己的学习成果，导致他们对学习产生挫败感，甚至可能认为学习英语没有实际意义，从而产生抗拒心理。
+
+解决方案：
+·  与学生的实际生活结合：通过引导学生理解英语学习与他们未来生活的关系，例如留学、旅行、职业发展等，让学生看到英语在实际生活中的应用，增加学习的现实意义。
+·  引导学生设定个人学习目标：让学生根据自己的兴趣和未来的计划设定个人的英语学习目标，并与他们讨论如何通过英语达成这些目标。这样，学生会更有动力去学习英语。
+
+3. 时间管理和学习安排不当
+原因：很多学生可能缺乏有效的时间管理和学习规划能力，尤其是在初中阶段，可能还未完全适应自主学习的方式。如果学生没有每天定期学习的习惯，或者没有按时完成作业，会造成学习进度缓慢，错过了必要的复习和巩固时间。
+
+影响：学习进度滞后，学生没有足够的时间进行系统复习和巩固，导致知识点没有牢固掌握，学习成果自然无法呈现出来。
+
+解决方案：
+·  制定学习计划：帮助学生制定具体的学习计划，并在计划中细化每周和每日的任务。例如，每天安排15-20分钟的英语学习时间，帮助学生养成规律的学习习惯。
+·  定期检查学习进度：每周和学生回顾一次他们的学习进度，了解他们是否按计划执行。如果有延误，及时调整计划并帮助学生解决遇到的问题。
+
+4. 课外作业和任务拖延
+原因：学生缺乏学习主动性和自律性，常常拖延作业和学习任务，只有在老师催促时才会去做。尤其是对于一些低自我驱动的学生，他们可能并没有建立起自觉完成作业的良好习惯，导致任务不能按时完成，影响课程的进展。
+
+影响：作业和任务的拖延导致学生无法及时巩固课堂上学到的知识，缺乏持续的复习和练习，最终会影响他们的英语能力提高，无法按计划取得学习成果。
+
+解决方案：
+·  分阶段的作业设计：避免布置过多的任务或过长的作业，而是将作业拆分成小的部分，并设定明确的截止时间。每次任务完成后，及时给予反馈，帮助学生保持动力。
+·  强化作业的即时反馈：及时批改作业并与学生进行一对一反馈，帮助学生了解自己的不足，并提供具体的改进建议。及时的反馈能让学生看到自己的进步，同时避免出现拖延现象。
+
+5. 对错误和反馈的抵触情绪
+原因：一些学生对自己犯的错误感到羞愧或者不喜欢被指出错误，尤其是当错误频繁发生时，他们可能产生消极情绪，不愿意接受反馈或纠正。这种情绪可能使他们回避做作业或者不认真复习。
+
+影响：如果学生没有积极接受错误反馈，并加以改正，他们的学习进度就会受到阻碍。错误如果没有及时纠正，容易加深记忆错误，影响学生的长远学习效果。
+
+解决方案：
+·  鼓励错误是学习的一部分：要让学生认识到犯错是学习过程中的一部分，是进步的必要条件。在课堂上，老师可以通过正向的语言帮助学生从错误中学习，而不是批评或责备。
+·  积极反馈和鼓励：通过提供具体的、建设性的反馈来帮助学生改正错误。反馈时要指出学生做得好的地方，并给出改善建议。这样能帮助学生建立自信，减少对错误的负面情绪。
+·  让学生自己发现错误：通过引导学生自己找到错误并进行改正，不仅能够增强他们的学习自主性，还能帮助他们更深刻地理解所学内容。
+
+6. 家庭支持不足
+原因：家庭环境对学生学习有很大的影响。如果家长对学生的英语学习不够重视，或者没有提供适当的支持和激励，学生可能缺乏外部的监督和鼓励，导致学习动力减弱。尤其是在学生课外学习时，家长的监督和配合非常重要。
+
+影响：没有足够的家庭支持，学生可能缺乏学习的动力和约束，难以按计划完成作业或进行有效的学习，进而影响整体学习成果。
+
+7. 学习压力过大导致的焦虑
+原因：有些学生可能会感到英语学习的压力过大，尤其是在面对较为困难的学术英语内容时。如果学生因为某些任务或目标感到焦虑，他们可能选择逃避学习，甚至不愿意面对课堂上的挑战。
+
+影响：学生无法正面应对挑战，甚至可能因焦虑产生情绪问题，从而影响学习表现和结果。如果教学方法过于急功近利，也可能加剧学生的压力。
+解决方法：
+关注学生的心理状态：定期与学生交流，了解他们的情绪和心理状况，尤其是在面对学业压力时。帮助学生学会管理学习压力，保持积极的心态。
+
+8. 外部因素（如健康问题、情绪波动等）
+原因：学生在学习过程中可能会因为身体健康问题、家庭压力、心理情绪问题等外部因素，导致无法集中注意力，影响学习效率。这些因素可能不容易察觉，但却会对学习产生很大影响。
+
+影响：情绪不佳或健康问题会导致学生的学习注意力和效率下降，无法按计划进行学习和任务完成，学习进展自然会受到影响。
+
+解决方法：
+关注学生的心理状态：定期与学生交流，了解他们的情绪和心理状况，尤其是在面对学业压力时。帮助学生学会管理学习压力，保持积极的心态。
+            """.trimIndent()
+            systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_PLAN_RISK_TEMPLATE", configValue = defaultPlanRisk))
+            println("=== Initialized global plan risk template ===")
+        }
+
         // Initialize default student types if the table is empty
         if (studentTypeDictionaryRepository.count() == 0L) {
             val defaults = listOf(

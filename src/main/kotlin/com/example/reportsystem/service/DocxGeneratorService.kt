@@ -172,7 +172,7 @@ G11,,1225L,17500,,,,,,
         com.example.reportsystem.service.docx.DocxAssessmentAnalysisRenderer.render(document, assessmentResultsJson)
 
         if (!teachingPlanDataJson.isNullOrBlank() && teachingPlanDataJson != "{}") {
-            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository)
+            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository, systemConfigRepository)
         }
 
         val out = ByteArrayOutputStream()

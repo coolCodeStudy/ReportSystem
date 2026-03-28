@@ -246,6 +246,32 @@
                                                 </div>
                                             </div>
 
+                                            <!-- 助教课打卡清单模板 -->
+                                            <div class="col-md-12 mb-4">
+                                                <div class="card">
+                                                    <div class="card-header bg-white">
+                                                        <span class="fw-bold">助教课打卡清单模板</span>
+                                                        <span class="text-muted small ms-2">导出报告时，将在教学计划大纲后自动附上此打卡清单。</span>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <textarea class="form-control" rows="6" x-model="teachingChecklistTemplate" placeholder="例如：A. Quizlet 单词打卡&#10;B. Reading Explorer 2 阅读打卡..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 课程频次模板 -->
+                                            <div class="col-md-12 mb-4">
+                                                <div class="card">
+                                                    <div class="card-header bg-white">
+                                                        <span class="fw-bold">课程频次模板</span>
+                                                        <span class="text-muted small ms-2">导出报告时，将在打卡清单后自动附上此课程频次说明。</span>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <textarea class="form-control" rows="4" x-model="courseFrequencyTemplate" placeholder="例如：根据备考节奏确定"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <!-- 方案风险模板 -->
                                             <div class="col-md-12">
                                                 <div class="card">
@@ -516,6 +542,8 @@
                 teacherIntros: [],
                 bookIntros: [],
                 teachingApproachTemplate: '',
+                teachingChecklistTemplate: '',
+                courseFrequencyTemplate: '',
                 planRiskTemplate: '',
                 alertMsg: '',
                 saving: false,
@@ -533,11 +561,15 @@
                         fetchConfig('GLOBAL_TEACHER_INTRODUCTIONS'),
                         fetchConfig('GLOBAL_TEXTBOOK_INTRODUCTIONS'),
                         fetchConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE'),
+                        fetchConfig('GLOBAL_TEACHING_CHECKLIST_TEMPLATE'),
+                        fetchConfig('GLOBAL_COURSE_FREQUENCY_TEMPLATE'),
                         fetchConfig('GLOBAL_PLAN_RISK_TEMPLATE')
-                    ]).then(([teacherData, bookData, approachData, riskData]) => {
+                    ]).then(([teacherData, bookData, approachData, checklistData, frequencyData, riskData]) => {
                         try { this.teacherIntros = teacherData ? JSON.parse(teacherData) : []; } catch (e) { this.teacherIntros = []; }
                         try { this.bookIntros = bookData ? JSON.parse(bookData) : []; } catch (e) { this.bookIntros = []; }
                         this.teachingApproachTemplate = approachData || '';
+                        this.teachingChecklistTemplate = checklistData || '';
+                        this.courseFrequencyTemplate = frequencyData || '';
                         this.planRiskTemplate = riskData || '';
                     });
                 },
@@ -567,6 +599,8 @@
                             saveConfig('GLOBAL_TEACHER_INTRODUCTIONS', this.teacherIntros.length ? JSON.stringify(this.teacherIntros) : ''),
                             saveConfig('GLOBAL_TEXTBOOK_INTRODUCTIONS', this.bookIntros.length ? JSON.stringify(this.bookIntros) : ''),
                             saveConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE', this.teachingApproachTemplate),
+                            saveConfig('GLOBAL_TEACHING_CHECKLIST_TEMPLATE', this.teachingChecklistTemplate),
+                            saveConfig('GLOBAL_COURSE_FREQUENCY_TEMPLATE', this.courseFrequencyTemplate),
                             saveConfig('GLOBAL_PLAN_RISK_TEMPLATE', this.planRiskTemplate)
                         ]);
                         this.alertMsg = '配置已成功保存！';
