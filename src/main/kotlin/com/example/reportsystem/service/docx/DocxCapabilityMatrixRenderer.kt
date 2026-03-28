@@ -96,7 +96,8 @@ G11,,1225L,17500,,,,,,
 
                 val rowDataForDisplay = if (selectedIndices != null) selectedIndices.map { fullRow.getOrNull(it) ?: "" } else fullRow
 
-                buildDataRow(table, filteredHeaders.size, rowDataForDisplay, isTargetLevel, isTargetGrade, isGradeRow, isLastDataRow = idx == fullRowsToRender.size - 1)
+                buildDataRow(table, filteredHeaders.size, rowDataForDisplay, isTargetLevel, isTargetGrade, isGradeRow,
+                    isLastDataRow = idx == fullRowsToRender.size - 1)
             }
         }
 
@@ -135,8 +136,10 @@ G11,,1225L,17500,,,,,,
         val row = table.createRow()
         headers.forEachIndexed { i, colHeader ->
             val cell = DocxStyleUtils.getOrCreateCell(row, i)
-            DocxStyleUtils.setCellText(cell, colHeader, bold = true)
-            DocxStyleUtils.setCellShading(cell, "4472C4")
+            DocxStyleUtils.setCellText(cell, colHeader, bold = true, fontSize = 8)
+            // 紧凑内边距（2pt 上下）
+            cell.paragraphs.forEach { p -> p.spacingBefore = 40; p.spacingAfter = 40 }
+            DocxStyleUtils.setCellShading(cell, "4472C4") // 恢复原始的蓝色主色调
             DocxStyleUtils.setCellTextColor(cell, "FFFFFF")
             DocxStyleUtils.setCellAlignment(cell, ParagraphAlignment.CENTER)
             DocxStyleUtils.setCellBorders(cell, isHeader = true, isFirstRow = true, isLastRow = false, isFirstCol = (i == 0), isLastCol = (i == headers.size - 1))
@@ -163,7 +166,9 @@ G11,,1225L,17500,,,,,,
         for (i in 0 until colCount) {
             val cellValue = rowData.getOrNull(i) ?: ""
             val cell = DocxStyleUtils.getOrCreateCell(row, i)
-            DocxStyleUtils.setCellText(cell, cellValue, bold = false)
+            DocxStyleUtils.setCellText(cell, cellValue, bold = false, fontSize = 8)
+            // 紧凑内边距（2pt 上下）
+            cell.paragraphs.forEach { p -> p.spacingBefore = 40; p.spacingAfter = 40 }
             DocxStyleUtils.setCellShading(cell, bgColor)
             DocxStyleUtils.setCellAlignment(cell, ParagraphAlignment.CENTER)
             DocxStyleUtils.setCellBorders(cell, isHeader = false, isFirstRow = false, isLastRow = isLastDataRow, isFirstCol = (i == 0), isLastCol = (i == colCount - 1))

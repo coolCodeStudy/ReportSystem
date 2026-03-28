@@ -131,13 +131,13 @@ G11,,1225L,17500,,,,,,
                 parts.forEachIndexed { index, part ->
                     if (index == 0) {
                         val titleRun = targetPara.createRun()
-                        titleRun.fontFamily = "微软雅黑"
+                        titleRun.fontFamily = com.example.reportsystem.service.docx.DocxStyleUtils.FONT_MAIN
                         titleRun.fontSize = 10
                         titleRun.isBold = true
                         titleRun.setText("测评说明：")
                         
                         val textRun = targetPara.createRun()
-                        textRun.fontFamily = "微软雅黑"
+                        textRun.fontFamily = com.example.reportsystem.service.docx.DocxStyleUtils.FONT_MAIN
                         textRun.fontSize = 10
                         textRun.setText(part)
                     } else {
@@ -154,14 +154,14 @@ G11,,1225L,17500,,,,,,
                         lastPara = newPara
                         
                         val textRun = newPara.createRun()
-                        textRun.fontFamily = "微软雅黑"
+                        textRun.fontFamily = com.example.reportsystem.service.docx.DocxStyleUtils.FONT_MAIN
                         textRun.fontSize = 10
                         textRun.setText(part)
                     }
                 }
             } else {
                 val titleRun = targetPara.createRun()
-                titleRun.fontFamily = "微软雅黑"
+                titleRun.fontFamily = com.example.reportsystem.service.docx.DocxStyleUtils.FONT_MAIN
                 titleRun.fontSize = 10
                 titleRun.isBold = true
                 titleRun.setText("测评说明：")

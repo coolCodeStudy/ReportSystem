@@ -6,12 +6,38 @@ import java.math.BigInteger
 
 object DocxStyleUtils {
 
+    // ── 字体系统 ──────────────────────────────────────────────
+    const val FONT_MAIN = "微软雅黑"       // 全文唯一正文字体
+
+    // ── 间距系统（单位：twentieths of a point，即 1pt = 20）────
+    // 三档固定间距，杜绝"6种间距并存"的混乱
+    const val SPACING_BODY    = 100  //  5pt — 正文段后
+    const val SPACING_SECTION = 240  // 12pt — ✦ 小节标题前后
+    const val SPACING_MAJOR   = 360  // 18pt — 一/二/三 大节标题前
+
+    // ── 品牌色值定义 ─────────────────────────────────────────
+    val THEME_PRIMARY  = "4A60BA"     // 克莱因蓝主色
+    val THEME_BG_LIGHT = "F8F9FA"     // 极浅灰底（斑马纹白）
+    val THEME_BG_DARK  = "F1F3F5"     // 稍深灰底（斑马纹灰）
+    val THEME_ACCENT   = "ED7D31"     // 重点强调色（橙）
+    val BORDER_GREY    = "E9ECEF"     // 浅灰内边框
+
     fun getOrCreateCell(row: XWPFTableRow, index: Int): XWPFTableCell {
         return row.getCell(index) ?: row.addNewTableCell()
     }
 
-    fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean = false, color: String? = null, fontSize: Int = 9) {
+    fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean = false, color: String? = null, fontSize: Int = 10) {
         val para = cell.paragraphs.firstOrNull() ?: cell.addParagraph()
+        
+        // 赋予表内呼吸感行距
+        para.spacingBefore = 60
+        para.spacingAfter = 60
+        // Set basic line spacing equivalent to ~1.2
+        if (para.ctp.pPr == null) para.ctp.addNewPPr()
+        if (para.ctp.pPr.spacing == null) para.ctp.pPr.addNewSpacing()
+        para.ctp.pPr.spacing.line = BigInteger.valueOf(280) // ~14pt 行高，完美契合 10pt/9pt 字体
+        para.ctp.pPr.spacing.lineRule = org.openxmlformats.schemas.wordprocessingml.x2006.main.STLineSpacingRule.EXACT
+
         para.runs.forEach { it.setText("", 0) }
         val run = if (para.runs.isEmpty()) para.createRun() else para.runs[0]
         
@@ -25,7 +51,7 @@ object DocxStyleUtils {
         
         run.isBold = bold
         run.fontSize = fontSize
-        run.fontFamily = "微软雅黑"
+        run.fontFamily = FONT_MAIN
         if (color != null) {
             run.setColor(color)
         }
@@ -35,10 +61,11 @@ object DocxStyleUtils {
         val tcPr = cell.ctTc.tcPr ?: cell.ctTc.addNewTcPr()
         val tcBorders = tcPr.tcBorders ?: tcPr.addNewTcBorders()
 
+        // 使用极品灰或透白边框，消除黑线
         fun setW(border: org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder) {
             border.`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder.SINGLE
             border.color = "FFFFFF"
-            border.sz = BigInteger.valueOf(12)
+            border.sz = BigInteger.valueOf(8)
             border.space = BigInteger.ZERO
         }
 
@@ -46,6 +73,39 @@ object DocxStyleUtils {
         setW(tcBorders.bottom ?: tcBorders.addNewBottom())
         setW(tcBorders.left ?: tcBorders.addNewLeft())
         setW(tcBorders.right ?: tcBorders.addNewRight())
+    }
+
+    fun setZebraBorders(cell: XWPFTableCell, isHeader: Boolean = false, isLast: Boolean = false) {
+        val tcPr = cell.ctTc.tcPr ?: cell.ctTc.addNewTcPr()
+        val tcBorders = tcPr.tcBorders ?: tcPr.addNewTcBorders()
+
+        fun setBorder(border: org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder, colorStr: String, size: Long = 4) {
+            border.`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder.SINGLE
+            border.color = colorStr
+            border.sz = BigInteger.valueOf(size)
+            border.space = BigInteger.ZERO
+        }
+        
+        fun removeBorder(border: org.openxmlformats.schemas.wordprocessingml.x2006.main.CTBorder) {
+            border.`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STBorder.NONE
+            border.sz = BigInteger.ZERO
+            border.space = BigInteger.ZERO
+        }
+
+        removeBorder(tcBorders.left ?: tcBorders.addNewLeft())
+        removeBorder(tcBorders.right ?: tcBorders.addNewRight())
+
+        if (isHeader) {
+            setBorder(tcBorders.top ?: tcBorders.addNewTop(), THEME_PRIMARY, 12)
+            setBorder(tcBorders.bottom ?: tcBorders.addNewBottom(), THEME_PRIMARY, 12)
+        } else {
+            setBorder(tcBorders.top ?: tcBorders.addNewTop(), BORDER_GREY, 4)
+            if (isLast) {
+                setBorder(tcBorders.bottom ?: tcBorders.addNewBottom(), BORDER_GREY, 8)
+            } else {
+                setBorder(tcBorders.bottom ?: tcBorders.addNewBottom(), BORDER_GREY, 4)
+            }
+        }
     }
 
     fun setCellShading(cell: XWPFTableCell, hexColor: String) {

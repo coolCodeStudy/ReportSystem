@@ -98,8 +98,8 @@ object DocxTeachingPlanRenderer {
                 val headers = listOf("阶段", "时长", "目标", "教材", "预计课时")
                 headers.forEachIndexed { col, text ->
                     DocxStyleUtils.setCellText(headerRow.getCell(col), text, bold = true, color = "FFFFFF", fontSize = 10)
-                    DocxStyleUtils.setCellShading(headerRow.getCell(col), "002060")
-                    DocxStyleUtils.setWhiteBorders(headerRow.getCell(col))
+                    DocxStyleUtils.setCellShading(headerRow.getCell(col), DocxStyleUtils.THEME_PRIMARY)
+                    DocxStyleUtils.setZebraBorders(headerRow.getCell(col), isHeader = true)
                 }
 
                 validRowData.forEachIndexed { index, rowNode ->
@@ -113,8 +113,8 @@ object DocxTeachingPlanRenderer {
                     )
                     cellsText.forEachIndexed { col, text ->
                         DocxStyleUtils.setCellText(row.getCell(col), text, bold = false, fontSize = 9)
-                        DocxStyleUtils.setCellShading(row.getCell(col), if (index % 2 == 0) "F2F2F2" else "FFFFFF")
-                        DocxStyleUtils.setWhiteBorders(row.getCell(col))
+                        DocxStyleUtils.setCellShading(row.getCell(col), if (index % 2 == 0) DocxStyleUtils.THEME_BG_LIGHT else "FFFFFF")
+                        DocxStyleUtils.setZebraBorders(row.getCell(col), isLast = false)
                     }
                 }
                 
@@ -135,19 +135,19 @@ object DocxTeachingPlanRenderer {
                 val totalText = phaseTotals.joinToString("\n")
                 
                 DocxStyleUtils.setCellText(totalRow.getCell(0), "预计总课时", bold = true, color = "FFFFFF", fontSize = 10)
-                DocxStyleUtils.setCellShading(totalRow.getCell(0), "002060")
-                DocxStyleUtils.setWhiteBorders(totalRow.getCell(0))
+                DocxStyleUtils.setCellShading(totalRow.getCell(0), DocxStyleUtils.THEME_PRIMARY)
+                DocxStyleUtils.setZebraBorders(totalRow.getCell(0), isHeader = false, isLast = true)
                 
                 val cell1 = totalRow.getCell(1)
                 cell1.ctTc.addNewTcPr().addNewHMerge().`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge.RESTART
                 DocxStyleUtils.setCellText(cell1, totalText, bold = false, fontSize = 9)
-                DocxStyleUtils.setCellShading(cell1, "D9E2F3")
-                DocxStyleUtils.setWhiteBorders(cell1)
+                DocxStyleUtils.setCellShading(cell1, "E9EDF6")
+                DocxStyleUtils.setZebraBorders(cell1, isHeader = false, isLast = true)
                 
                 for (col in 2..4) {
                     val c = totalRow.getCell(col) ?: totalRow.addNewTableCell()
                     c.ctTc.addNewTcPr().addNewHMerge().`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge.CONTINUE
-                    DocxStyleUtils.setWhiteBorders(c)
+                    DocxStyleUtils.setZebraBorders(c, isHeader = false, isLast = true)
                 }
                 
                 createPara().spacingAfter = 100
@@ -214,20 +214,21 @@ object DocxTeachingPlanRenderer {
 
         fun addStarredSectionTitle(title: String) {
             val tp = createPara()
-            tp.spacingBefore = 200
-            tp.spacingAfter = 100
+            tp.style = "3"                             // Word Heading 3 样式
+            tp.spacingBefore = DocxStyleUtils.SPACING_SECTION
+            tp.spacingAfter = DocxStyleUtils.SPACING_BODY
             val starRun = tp.createRun()
-            starRun.setText("★ ")
-            starRun.fontFamily = "微软雅黑"
+            starRun.setText("✦ ")
+            starRun.fontFamily = DocxStyleUtils.FONT_MAIN
             starRun.fontSize = 12
             starRun.isBold = true
-            starRun.color = "ED7D31" // Orange-red star
+            starRun.color = DocxStyleUtils.THEME_ACCENT
             val titleRun = tp.createRun()
             titleRun.setText(title)
-            titleRun.fontFamily = "微软雅黑"
+            titleRun.fontFamily = DocxStyleUtils.FONT_MAIN
             titleRun.fontSize = 12
             titleRun.isBold = true
-            titleRun.color = "000000"
+            titleRun.color = DocxStyleUtils.THEME_PRIMARY
         }
 
         // --- 教学思路：优先使用该学生的教学思路数据，若为空则从全局模板配置兜底读取 ---
@@ -261,8 +262,8 @@ object DocxTeachingPlanRenderer {
                     DocxStyleUtils.setCellText(headerRow.getCell(3), "学习目标", bold = true, color = "FFFFFF", fontSize = 10)
                     
                     headerRow.tableCells.forEach {
-                        DocxStyleUtils.setCellShading(it, "002060")
-                        DocxStyleUtils.setWhiteBorders(it)
+                        DocxStyleUtils.setCellShading(it, DocxStyleUtils.THEME_PRIMARY)
+                        DocxStyleUtils.setZebraBorders(it, isHeader = true)
                     }
 
                     plans.forEachIndexed { index, plan ->
@@ -272,9 +273,10 @@ object DocxTeachingPlanRenderer {
                         DocxStyleUtils.setCellText(row.getCell(2), plan.courseContent ?: "", bold = false, fontSize = 9)
                         DocxStyleUtils.setCellText(row.getCell(3), plan.learningObjectives ?: "", bold = false, fontSize = 9)
                         
+                        val isLastDataRow = index == plans.size - 1
                         row.tableCells.forEach {
-                            DocxStyleUtils.setCellShading(it, if (index % 2 == 0) "F2F2F2" else "FFFFFF")
-                            DocxStyleUtils.setWhiteBorders(it)
+                            DocxStyleUtils.setCellShading(it, if (index % 2 == 0) DocxStyleUtils.THEME_BG_LIGHT else "FFFFFF")
+                            DocxStyleUtils.setZebraBorders(it, isLast = isLastDataRow)
                             DocxStyleUtils.setCellAlignment(it, ParagraphAlignment.LEFT)
                         }
                     }
@@ -314,25 +316,53 @@ object DocxTeachingPlanRenderer {
 
     private fun addSectionTitle(createPara: () -> XWPFParagraph, title: String) {
         val p = createPara()
-        p.spacingBefore = 200
-        p.spacingAfter = 100
+        p.style = "2"                              // Word Heading 2 样式（使大纲可识别、可生成目录）
+        p.spacingBefore = DocxStyleUtils.SPACING_MAJOR
+        p.spacingAfter = DocxStyleUtils.SPACING_BODY
         val r = p.createRun()
         r.setText(title)
-        r.fontFamily = "微软雅黑"
+        r.fontFamily = DocxStyleUtils.FONT_MAIN
         r.fontSize = 12
         r.isBold = true
+        r.color = DocxStyleUtils.THEME_PRIMARY
     }
 
     private fun addTextParagraphs(createPara: () -> XWPFParagraph, text: String) {
+        val pattern = Regex("^((\\d+\\.[\\s\\S]*?[：:]|【[\\s\\S]*?】[：:]?))(.*)$")
         text.split("\n").forEach { line ->
             if (line.isNotBlank()) {
                 val p = createPara()
-                p.spacingAfter = 100
+                p.spacingAfter = DocxStyleUtils.SPACING_BODY
                 p.indentationLeft = 300
-                val r = p.createRun()
-                r.setText(line.trim())
-                r.fontFamily = "微软雅黑"
-                r.fontSize = 10
+                
+                // 固定抗网格化行距，让这些大段文字具有阅读呼吸感
+                if (p.ctp.pPr == null) p.ctp.addNewPPr()
+                if (p.ctp.pPr.spacing == null) p.ctp.pPr.addNewSpacing()
+                p.ctp.pPr.spacing.line = BigInteger.valueOf(300) // 15pt
+                p.ctp.pPr.spacing.lineRule = org.openxmlformats.schemas.wordprocessingml.x2006.main.STLineSpacingRule.EXACT
+                
+                val trimmedLine = line.trim()
+                val match = pattern.find(trimmedLine)
+                if (match != null) {
+                    // 如果匹配到诸如 "1. 词汇：" 或 "【听力】："，就加粗前半段
+                    val prefixRun = p.createRun()
+                    prefixRun.setText(match.groupValues[1])
+                    prefixRun.fontFamily = DocxStyleUtils.FONT_MAIN
+                    prefixRun.fontSize = 10
+                    prefixRun.isBold = true // 智能重点高亮
+                    prefixRun.color = DocxStyleUtils.THEME_PRIMARY // 让小标题带上主视觉色
+                    
+                    val contentRun = p.createRun()
+                    contentRun.setText(match.groupValues[3])
+                    contentRun.fontFamily = DocxStyleUtils.FONT_MAIN
+                    contentRun.fontSize = 10
+                } else {
+                    // 没有锚点的普通纯文字
+                    val r = p.createRun()
+                    r.setText(trimmedLine)
+                    r.fontFamily = DocxStyleUtils.FONT_MAIN
+                    r.fontSize = 10
+                }
             }
         }
     }
