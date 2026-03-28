@@ -123,7 +123,20 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
                                     <div class="col-md-9">
+                                        <!-- Textbook Config Card -->
+                                        <div class="card shadow-sm border-0 mb-4" id="textbookConfigCard" style="display: none;">
+                                            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                                <h6 class="mb-0 fw-bold text-secondary"><i class="bi bi-pencil-square me-2"></i> <span id="configBookNameTitle" class="text-primary">教材</span> 简介配置</h6>
+                                                <button class="btn btn-sm btn-primary px-3 shadow-sm" onclick="saveTextbookIntro()"><i class="bi bi-save me-1"></i> 保 存</button>
+                                            </div>
+                                            <div class="card-body p-4 bg-light">
+                                                <label class="form-label small fw-bold text-muted mb-2">在这本教材被排入课时规划时，此段简介将自动插入到文档中作为说明。</label>
+                                                <textarea class="form-control" id="textbookIntroInput" rows="3" placeholder="例如：该教材旨在帮助学生..."></textarea>
+                                            </div>
+                                        </div>
+
                                         <div class="card shadow-sm border-0 h-100">
                                             <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                                                 <h6 class="mb-0 fw-bold text-secondary" id="tableTitle"><i class="bi bi-table me-2"></i> 全部教学大纲</h6>
@@ -323,11 +336,81 @@
             sidebar.innerHTML = html;
         }
 
+        function getSeriesName(bookName) {
+            return bookName.split('-')[0].trim();
+        }
+
         function selectBook(bookName, event) {
             if(event) event.preventDefault();
             currentSelectedBook = bookName;
             renderBookSidebar();
             renderTable();
+            
+            const configCard = document.getElementById('textbookConfigCard');
+            if (bookName === 'ALL') {
+                if(configCard) configCard.style.display = 'none';
+            } else {
+                if(configCard) {
+                    configCard.style.display = 'block';
+                    document.getElementById('configBookNameTitle').innerText = getSeriesName(bookName) + " 系列";
+                    fetchTextbookIntro();
+                }
+            }
+        }
+
+        
+        function fetchTextbookIntro() {
+            if (currentSelectedBook === 'ALL') return;
+            const seriesName = getSeriesName(currentSelectedBook);
+            const input = document.getElementById('textbookIntroInput');
+            input.value = '加载中...';
+            input.disabled = true;
+            fetch(`/admin/api/textbook-config/${encodeURIComponent(seriesName)}`)
+                .then(res => res.json())
+                .then(res => {
+                    input.disabled = false;
+                    if (res.code === 200) {
+                        input.value = res.data || '';
+                    } else {
+                        input.value = '';
+                    }
+                })
+                .catch(e => {
+                    input.disabled = false;
+                    input.value = '';
+                });
+        }
+
+        function saveTextbookIntro() {
+            const btn = document.querySelector('#textbookConfigCard .btn-primary');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> 保存中...';
+            btn.disabled = true;
+            const intro = document.getElementById('textbookIntroInput').value;
+            fetch('/admin/api/textbook-config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bookName: getSeriesName(currentSelectedBook), introduction: intro })
+            })
+            .then(res => res.json())
+            .then(res => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                if (res.code === 200) {
+                    let btnSuccess = document.createElement('span');
+                    btnSuccess.className = "text-success ms-3 small fw-bold";
+                    btnSuccess.innerHTML = '<i class="bi bi-check-circle-fill"></i> 已保存';
+                    btn.parentNode.insertBefore(btnSuccess, btn.nextSibling);
+                    setTimeout(() => btnSuccess.remove(), 2500);
+                } else {
+                    alert('保存失败：' + res.message);
+                }
+            })
+            .catch(err => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+                alert('网络错误');
+            });
         }
 
         function deleteBook(bookName, event) {

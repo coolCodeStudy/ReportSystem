@@ -10,11 +10,19 @@ object DocxStyleUtils {
         return row.getCell(index) ?: row.addNewTableCell()
     }
 
-    fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean, color: String? = null, fontSize: Int = 9) {
+    fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean = false, color: String? = null, fontSize: Int = 9) {
         val para = cell.paragraphs.firstOrNull() ?: cell.addParagraph()
         para.runs.forEach { it.setText("", 0) }
         val run = if (para.runs.isEmpty()) para.createRun() else para.runs[0]
-        run.setText(text, 0)
+        
+        val lines = text.split("\n")
+        lines.forEachIndexed { index, line ->
+            run.setText(line)
+            if (index < lines.size - 1) {
+                run.addCarriageReturn()
+            }
+        }
+        
         run.isBold = bold
         run.fontSize = fontSize
         run.fontFamily = "微软雅黑"

@@ -18,6 +18,7 @@ class DocxGeneratorServiceTest {
     private val systemConfigRepository: SystemConfigRepository = mockk()
     private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository = mockk()
     private val teachingPlanRepository: com.example.reportsystem.repository.TeachingPlanRepository = mockk()
+    private val textbookConfigRepository: com.example.reportsystem.repository.TextbookConfigRepository = mockk()
     private lateinit var docxGeneratorService: DocxGeneratorService
 
     @BeforeEach
@@ -25,7 +26,8 @@ class DocxGeneratorServiceTest {
         docxGeneratorService = DocxGeneratorService(
             studentTypeDictionaryRepository,
             systemConfigRepository,
-            teachingPlanRepository
+            teachingPlanRepository,
+            textbookConfigRepository
         )
 
         // Mock basic configurations

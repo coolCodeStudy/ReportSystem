@@ -15,11 +15,14 @@ import java.math.BigInteger
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
+import com.example.reportsystem.repository.TextbookConfigRepository
+
 @Service
 class DocxGeneratorService(
     private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository,
     private val systemConfigRepository: SystemConfigRepository,
-    private val teachingPlanRepository: com.example.reportsystem.repository.TeachingPlanRepository
+    private val teachingPlanRepository: com.example.reportsystem.repository.TeachingPlanRepository,
+    private val textbookConfigRepository: TextbookConfigRepository
 ) {
 
     private val DEFAULT_CSV = """
@@ -169,7 +172,7 @@ G11,,1225L,17500,,,,,,
         com.example.reportsystem.service.docx.DocxAssessmentAnalysisRenderer.render(document, assessmentResultsJson)
 
         if (!teachingPlanDataJson.isNullOrBlank() && teachingPlanDataJson != "{}") {
-            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository)
+            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository)
         }
 
         val out = ByteArrayOutputStream()
