@@ -193,6 +193,26 @@
         }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+        function handleBackToIndex(e) {
+            if (window.parent && window.parent !== window && window.parent.closeWorkspaceDrawer) {
+                e.preventDefault();
+                window.parent.closeWorkspaceDrawer();
+                return false;
+            }
+            return true;
+        }
+        
+        // SweetAlert2 Setup
+        const SwalToast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
 
@@ -200,7 +220,7 @@
     <aside class="sidebar">
         <div class="sidebar-header">
             <h5 class="fw-bold mb-1 text-primary">
-                <a href="/" class="text-decoration-none"><i class="bi bi-arrow-left-circle me-2"></i>返回首页</a>
+                <a href="/" class="text-decoration-none" onclick="return handleBackToIndex(event)"><i class="bi bi-arrow-left-circle me-2"></i>返回首页</a>
             </h5>
             <small class="text-muted d-block mt-2">工作台为单次测试报告服务，当前进度会自动保存草稿。</small>
         </div>
@@ -1224,7 +1244,7 @@
                         }
                     })
                     .catch(err => {
-                        alert("保存失败，请检查网络！");
+                        Swal.fire('错误', '保存失败，请检查网络！', 'error');
                         throw err;
                     });
                 }
@@ -1446,13 +1466,13 @@
                     // Force UI transition to step 2 after save
                     switchTab('step2');
                 } else {
-                    alert('保存失败。');
+                    Swal.fire('提示', '保存失败。', 'error');
                 }
             })
             .catch(err => {
                 btn.disabled = false;
                 btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
-                alert("网络错误，保存失败。");
+                Swal.fire('提示', '网络错误，保存失败。', 'error');
             });
         }
 
@@ -1562,10 +1582,10 @@
                             this.alertMsg = '教学安排内容已保存成功！';
                             setTimeout(() => this.alertMsg='', 3000);
                         } else {
-                            alert('保存失败: ' + resData.message);
+                            Swal.fire('提示', '保存失败: ' + resData.message, 'error');
                         }
                     } catch (e) {
-                        alert('网络错误');
+                        Swal.fire('提示', '网络错误', 'error');
                     } finally {
                         this.saving = false;
                     }

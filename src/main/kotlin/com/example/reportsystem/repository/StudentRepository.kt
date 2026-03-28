@@ -9,4 +9,5 @@ interface StudentRepository : JpaRepository<Student, Long> {
     fun findFirstByNameAndSchool(name: String, school: String?): Student?
     fun findFirstByName(name: String): Student?
     fun findAllByOrderByUpdatedAtDesc(): List<Student>
+    fun findByNameContainingIgnoreCaseOrSchoolContainingIgnoreCaseOrderByUpdatedAtDesc(name: String, school: String): List<Student>
 }

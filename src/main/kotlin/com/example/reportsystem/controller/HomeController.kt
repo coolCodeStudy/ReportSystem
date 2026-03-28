@@ -29,10 +29,17 @@ class HomeController(
 ) {
 
     @GetMapping("/")
-    fun home(model: Model): String {
+    fun home(
+        model: Model,
+        @org.springframework.web.bind.annotation.RequestParam(required = false) q: String?
+    ): String {
         val activeTypes = dictService.getAllActiveStudentTypes()
         
-        val students = studentRepository.findAllByOrderByUpdatedAtDesc()
+        val students = if (!q.isNullOrBlank()) {
+             studentRepository.findByNameContainingIgnoreCaseOrSchoolContainingIgnoreCaseOrderByUpdatedAtDesc(q, q)
+        } else {
+             studentRepository.findAllByOrderByUpdatedAtDesc()
+        }
         val dtos = students.map { student ->
             val records = student.id?.let { assessmentRecordRepository.findByStudentId(it) } ?: emptyList()
             val latestRecord = records.maxByOrNull { it.createdAt }
@@ -71,8 +78,17 @@ class HomeController(
             )
         }
         
+        val totalStudents = studentRepository.count()
+        val totalRecords = assessmentRecordRepository.count()
+        val thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30)
+        val recentRecords = assessmentRecordRepository.findAll().count { it.createdAt.isAfter(thirtyDaysAgo) }
+        
         model.addAttribute("students", dtos)
         model.addAttribute("activeStudentTypes", activeTypes)
+        model.addAttribute("totalStudents", totalStudents)
+        model.addAttribute("totalRecords", totalRecords)
+        model.addAttribute("recentRecords", recentRecords)
+        model.addAttribute("queryKeyword", q ?: "")
         return "index"
     }
 

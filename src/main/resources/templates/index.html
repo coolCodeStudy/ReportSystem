@@ -36,20 +36,17 @@
         <div class="app-body">
             <!-- Sidebar -->
             <aside class="app-sidebar">
-                <!--
                 <div class="sidebar-section">
-                    <h6 class="sidebar-heading">快速搜索</h6>
-                    <form class="quick-search-form">
-                        <input type="text" class="form-control form-control-sm mb-2" placeholder="输入学生姓名">
-                        <input type="text" class="form-control form-control-sm mb-2" placeholder="输入学校名称">
+                    <h6 class="sidebar-heading">快速模糊检索</h6>
+                    <form class="quick-search-form" action="/" method="GET">
+                        <input type="text" class="form-control form-control-sm mb-2" name="q" th:value="${queryKeyword}" placeholder="输入姓名或学校检索..." autocomplete="off">
                         <div class="d-flex gap-2 mt-3">
-                            <button type="button"
-                                class="btn btn-primary btn-sm flex-grow-1 sidebar-btn shadow-sm">搜索</button>
-                            <button type="reset" class="btn btn-light btn-sm flex-grow-1 sidebar-btn">重置</button>
+                            <button type="submit"
+                                class="btn btn-primary btn-sm flex-grow-1 sidebar-btn shadow-sm">过滤</button>
+                            <a href="/" class="btn btn-light btn-sm flex-grow-1 sidebar-btn text-center" style="line-height: 1.5; padding: 0.25rem 0.5rem;">全量</a>
                         </div>
                     </form>
                 </div>
-                -->
 
                 <div class="sidebar-section">
                     <h6 class="sidebar-heading">教务管理</h6>
@@ -94,8 +91,8 @@
                             style="letter-spacing: 0.5px;">主页仪表盘</span>
                     </div>
                     <div class="action-buttons d-flex gap-3">
-                        <button class="btn btn-primary btn-action" data-bs-toggle="modal"
-                            data-bs-target="#studentRecordModal"
+                        <button class="btn btn-primary btn-action" data-bs-toggle="offcanvas"
+                            data-bs-target="#studentRecordOffcanvas"
                             style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); line-height: 1;">
                             新建学生档案
                         </button>
@@ -110,34 +107,36 @@
 
                 <!-- Features/Stat Cards Row -->
                 <div class="row g-4 mb-4 top-cards-row">
-                    <!--
+                    <!-- Total Students -->
                     <div class="col-md-4">
-                        <div class="stat-card">
-                            <div class="stat-icon bg-blue-light"><i class="bi bi-search"></i></div>
-                            <div class="stat-content text-center flex-grow-1 pe-4">
-                                <h5 class="text-primary mb-0">高级条件检索</h5>
+                        <div class="stat-card border-0 shadow-sm" style="transition: transform 0.2s;">
+                            <div class="stat-icon bg-blue-light"><i class="bi bi-people-fill text-primary"></i></div>
+                            <div class="stat-content flex-grow-1 ms-3 text-start">
+                                <p class="text-muted mb-1 small fw-bold">总在档学员</p>
+                                <h4 class="mb-0 fw-black text-dark" th:text="${totalStudents ?: 0}">0</h4>
                             </div>
                         </div>
                     </div>
-                    -->
-                    <div class="col-md-12">
-                        <div class="stat-card active-card">
-                            <div class="stat-icon bg-purple-light"><i class="bi bi-journal-bookmark-fill"></i></div>
-                            <div class="stat-content text-center flex-grow-1 pe-4">
-                                <h5 class="mb-0">档案基础信息概览</h5>
-                            </div>
-                        </div>
-                    </div>
-                    <!--
+                    <!-- Monthly Records -->
                     <div class="col-md-4">
-                        <div class="stat-card">
-                            <div class="stat-icon bg-green-light"><i class="bi bi-printer"></i></div>
-                            <div class="stat-content text-center flex-grow-1 pe-4">
-                                <h5 class="text-primary mb-0" style="color:var(--primary)!important;">报表批量导出</h5>
+                        <div class="stat-card active-card border-0 shadow" style="transform: translateY(-3px);">
+                            <div class="stat-icon" style="background: rgba(255,255,255,0.2);"><i class="bi bi-graph-up-arrow text-white"></i></div>
+                            <div class="stat-content flex-grow-1 ms-3 text-start">
+                                <p class="text-white-50 mb-1 small fw-bold">近 30 天新增报告</p>
+                                <h4 class="mb-0 fw-black text-white"><span th:text="${recentRecords ?: 0}">0</span> <small class="fs-6 fw-normal ms-1 opacity-75">份</small></h4>
                             </div>
                         </div>
                     </div>
-                    -->
+                    <!-- Total Records -->
+                    <div class="col-md-4">
+                        <div class="stat-card border-0 shadow-sm" style="transition: transform 0.2s;">
+                            <div class="stat-icon bg-green-light"><i class="bi bi-file-earmark-check-fill text-success"></i></div>
+                            <div class="stat-content flex-grow-1 ms-3 text-start">
+                                <p class="text-muted mb-1 small fw-bold">历史测评总计</p>
+                                <h4 class="mb-0 fw-black text-dark"><span th:text="${totalRecords ?: 0}">0</span> <small class="fs-6 fw-normal ms-1 text-muted">份</small></h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Data Table (Static Mockup for layout preview) -->
@@ -233,163 +232,192 @@
 
 
 
-    <!-- Student Record Modal (For standalone student CRUD) -->
-    <div class="modal fade" id="studentRecordModal" tabindex="-1" aria-labelledby="studentRecordModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <form action="/student/save" method="POST">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="studentRecordModalLabel"><i class="bi bi-person-plus me-2"></i>新建 /
-                            编辑学生基础档案</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="sid" name="id">
-                        <input type="hidden" id="sdynamicData" name="dynamicData">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label for="sname" class="form-label">学生姓名</label>
-                                <input type="text" class="form-control" id="sname" name="name" placeholder="例如：张三"
-                                    required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sage" class="form-label">年龄</label>
-                                <input type="number" class="form-control" id="sage" name="age" placeholder="例如：12">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sphone" class="form-label">联系电话</label>
-                                <input type="tel" class="form-control" id="sphone" name="phone"
-                                    placeholder="例如：13812345678">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sgender" class="form-label">性别</label>
-                                <select class="form-select" id="sgender" name="gender">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="男">男</option>
-                                    <option value="女">女</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sschool" class="form-label">所在学校</label>
-                                <input type="text" class="form-control" id="sschool" name="school"
-                                    placeholder="例如：育才小学">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="sgrade" class="form-label">目标年级</label>
-                                <select class="form-select" id="sgrade" name="grade">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <option value="K">K</option>
-                                    <option value="G1">G1</option>
-                                    <option value="G2">G2</option>
-                                    <option value="G3">G3</option>
-                                    <option value="G4">G4</option>
-                                    <option value="G5">G5</option>
-                                    <option value="G6">G6</option>
-                                    <option value="G7">G7</option>
-                                    <option value="G8">G8</option>
-                                    <option value="G9">G9</option>
-                                    <option value="G10">G10</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mt-4">
-                                <hr class="my-2 border-secondary opacity-25">
-                            </div>
-                            <div class="col-md-12">
-                                <label for="sstudentType" class="form-label">学生类型 (选择体系以加载专属档案表单)</label>
-                                <select class="form-select" id="sstudentType" name="studentType" onchange="loadDynamicFields(this.value)">
-                                    <option value="" selected disabled>请选择...</option>
-                                    <th:block th:each="type : ${activeStudentTypes}">
-                                        <option th:value="${type.typeCode}" th:text="${type.typeName}"></option>
-                                    </th:block>
-                                </select>
-                            </div>
-                            <div class="col-12 mt-3" id="dynamicFieldsContainer" style="display:none;">
-                                <div class="p-3 bg-light rounded border">
-                                    <h6 class="text-primary mb-3 fw-bold"><i class="bi bi-ui-checks-grid me-2"></i>该体系专属档案信息</h6>
-                                    <div class="row g-3" id="dynamicFieldsBody">
-                                        <!-- Fields injected via JS -->
-                                    </div>
+    <!-- Student Record Offcanvas (For standalone student CRUD) -->
+    <div class="offcanvas offcanvas-end" id="studentRecordOffcanvas" tabindex="-1" aria-labelledby="studentRecordOffcanvasLabel" style="width: 500px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
+        <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <h5 class="offcanvas-title" id="studentRecordOffcanvasLabel"><i class="bi bi-person-plus me-2"></i>新建 / 编辑学生基础档案</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column">
+            <form action="/student/save" method="POST" class="d-flex flex-column flex-grow-1" id="studentForm" style="height: 100%;">
+                <div class="p-4 flex-grow-1" style="overflow-y: auto;">
+                    <input type="hidden" id="sid" name="id">
+                    <input type="hidden" id="sdynamicData" name="dynamicData">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="sname" class="form-label">学生姓名 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="sname" name="name" placeholder="例如：张三" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sage" class="form-label">年龄</label>
+                            <input type="number" class="form-control" id="sage" name="age" placeholder="例如：12">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sphone" class="form-label">联系电话</label>
+                            <input type="tel" class="form-control" id="sphone" name="phone" placeholder="例如：13812345678">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sgender" class="form-label">性别</label>
+                            <select class="form-select" id="sgender" name="gender">
+                                <option value="" selected disabled>请选择...</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="sschool" class="form-label">所在学校</label>
+                            <input type="text" class="form-control" id="sschool" name="school" placeholder="例如：育才小学">
+                        </div>
+                        <div class="col-12">
+                            <label for="sgrade" class="form-label">目标年级</label>
+                            <select class="form-select" id="sgrade" name="grade">
+                                <option value="" selected disabled>请选择...</option>
+                                <option value="K">K</option>
+                                <option value="G1">G1</option>
+                                <option value="G2">G2</option>
+                                <option value="G3">G3</option>
+                                <option value="G4">G4</option>
+                                <option value="G5">G5</option>
+                                <option value="G6">G6</option>
+                                <option value="G7">G7</option>
+                                <option value="G8">G8</option>
+                                <option value="G9">G9</option>
+                                <option value="G10">G10</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <hr class="my-2 border-secondary opacity-25">
+                        </div>
+                        <div class="col-12">
+                            <label for="sstudentType" class="form-label text-primary fw-medium">学生体系 (加载专属档案)</label>
+                            <select class="form-select border-primary" id="sstudentType" name="studentType" onchange="loadDynamicFields(this.value)">
+                                <option value="" selected disabled>请选择...</option>
+                                <th:block th:each="type : ${activeStudentTypes}">
+                                    <option th:value="${type.typeCode}" th:text="${type.typeName}"></option>
+                                </th:block>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-3" id="dynamicFieldsContainer" style="display:none;">
+                            <div class="p-3 bg-light rounded border border-light-subtle shadow-sm">
+                                <h6 class="text-primary mb-3 fw-bold"><i class="bi bi-ui-checks-grid me-2"></i>体系专属详细信息</h6>
+                                <div class="row g-3" id="dynamicFieldsBody">
+                                    <!-- Fields injected via JS -->
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-outline-secondary px-4 rounded-pill"
-                            data-bs-dismiss="modal">取消</button>
-                        <button type="submit" class="btn btn-primary px-4 rounded-pill"
-                            style="background: var(--primary); border: none;">保存建档</button>
-                    </div>
-                </form>
+                </div>
+                <div class="p-3 border-top bg-light text-end">
+                    <button type="button" class="btn btn-outline-secondary px-4 rounded-pill me-2" data-bs-dismiss="offcanvas">取消</button>
+                    <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border: none;">保存建档</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assessment History Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="assessmentHistoryOffcanvas" aria-labelledby="assessmentHistoryOffcanvasLabel" style="width: 550px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
+        <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+            <h5 class="offcanvas-title" id="assessmentHistoryOffcanvasLabel">
+                <i class="bi bi-clock-history me-2 text-white-50"></i>
+                <span id="historyStudentName" class="fw-bold">学生姓名</span> 的测评履历
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column">
+            <div id="historyLoading" class="p-4 w-100">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="placeholder col-3 rounded"></span>
+                    <span class="placeholder col-4 rounded"></span>
+                </div>
+                <div class="placeholder-glow">
+                    <div class="placeholder col-12 py-3 mb-2 rounded bg-light"></div>
+                    <div class="placeholder col-12 py-3 mb-2 rounded bg-light"></div>
+                    <div class="placeholder col-12 py-3 mb-2 rounded bg-light"></div>
+                </div>
+            </div>
+            <div class="table-responsive flex-grow-1" style="overflow-y: auto;">
+                <table class="table table-hover mb-0 d-none" id="historyTable" style="font-size: 0.95rem;">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th scope="col" class="ps-4">测评日期</th>
+                            <th scope="col">测评类型</th>
+                            <th scope="col">Level / 级别</th>
+                            <th scope="col">当前/目标年级</th>
+                            <th scope="col" class="text-end pe-4">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Data will be injected here by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="p-3 border-top bg-light text-end">
+                <button type="button" class="btn btn-outline-secondary me-2 rounded-pill px-4" data-bs-dismiss="offcanvas">关闭</button>
+                <button type="button" class="btn btn-primary btn-action px-4 rounded-pill shadow-sm"
+                    style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border:none;"
+                    onclick="triggerNewReport()">
+                    <i class="bi bi-plus-circle me-1"></i> 为TA录入新测评
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Assessment History Modal -->
-    <div class="modal fade" id="assessmentHistoryModal" tabindex="-1" aria-labelledby="assessmentHistoryModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-0 overflow-hidden">
-                <div class="modal-header text-white"
-                    style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
-                    <h5 class="modal-title" id="assessmentHistoryModalLabel">
-                        <i class="bi bi-clock-history me-2 text-white-50"></i>
-                        <span id="historyStudentName" class="fw-bold">学生姓名</span> 的测评履历
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                        aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div id="historyLoading" class="text-center p-5 text-muted">
-                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>正在读取数据...
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 d-none" id="historyTable" style="font-size: 0.95rem;">
-                            <thead class="table-light sticky-top">
-                                <tr>
-                                    <th scope="col" class="ps-4">测评日期</th>
-                                    <th scope="col">测评类型</th>
-                                    <th scope="col">Level / 级别</th>
-                                    <th scope="col">当前/目标年级</th>
-                                    <th scope="col" class="text-end pe-4">操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="historyTableBody">
-                                <!-- Data will be injected here by JS -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">关闭</button>
-                    <button type="button" class="btn btn-primary btn-action px-4 shadow-sm"
-                        style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border:none;"
-                        onclick="triggerNewReport()">
-                        <i class="bi bi-plus-circle me-1"></i> 为TA录入新测评
-                    </button>
+    <!-- Workspace Fullscreen Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="workspaceOffcanvas" style="width: 95vw; background-color: #f8f9fa;">
+        <div class="offcanvas-header py-2 border-bottom bg-white shadow-sm" style="z-index: 10;">
+            <h6 class="offcanvas-title text-secondary fw-bold" id="workspaceOffcanvasLabel">
+                <i class="bi bi-window-dash me-2 text-primary"></i>智能评估工作台
+            </h6>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body p-0 overflow-hidden position-relative">
+            <div id="workspaceLoadingOverlay" class="d-flex justify-content-center align-items-center position-absolute w-100 h-100 bg-light" style="z-index: 5; display: none !important;">
+                <div class="text-center text-muted">
+                    <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <h5>安全环境加载中，请稍候...</h5>
                 </div>
             </div>
+            <iframe id="workspaceIframe" src="about:blank" style="width: 100%; height: 100%; border: none; position: relative; z-index: 6; transition: opacity 0.3s;"></iframe>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
+    </script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
 
+            // Global workspace closer for iframe children
+            window.closeWorkspaceDrawer = function() {
+                var wsEl = document.getElementById('workspaceOffcanvas');
+                if (wsEl) {
+                    var instance = bootstrap.Offcanvas.getInstance(wsEl);
+                    if (instance) instance.hide();
+                }
+            };
 
             // Functionality to open Student form modal for New
-            const newStudentBtn = document.querySelector('[data-bs-target="#studentRecordModal"]');
+            const newStudentBtn = document.querySelector('[data-bs-target="#studentRecordOffcanvas"]');
             if (newStudentBtn) {
                 newStudentBtn.addEventListener('click', function () {
-                    const form = document.querySelector('#studentRecordModal form');
+                    const form = document.querySelector('#studentRecordOffcanvas form');
                     form.reset();
                     document.getElementById('sid').value = '';
                     document.getElementById('sdynamicData').value = '';
                     document.getElementById('dynamicFieldsContainer').style.display = 'none';
                     document.getElementById('dynamicFieldsBody').innerHTML = '';
-                    document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>新建学生基础档案';
+                    document.getElementById('studentRecordOffcanvasLabel').innerHTML = '<i class="bi bi-person-plus me-2"></i>新建学生基础档案';
                 });
             }
 
@@ -430,9 +458,9 @@
                         document.getElementById('dynamicFieldsBody').innerHTML = '';
                     }
 
-                    document.getElementById('studentRecordModalLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>编辑学生基础档案';
+                    document.getElementById('studentRecordOffcanvasLabel').innerHTML = '<i class="bi bi-pencil-square me-2"></i>编辑学生基础档案';
 
-                    var myModal = new bootstrap.Modal(document.getElementById('studentRecordModal'));
+                    var myModal = new bootstrap.Offcanvas(document.getElementById('studentRecordOffcanvas'));
                     myModal.show();
                 });
             });
@@ -459,7 +487,7 @@
                     historyTable.classList.add('d-none');
                     tbody.innerHTML = '';
 
-                    var myModal = new bootstrap.Modal(document.getElementById('assessmentHistoryModal'));
+                    var myModal = new bootstrap.Offcanvas(document.getElementById('assessmentHistoryOffcanvas'));
                     myModal.show();
 
                     fetch(`/student/${studentId}/history`)
@@ -502,21 +530,33 @@
                             document.querySelectorAll('.delete-history-btn').forEach(btn => {
                                 btn.addEventListener('click', function() {
                                     const recordId = this.getAttribute('data-id');
-                                    if (confirm('确定要删除这条测评记录吗？这不会影响学生的基本信息，但该记录一旦删除无法恢复。')) {
-                                        fetch(`/student/history/${recordId}`, { method: 'DELETE' })
-                                            .then(res => {
-                                                if (res.ok) {
-                                                    const viewBtn = document.querySelector(`.view-history-btn[data-name="${currentSelectedHistoryStudentName}"]`);
-                                                    if(viewBtn) viewBtn.click();
-                                                } else {
-                                                    alert('删除失败，请稍后重试。');
-                                                }
-                                            })
-                                            .catch(err => {
-                                                console.error(err);
-                                                alert('网络错误，删除失败。');
-                                            });
-                                    }
+                                    Swal.fire({
+                                        title: '确定删除此条测评记录？',
+                                        text: "这不会影响学生基本信息，但该记录一旦删除无法恢复",
+                                        icon: 'warning',
+                                        showCancelButton: true,
+                                        confirmButtonColor: '#dc3545',
+                                        cancelButtonColor: '#6c757d',
+                                        confirmButtonText: '确定删除',
+                                        cancelButtonText: '取消'
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            fetch(`/student/history/${recordId}`, { method: 'DELETE' })
+                                                .then(res => {
+                                                    if (res.ok) {
+                                                        const viewBtn = document.querySelector(`.view-history-btn[data-name="${currentSelectedHistoryStudentName}"]`);
+                                                        if(viewBtn) viewBtn.click();
+                                                        Toast.fire({ icon: 'success', title: '履历删除成功' });
+                                                    } else {
+                                                        Swal.fire('错误', '删除失败，请稍后重试。', 'error');
+                                                    }
+                                                })
+                                                .catch(err => {
+                                                    console.error(err);
+                                                    Swal.fire('网络错误', '请求失败，请检查连接。', 'error');
+                                                });
+                                        }
+                                    });
                                 });
                             });
 
@@ -524,7 +564,23 @@
                             document.querySelectorAll('.open-workspace-btn').forEach(btn => {
                                 btn.addEventListener('click', function() {
                                     const recordId = this.getAttribute('data-record-id');
-                                    window.location.href = `/assessment/${recordId}/workspace`;
+                                    var wsOffcanvas = new bootstrap.Offcanvas(document.getElementById('workspaceOffcanvas'));
+                                    var wIframe = document.getElementById('workspaceIframe');
+                                    var overlay = document.getElementById('workspaceLoadingOverlay');
+                                    
+                                    overlay.style.setProperty('display', 'flex', 'important');
+                                    wIframe.style.opacity = '0';
+                                    wIframe.onload = function() {
+                                        overlay.style.setProperty('display', 'none', 'important');
+                                        wIframe.style.opacity = '1';
+                                    };
+                                    wIframe.src = `/assessment/${recordId}/workspace`;
+                                    
+                                    document.getElementById('workspaceOffcanvas').addEventListener('hidden.bs.offcanvas', function () {
+                                        wIframe.src = 'about:blank';
+                                    }, {once: true});
+                                    
+                                    wsOffcanvas.show();
                                 });
                             });
 
@@ -545,7 +601,7 @@
 
             // Make triggerNewReport globally available
             window.triggerNewReport = function () {
-                const historyModal = bootstrap.Modal.getInstance(document.getElementById('assessmentHistoryModal'));
+                const historyModal = bootstrap.Offcanvas.getInstance(document.getElementById('assessmentHistoryOffcanvas'));
                 if (historyModal) { historyModal.hide(); }
                 if (window.currentSelectedHistoryStudentId) {
                     const formData = new URLSearchParams();
@@ -554,12 +610,28 @@
                         .then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
                         .then(data => {
                             if (data.recordId) {
-                                window.location.href = `/assessment/${data.recordId}/workspace`;
-                            } else { alert('创建测评档案失败，数据结构异常'); }
+                                    var wsOffcanvas = new bootstrap.Offcanvas(document.getElementById('workspaceOffcanvas'));
+                                    var wIframe = document.getElementById('workspaceIframe');
+                                    var overlay = document.getElementById('workspaceLoadingOverlay');
+                                    
+                                    overlay.style.setProperty('display', 'flex', 'important');
+                                    wIframe.style.opacity = '0';
+                                    wIframe.onload = function() {
+                                        overlay.style.setProperty('display', 'none', 'important');
+                                        wIframe.style.opacity = '1';
+                                    };
+                                    wIframe.src = `/assessment/${data.recordId}/workspace`;
+                                    
+                                    document.getElementById('workspaceOffcanvas').addEventListener('hidden.bs.offcanvas', function () {
+                                        wIframe.src = 'about:blank';
+                                    }, {once: true});
+                                    
+                                    wsOffcanvas.show();
+                            } else { Swal.fire('错误', '创建测评档案失败，数据结构异常', 'error'); }
                         })
                         .catch(err => {
                             console.error('Failed to create empty workspace', err);
-                            alert('网络错误，请稍后重试');
+                            Swal.fire('网络错误', '请求服务器超时或失败', 'error');
                         });
                 }
             };
@@ -569,20 +641,31 @@
                 btn.addEventListener('click', function() {
                     const studentId = this.getAttribute('data-id');
                     const studentName = this.getAttribute('data-name');
-                    if (confirm(`警告！确定要彻底删除学生 [${studentName}] 的档案吗？\n\n这将会一并彻底删除该学生所有的历史测评记录，此操作无法恢复！`)) {
-                        fetch(`/student/${studentId}`, { method: 'DELETE' })
-                            .then(res => {
-                                if (res.ok) {
-                                    window.location.reload();
-                                } else {
-                                    alert('删除失败，请稍后重试。');
-                                }
-                            })
-                            .catch(err => {
-                                console.error(err);
-                                alert('网络错误，删除失败。');
-                            });
-                    }
+                    Swal.fire({
+                        title: `删除学生 [${studentName}]？`,
+                        text: '这将彻底删除所有历史测评记录且无法恢复！',
+                        icon: 'error',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: '强制删除'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch(`/student/${studentId}`, { method: 'DELETE' })
+                                .then(res => {
+                                    if (res.ok) {
+                                        Toast.fire({ icon: 'success', title: '档案已销毁' });
+                                        setTimeout(() => window.location.reload(), 1000);
+                                    } else {
+                                        Swal.fire('错误', '删除失败，请重试。', 'error');
+                                    }
+                                })
+                                .catch(err => {
+                                    console.error(err);
+                                    Swal.fire('异常', '网络或服务器错误。', 'error');
+                                });
+                        }
+                    });
                 });
             });
             // Load Dynamic Fields
@@ -651,7 +734,7 @@
             };
 
             // Intercept form submit to serialize dynamicData
-            const studentForm = document.querySelector('#studentRecordModal form');
+            const studentForm = document.querySelector('#studentRecordOffcanvas form');
             if(studentForm) {
                 studentForm.addEventListener('submit', function(e) {
                     const inputs = document.querySelectorAll('.dynamic-input');
