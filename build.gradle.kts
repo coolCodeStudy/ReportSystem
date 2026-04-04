@@ -50,3 +50,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         jvmTarget = "17"
     }
 }
+
+tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
+    sourceResources(sourceSets.main.get())
+}

@@ -147,10 +147,14 @@
                                                                 </div>
                                                             </div>
                                                         </template>
-                                                        <div class="mt-3">
+                                                        <div class="mt-3 d-flex align-items-center gap-2">
                                                             <button class="btn btn-sm btn-outline-primary rounded-pill px-3" @click="addAnalysisRow(tab.id)">
                                                                 <i class="bi bi-plus me-1"></i>添加新考评维度
                                                             </button>
+                                                            <button class="btn btn-sm btn-outline-success rounded-pill px-3" @click="document.getElementById('fileInput_'+tab.id).click()">
+                                                                <i class="bi bi-file-earmark-excel me-1"></i>Excel 全量导入
+                                                            </button>
+                                                            <input type="file" :id="'fileInput_'+tab.id" class="d-none" accept=".xlsx, .xls" @change="uploadExcel($event, tab.id)">
                                                         </div>
                                                     </div>
 
@@ -264,6 +268,35 @@
                 },
                 removeCauseRow(type, index) {
                     this.configs[type].cause.splice(index, 1);
+                },
+
+                async uploadExcel(event, type) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    
+                    try {
+                        const res = await fetch('/admin/api/analysis-templates/import-excel', {
+                            method: 'POST',
+                            body: formData
+                        }).then(r => r.json());
+                        
+                        if (res.code === 200) {
+                            if (res.data.length === 0) {
+                                alert('未能从 Excel 中识别到有效的维度信息。');
+                            } else {
+                                this.configs[type].analysis = res.data;
+                                alert(`成功导入并替换为 ${res.data.length} 个维度指标！\n请记得点击底部的“保存所有模板配置”使其生效。`);
+                            }
+                        } else {
+                            alert('解析失败: ' + res.message);
+                        }
+                    } catch (e) {
+                        alert('网络上传出现错误');
+                    }
+                    event.target.value = ''; // Reset file input
                 },
 
                 async saveAll() {
