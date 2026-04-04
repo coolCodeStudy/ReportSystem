@@ -276,13 +276,13 @@
                             const cleanCause = this.configs[tab.id].cause.map(c => c.val.trim()).filter(v => v !== '');
                             
                             promises.push(fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tab.key}`, {
-                                method: 'PUT', headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({configValue: JSON.stringify(cleanAnalysis)})
-                            }));
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({value: JSON.stringify(cleanAnalysis)})
+                            }).then(r => r.json()));
                             promises.push(fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tab.key}`, {
-                                method: 'PUT', headers: {'Content-Type': 'application/json'},
-                                body: JSON.stringify({configValue: JSON.stringify(cleanCause)})
-                            }));
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({value: JSON.stringify(cleanCause)})
+                            }).then(r => r.json()));
                         } catch(e) {
                             console.error('Error stringifying state', tab.id, e);
                         }
@@ -290,8 +290,8 @@
                     
                     try {
                         const results = await Promise.all(promises);
-                        if (results.every(r => r.ok)) alert('✅ 模板配置保存成功！所有的改动已转化为规范JSON并存入系统，前端测评工作台将即刻生效。');
-                        else alert('❌ 保存部分失败，请重试！');
+                        if (results.every(r => r.code === 200)) alert('✅ 模板配置保存成功！所有的改动已转化为规范JSON并存入系统，前端测评工作台将即刻生效。');
+                        else alert('❌ 保存部分失败，请重试！\n' + results.map(r => r.message || '').filter(Boolean).join('\n'));
                     } catch(e) {
                         console.error('网络异常:', e);
                         alert('保存遇到网络异常');
