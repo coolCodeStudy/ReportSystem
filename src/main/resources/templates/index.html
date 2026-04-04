@@ -149,14 +149,15 @@
                                             <div class="form-check"><input class="form-check-input" type="checkbox">
                                             </div>
                                         </th>
-                                        <th scope="col">就读学校 / 目标年级</th>
+                                        <th scope="col">就读学校</th>
+                                        <th scope="col">目标年级</th>
                                         <th scope="col">学生姓名</th>
                                         <th scope="col">学生类型</th>
                                         <th scope="col">性别 | 年龄</th>
                                         <th scope="col">联系电话</th>
                                         <th scope="col">最新录入时间</th>
                                         <!-- <th scope="col">课程目标</th> -->
-                                        <th scope="col">能力级别</th>
+                                        <th scope="col">最新能力级别</th>
                                         <th scope="col" class="text-end pe-4">操作</th>
                                     </tr>
                                 </thead>
@@ -168,8 +169,11 @@
                                                     th:checked="${stat.index == 0}"></div>
                                         </td>
                                         <td>
-                                            <span class="text-muted" th:text="${stat.count}">1</span>
-                                            <span th:text="${student.schoolOrTarget}">School</span>
+                                            <span class="text-muted pe-1 border-end border-2 me-1" th:text="${stat.count}">1</span>
+                                            <span th:text="${student.school != null && !student.school.isEmpty() ? student.school : '-'}">School</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border" th:text="${student.grade != null && !student.grade.isEmpty() ? student.grade : '未定'}">Grade</span>
                                         </td>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -214,7 +218,7 @@
                                     </tr>
 
                                     <tr th:if="${#lists.isEmpty(students)}">
-                                        <td colspan="9" class="text-center py-5 text-muted">
+                                        <td colspan="10" class="text-center py-5 text-muted">
                                             <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                                             暂无任何档案数据。请点击右上方的 "新建学生档案" 创建您的第一条记录。
                                         </td>
@@ -315,7 +319,7 @@
     </div>
 
     <!-- Assessment History Offcanvas -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="assessmentHistoryOffcanvas" aria-labelledby="assessmentHistoryOffcanvasLabel" style="width: 550px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="assessmentHistoryOffcanvas" aria-labelledby="assessmentHistoryOffcanvasLabel" style="width: 900px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
         <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="assessmentHistoryOffcanvasLabel">
                 <i class="bi bi-clock-history me-2 text-white-50"></i>
@@ -342,7 +346,7 @@
                             <th scope="col" class="ps-4">测评日期</th>
                             <th scope="col">测评类型</th>
                             <th scope="col">Level / 级别</th>
-                            <th scope="col">当前/目标年级</th>
+                            <th scope="col">目标年级</th>
                             <th scope="col" class="text-end pe-4">操作</th>
                         </tr>
                     </thead>

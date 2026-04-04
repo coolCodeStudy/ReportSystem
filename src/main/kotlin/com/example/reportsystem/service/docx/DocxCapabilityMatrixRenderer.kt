@@ -127,7 +127,7 @@ G11,,1225L,17500,,,,,,
         
         addRun("注：")
         addRun("黄色背景", bold = true)
-        addRun("表示所在年级；")
+        addRun("表示目标年级；")
         addRun("蓝色背景", bold = true)
         addRun("表示听说读写的水平。")
     }
