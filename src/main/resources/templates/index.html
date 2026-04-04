@@ -10,10 +10,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Playfair Display & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Custom Styles -->
     <link href="/css/style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
         <header class="app-header">
             <div class="logo">
                 <img src="/images/lingoland_logo.jpg" alt="Lingoland Logo">
-                <span style="font-size: 1.1rem; letter-spacing: 0.5px;">语陆教育学生管理系统</span>
+                <span>语陆教育学生管理系统</span>
             </div>
             <div class="header-actions">
                 <button class="icon-btn" title="系统设置"><i class="bi bi-gear"></i></button>
@@ -91,9 +91,8 @@
                             style="letter-spacing: 0.5px;">主页仪表盘</span>
                     </div>
                     <div class="action-buttons d-flex gap-3">
-                        <button class="btn btn-primary btn-action" data-bs-toggle="offcanvas"
-                            data-bs-target="#studentRecordOffcanvas"
-                            style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); line-height: 1;">
+                        <button class="btn btn-action" data-bs-toggle="offcanvas"
+                            data-bs-target="#studentRecordOffcanvas">
                             新建学生档案
                         </button>
                         <!--
@@ -234,7 +233,7 @@
 
     <!-- Student Record Offcanvas (For standalone student CRUD) -->
     <div class="offcanvas offcanvas-end" id="studentRecordOffcanvas" tabindex="-1" aria-labelledby="studentRecordOffcanvasLabel" style="width: 500px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
-        <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+        <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="studentRecordOffcanvasLabel"><i class="bi bi-person-plus me-2"></i>新建 / 编辑学生基础档案</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
@@ -309,7 +308,7 @@
                 </div>
                 <div class="p-3 border-top bg-light text-end">
                     <button type="button" class="btn btn-outline-secondary px-4 rounded-pill me-2" data-bs-dismiss="offcanvas">取消</button>
-                    <button type="submit" class="btn btn-primary px-4 rounded-pill shadow-sm" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border: none;">保存建档</button>
+                    <button type="submit" class="btn btn-action px-4 rounded-pill shadow-sm">保存建档</button>
                 </div>
             </form>
         </div>
@@ -317,7 +316,7 @@
 
     <!-- Assessment History Offcanvas -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="assessmentHistoryOffcanvas" aria-labelledby="assessmentHistoryOffcanvasLabel" style="width: 550px; box-shadow: -5px 0 15px rgba(0,0,0,0.05);">
-        <div class="offcanvas-header text-white" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);">
+        <div class="offcanvas-header">
             <h5 class="offcanvas-title" id="assessmentHistoryOffcanvasLabel">
                 <i class="bi bi-clock-history me-2 text-white-50"></i>
                 <span id="historyStudentName" class="fw-bold">学生姓名</span> 的测评履历
@@ -354,8 +353,7 @@
             </div>
             <div class="p-3 border-top bg-light text-end">
                 <button type="button" class="btn btn-outline-secondary me-2 rounded-pill px-4" data-bs-dismiss="offcanvas">关闭</button>
-                <button type="button" class="btn btn-primary btn-action px-4 rounded-pill shadow-sm"
-                    style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border:none;"
+                <button type="button" class="btn btn-action px-4 rounded-pill"
                     onclick="triggerNewReport()">
                     <i class="bi bi-plus-circle me-1"></i> 为TA录入新测评
                 </button>
@@ -364,9 +362,9 @@
     </div>
 
     <!-- Workspace Fullscreen Offcanvas -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="workspaceOffcanvas" style="width: 95vw; background-color: #f8f9fa;">
-        <div class="offcanvas-header py-2 border-bottom bg-white shadow-sm" style="z-index: 10;">
-            <h6 class="offcanvas-title text-secondary fw-bold" id="workspaceOffcanvasLabel">
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="workspaceOffcanvas" style="width: 95vw; background-color: var(--bg-base);">
+        <div class="offcanvas-header py-2 border-bottom shadow-sm" style="z-index: 10;">
+            <h6 class="offcanvas-title fw-bold text-white" id="workspaceOffcanvasLabel">
                 <i class="bi bi-window-dash me-2 text-primary"></i>智能评估工作台
             </h6>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
