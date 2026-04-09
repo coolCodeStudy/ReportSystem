@@ -3,11 +3,18 @@ package com.example.reportsystem.service.docx
 import org.apache.poi.xwpf.usermodel.*
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*
 import java.math.BigInteger
+import com.example.reportsystem.repository.SystemConfigRepository
+import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 object DocxAssessmentAnalysisRenderer {
 
-    fun render(document: XWPFDocument, assessmentResultsJson: String?) {
+    fun render(
+        document: XWPFDocument, 
+        assessmentResultsJson: String?, 
+        typeId: String?, 
+        systemConfigRepository: SystemConfigRepository
+    ) {
         if (assessmentResultsJson.isNullOrBlank()) return
         try {
             val mapper = jacksonObjectMapper()
@@ -51,34 +58,65 @@ object DocxAssessmentAnalysisRenderer {
                 }
             }
 
-            val subjectMap = mapOf(
-                "reading" to "阅读",
-                "listening" to "听力",
-                "speaking" to "口语",
-                "writing" to "写作",
-                "language_use" to "语言运用",
-                "learning_literacy" to "学习素养"
-            )
+            var subjects: List<Map<String, String>> = emptyList()
 
-            for ((key, displayName) in subjectMap) {
-                val subjNode = analysis.path(key)
-                if (subjNode.isMissingNode || subjNode.isEmpty) continue
+            var actualTypeId = typeId
+            if (!actualTypeId.isNullOrBlank()) {
+                // If the stored value in DB is the human-readable name (e.g., "剑桥考试体系"), map it back to the UUID.
+                val descJson = systemConfigRepository.findByConfigKey("GLOBAL_ASSESSMENT_DESCRIPTIONS")?.configValue
+                if (!descJson.isNullOrBlank()) {
+                    try {
+                        val arr = mapper.readTree(descJson)
+                        for (node in arr) {
+                            if (node.path("name").asText() == actualTypeId) {
+                                actualTypeId = node.path("id").asText()
+                                break
+                            }
+                        }
+                    } catch (e: Exception) {}
+                }
+
+                val dbSubj = systemConfigRepository.findByConfigKey("GLOBAL_SUBJECTS_${actualTypeId?.uppercase()}")?.configValue
+                if (!dbSubj.isNullOrBlank()) {
+                    try {
+                        subjects = mapper.readValue<List<Map<String, String>>>(dbSubj)
+                    } catch (e: Exception) {}
+                }
+            }
+
+            for (subjInfo in subjects) {
+                val rawKey = subjInfo["id"] ?: continue
                 
-                val scoreNode = subjNode.path("score")
-                val isScoreEmptyOrZero = scoreNode.isMissingNode || scoreNode.asText().isBlank() || scoreNode.asDouble(0.0) == 0.0
-                val isPaperEmpty = subjNode.path("paperAnalysis").isMissingNode || subjNode.path("paperAnalysis").isEmpty
-                val isCauseEmpty = subjNode.path("causeAnalysis").isMissingNode || subjNode.path("causeAnalysis").isEmpty
+                // Match frontend prefixing logic (e.g. subj_5gq4dy -> STARTERS_SUBJ_5GQ4DY)
+                var key = rawKey
+                if (!key.uppercase().contains(actualTypeId?.uppercase() ?: "")) {
+                    key = "${actualTypeId?.uppercase()}_${key}".uppercase()
+                }
 
-                if (isScoreEmptyOrZero && isPaperEmpty && isCauseEmpty) continue
+                var displayName = subjInfo["name"] ?: rawKey
+                if (displayName.endsWith("理解") || displayName.endsWith("表达")) {
+                    displayName = displayName.substring(0, 2)
+                }
 
+                var subjNode = analysis.path(key)
+                if (subjNode.isMissingNode || subjNode.isEmpty) {
+                    // Fallback to raw key just in case some legacy data exists
+                    subjNode = analysis.path(rawKey)
+                    if (subjNode.isMissingNode || subjNode.isEmpty) continue
+                }
+                
                 val score = subjNode.path("score").asText()
                 val total = subjNode.path("total").asText()
                 val level = subjNode.path("level").asText()
-                val prefix = if (key in listOf("reading", "listening")) "正确率" else "得分"
+                val prefix = if (key.contains("reading", ignoreCase = true) || key.contains("listening", ignoreCase = true)) "正确率" else "得分"
 
                 var headerText = "▎ ${displayName}"
-                if (score.isNotBlank() && total.isNotBlank()) headerText += "  $prefix $score/$total"
-                if (level.isNotBlank()) headerText += "  $level"
+                if (score.isNotBlank() && score != "null" && total.isNotBlank() && total != "null") {
+                    headerText += "  $prefix $score/$total"
+                }
+                if (level.isNotBlank() && level != "null" && level != "-") {
+                    headerText += "  $level"
+                }
 
                 val table = createTableWrappen(1, 2)
                 table.removeBorders()
@@ -129,7 +167,7 @@ object DocxAssessmentAnalysisRenderer {
                     DocxStyleUtils.setCellShading(c11, DocxStyleUtils.THEME_BG_LIGHT)
                     DocxStyleUtils.setWhiteBorders(c11)
                     var isFirstP1 = true
-                    paperNode.fields().forEach { (dim, valNode) ->
+                    for ((dim, valNode) in paperNode.fields()) {
                         val status = valNode.path("status").asText()
                         val text = valNode.path("text").asText()
 
@@ -210,7 +248,7 @@ object DocxAssessmentAnalysisRenderer {
                     DocxStyleUtils.setCellShading(c21, DocxStyleUtils.THEME_BG_LIGHT)
                     DocxStyleUtils.setWhiteBorders(c21)
                     var isFirstCause = true
-                    causeNode.forEach { causeStrNode ->
+                    for (causeStrNode in causeNode) {
                         val causeStr = causeStrNode.asText()
                         val pCause = if (isFirstCause && c21.paragraphs.isNotEmpty()) {
                             isFirstCause = false

@@ -68,6 +68,7 @@ object DocxTeachingPlanRenderer {
         val coursePlans = data.path("coursePlans")
         
         val allSelectedSeries = mutableSetOf<String>()
+        val exactBookNames = mutableSetOf<String>()
         if (coursePlans.isArray && coursePlans.size() > 0) {
             coursePlans.forEach { row ->
                 val tbStr = row.path("textbook").asText()
@@ -78,6 +79,7 @@ object DocxTeachingPlanRenderer {
                         .forEach { bookName ->
                             val series = bookName.substringBefore("-").trim()
                             allSelectedSeries.add(series) 
+                            exactBookNames.add(bookName)
                         }
                 }
             }
@@ -214,7 +216,7 @@ object DocxTeachingPlanRenderer {
 
         fun addStarredSectionTitle(title: String) {
             val tp = createPara()
-            tp.style = "3"                             // Word Heading 3 样式
+            tp.style = "3"                             // Word Heading 2 样式（并列展示，防止层级溢出嵌套）
             tp.spacingBefore = DocxStyleUtils.SPACING_SECTION
             tp.spacingAfter = DocxStyleUtils.SPACING_BODY
             val starRun = tp.createRun()
@@ -242,15 +244,21 @@ object DocxTeachingPlanRenderer {
             addTextParagraphs(createPara, finalTeachingApproach)
         }
 
+        var plans = mutableListOf<com.example.reportsystem.entity.TeachingPlan>()
         val selectedPlanIdsArray = data.path("selectedPlanIds")
         if (selectedPlanIdsArray.isArray && selectedPlanIdsArray.size() > 0) {
             val ids = selectedPlanIdsArray.map { it.asLong() }
             if (ids.isNotEmpty()) {
-                val plans = teachingPlanRepository.findAllById(ids)
-                if (plans.isNotEmpty()) {
-                    addSectionTitle(createPara, "教学计划大纲")
-                    
-                    val table = createTableWrappen(plans.size + 1, 4)
+                plans.addAll(teachingPlanRepository.findAllById(ids))
+            }
+        } else if (exactBookNames.isNotEmpty()) {
+            plans.addAll(teachingPlanRepository.findByBookNameIn(exactBookNames.toList()))
+        }
+
+        if (plans.isNotEmpty()) {
+            addSectionTitle(createPara, "教学计划大纲")
+            
+            val table = createTableWrappen(plans.size + 1, 4)
                     val tblW = table.ctTbl.tblPr?.addNewTblW() ?: table.ctTbl.addNewTblPr().addNewTblW()
                     tblW.type = STTblWidth.PCT
                     tblW.w = BigInteger.valueOf(5000)
@@ -281,8 +289,6 @@ object DocxTeachingPlanRenderer {
                         }
                     }
                     createPara().spacingAfter = 200
-                }
-            }
         }
 
         // --- 助教课打卡清单：从全局配置读取 ---
@@ -316,7 +322,7 @@ object DocxTeachingPlanRenderer {
 
     private fun addSectionTitle(createPara: () -> XWPFParagraph, title: String) {
         val p = createPara()
-        p.style = "2"                              // Word Heading 2 样式（使大纲可识别、可生成目录）
+        p.style = "3"                              // Word Heading 2 样式（由 Heading 1 降级以确保正确嵌套）
         p.spacingBefore = DocxStyleUtils.SPACING_MAJOR
         p.spacingAfter = DocxStyleUtils.SPACING_BODY
         val r = p.createRun()

@@ -83,6 +83,7 @@ G11,,1225L,17500,,,,,,
         }
 
         var parts: List<String> = emptyList()
+        var typeId: String? = null
 
         if (!descriptionsJson.isNullOrBlank() && !assessmentTypes.isNullOrEmpty()) {
             try {
@@ -103,6 +104,7 @@ G11,,1225L,17500,,,,,,
                 }
                 
                 if (matchedDescs.isNotEmpty()) {
+                    typeId = matchedDescs.firstOrNull()?.get("id")
                     var combinedText = matchedDescs.joinToString("\n") { it["description"] ?: "" }
                     // Remove any existing manual difficulty prefix from JSON to avoid duplication
                     combinedText = combinedText.replace(Regex("本次测评难度为.*?难度。\\s*"), "")
@@ -169,7 +171,9 @@ G11,,1225L,17500,,,,,,
         }
 
         // --- Append Assessment Analysis Tables ---
-        com.example.reportsystem.service.docx.DocxAssessmentAnalysisRenderer.render(document, assessmentResultsJson)
+        com.example.reportsystem.service.docx.DocxAssessmentAnalysisRenderer.render(
+            document, assessmentResultsJson, typeId, systemConfigRepository
+        )
 
         if (!teachingPlanDataJson.isNullOrBlank() && teachingPlanDataJson != "{}") {
             com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository, systemConfigRepository)

@@ -110,15 +110,14 @@ class SystemInitRunner(
         if (systemConfigRepository.findByConfigKey("GLOBAL_ASSESSMENT_DESCRIPTIONS") == null) {
             val defaultDescs = """
                 [
-                  {"name":"Starters","description":"本次测评难度为Starters难度。"},
-                  {"name":"Movers","description":"本次测评难度为Movers难度。"},
-                  {"name":"Flyers","description":"本次测评难度为Flyers难度。"},
-                  {"name":"KET","description":"本次测评难度为KET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与基础交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
-                  {"name":"PET","description":"本次测评难度为PET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与初级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
-                  {"name":"IELTS","description":"本次测评难度为雅思难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与中级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
-                  {"name":"雅思","description":"本次测评难度为雅思难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与中级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
-                  {"name":"TOEFL Junior","description":"本次测评难度为TOEFL Junior难度。"},
-                  {"name":"MAP","description":"本次测评难度为MAP难度。"}
+                  {"id":"starters","name":"Starters","description":"本次测评难度为Starters难度。"},
+                  {"id":"movers","name":"Movers","description":"本次测评难度为Movers难度。"},
+                  {"id":"flyers","name":"Flyers","description":"本次测评难度为Flyers难度。"},
+                  {"id":"ket","name":"KET","description":"本次测评难度为KET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与基础交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"id":"pet","name":"PET","description":"本次测评难度为PET难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与初级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"id":"ielts","name":"IELTS","description":"本次测评难度为雅思难度。从听、说、读、写四项语言技能以及学习素养与能力方面，全面反映学员在语言知识与中级交际方面的能力水平。重点考察学员对该阶段词汇、语法知识的了解以及语言技能的运用。考核项目分为笔试和口试两部分，笔试包含听力、阅读与写作，口试由学员与测试官口头完成。"},
+                  {"id":"toefl_junior","name":"TOEFL Junior","description":"本次测评难度为TOEFL Junior难度。"},
+                  {"id":"map","name":"MAP","description":"本次测评难度为MAP难度。"}
                 ]
             """.trimIndent()
             systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_ASSESSMENT_DESCRIPTIONS", configValue = defaultDescs))

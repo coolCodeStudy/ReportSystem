@@ -8,4 +8,5 @@ import org.springframework.stereotype.Repository
 interface TeachingPlanRepository : JpaRepository<TeachingPlan, Long> {
     fun findByUnitCodeAndBookName(unitCode: String, bookName: String): TeachingPlan?
     fun deleteByBookName(bookName: String)
+    fun findByBookNameIn(bookNames: List<String>): List<TeachingPlan>
 }

@@ -307,6 +307,9 @@
                             <input type="hidden" id="step1_selectedExportColumns" th:value="${record.selectedExportColumns}">
                             <input type="hidden" id="step1_studentType" th:value="${student.studentType}">
                         </div>
+                        <div class="col-12 mt-4 text-end">
+                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="btnSaveStep1" onclick="saveStep1AndContinue()">保存测评基础配置</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -323,536 +326,118 @@
             </div>
 
             <!-- Subject Tabs -->
-            <ul class="nav nav-pills mb-4" id="subjectTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-medium px-4" id="reading-tab" data-bs-toggle="pill" data-bs-target="#reading" type="button" role="tab">📖 阅读 (Reading)</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4" id="listening-tab" data-bs-toggle="pill" data-bs-target="#listening" type="button" role="tab">🎧 听力 (Listening)</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4" id="speaking-tab" data-bs-toggle="pill" data-bs-target="#speaking" type="button" role="tab">🗣️ 口语 (Speaking)</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4" id="writing-tab" data-bs-toggle="pill" data-bs-target="#writing" type="button" role="tab">✍️ 写作 (Writing)</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4" id="language_use-tab" data-bs-toggle="pill" data-bs-target="#language_use" type="button" role="tab">🧩 语言运用 (Language Use)</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link fw-medium px-4" id="learning_literacy-tab" data-bs-toggle="pill" data-bs-target="#learning_literacy" type="button" role="tab">🌟 学习素养 (Learning Literacy)</button>
-                </li>
+            <ul class="nav nav-pills mb-4" id="subjectTabs" role="tablist" x-show="activeSubjects.length > 0">
+                <template x-for="(subj, index) in activeSubjects" :key="subj.id">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link fw-medium px-4" 
+                                :class="{'active': activeTab === subj.id}" 
+                                @click="activeTab = subj.id" 
+                                type="button" role="tab">
+                            <i class="bi me-1" :class="subj.icon"></i><span x-text="subj.name"></span>
+                        </button>
+                    </li>
+                </template>
             </ul>
+            <div x-show="activeSubjects.length === 0 && !loading" class="text-center text-muted p-5 bg-light rounded border mb-4">
+                当前勾选的<strong class="text-primary">参考测评体系</strong>尚未配置任何考评科目，请前往后台【测评科目与评价管理】页面，点击【管理开通科目】配置好再刷新本页面。
+            </div>
+            <div x-show="loading" class="text-center text-muted p-5 bg-light rounded border mb-4">
+                <div class="spinner-border spinner-border-sm me-2"></div>正在为您拉取考评科目配置...
+            </div>
 
-            <div class="tab-content" id="subjectTabContent">
-                <!-- Reading Section -->
-                <div class="tab-pane fade show active" id="reading" role="tabpanel" tabindex="0">
+            <div class="tab-content" id="subjectTabContent" x-show="activeSubjects.length > 0">
+                <template x-for="(subj, index) in activeSubjects" :key="subj.id">
+                    <div class="tab-pane fade" :class="{'show active': activeTab === subj.id}" role="tabpanel" tabindex="0">
 
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.reading.examType" @change="calculateGrade('reading')">
-                                        <option value="KET">KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">阅读正确数 / 总题量</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" x-model.number="assessments.reading.score" @input="calculateGrade('reading')" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.reading.total" @input="calculateGrade('reading')" min="1">
+                        <div class="analysis-card">
+                            <div class="analysis-card-header">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
+                            </div>
+                            <div class="p-4" x-show="assessments[subj.id]">
+                                <div class="row g-4 align-items-center">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-medium">测评卷种</label>
+                                        <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments[subj.id].examType" @change="calculateGrade(subj.id)">
+                                            <option value="KET">KET (剑桥通用英语第一级)</option>
+                                            <option value="PET">PET (剑桥通用英语第二级)</option>
+                                        </select>
                                     </div>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.reading.rate || '-'"></div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-medium">正确数 / 总题量 (部分科目可只填得分)</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control text-center" x-model.number="assessments[subj.id].score" @input="calculateGrade(subj.id)" min="0" placeholder="得分/正确数">
+                                            <span class="input-group-text">/</span>
+                                            <input type="number" class="form-control text-center text-muted" x-model.number="assessments[subj.id].total" @input="calculateGrade(subj.id)" min="1" placeholder="选填总题量">
+                                        </div>
                                     </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.reading.level || '-'"></div>
+                                    <div class="col-md-5 d-flex justify-content-end align-items-center">
+                                        <div class="me-4 text-end">
+                                            <div class="text-muted small mb-1">综合正确率/得分</div>
+                                            <div class="fs-5 fw-bold" x-text="assessments[subj.id].rate || '-'"></div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div class="text-muted small mb-1">自动判定等级</div>
+                                            <div class="auto-grade-display" x-text="assessments[subj.id].level || '-'"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.reading.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
+                        
+                        <!-- Paper Analysis -->
+                        <div class="analysis-card">
+                            <div class="analysis-card-header">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
+                            </div>
+                            <div class="p-4" x-show="assessments[subj.id]">
+                                <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
+                                <div x-show="!loading">
+                                    <template x-for="(item, index) in assessments[subj.id].paperAnalysis" :key="index">
+                                        <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
+                                            <div class="col-md-3">
+                                                <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
+                                            </div>
+                                            <div class="col-md-9">
+                                                <div class="d-flex align-items-center gap-3">
+                                                    <div class="btn-group shadow-sm" style="min-width: 220px;">
+                                                        <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
+                                                        <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
+                                                        <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
+                                                    </div>
+                                                    <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
                                                 </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
                                             </div>
                                         </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.reading.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
+                                    </template>
+                                    <div x-show="assessments[subj.id].paperAnalysis && assessments[subj.id].paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.reading.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.reading.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('reading', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.reading.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
+                        
+                        <!-- Cause Analysis -->
+                        <div class="analysis-card">
+                            <div class="analysis-card-header">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
                             </div>
-                        </div>
-                    </div>
-                </div>
-<!-- Listening Section -->
-                <div class="tab-pane fade " id="listening" role="tabpanel" tabindex="0">
-
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.listening.examType" @change="calculateGrade('listening')">
-                                        <option value="KET">KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">听力正确数 / 总题量</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" x-model.number="assessments.listening.score" @input="calculateGrade('listening')" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.listening.total" @input="calculateGrade('listening')" min="1">
-                                    </div>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.listening.rate || '-'"></div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.listening.level || '-'"></div>
-                                    </div>
+                            <div class="p-4" x-show="assessments[subj.id]">
+                                <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
+                                <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
+                                <div class="d-flex flex-wrap gap-2" x-show="!loading">
+                                    <template x-for="(cause, index) in assessments[subj.id].causeOptions" :key="index">
+                                        <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
+                                              :class="assessments[subj.id].causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
+                                              @click="toggleCause(subj.id, cause)"
+                                              x-text="cause"></span>
+                                    </template>
+                                    <div x-show="assessments[subj.id].causeOptions && assessments[subj.id].causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.listening.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
-                                                </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.listening.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.listening.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.listening.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('listening', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.listening.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-<!-- Speaking Section -->
-                <div class="tab-pane fade " id="speaking" role="tabpanel" tabindex="0">
-
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">口语得分</label>
-                                    <input type="number" step="0.5" class="form-control" x-model.number="assessments.speaking.score" @input="calculateGrade('speaking')" min="0">
-                                    <small class="text-muted mt-1 d-block">参考雅思评分标准（0-9分）</small>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.speaking.rate || '-'"></div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.speaking.level || '-'"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.speaking.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
-                                                </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.speaking.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.speaking.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.speaking.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('speaking', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.speaking.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-<!-- Writing Section -->
-                <div class="tab-pane fade " id="writing" role="tabpanel" tabindex="0">
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.writing.examType" @change="calculateGrade('writing')">
-                                        <option value="KET">KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">写作得分 / 总分</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" x-model.number="assessments.writing.score" @input="calculateGrade('writing')" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.writing.total" @input="calculateGrade('writing')" min="1">
-                                    </div>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.writing.rate || '-'"></div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.writing.level || '-'"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.writing.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
-                                                </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.writing.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.writing.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.writing.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('writing', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.writing.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-<!-- LanguageUse Section -->
-                <div class="tab-pane fade " id="language_use" role="tabpanel" tabindex="0">
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.language_use.examType" @change="calculateGrade('language_use')">
-                                        <option value="KET">KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">得分 / 总分</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" x-model.number="assessments.language_use.score" @input="calculateGrade('language_use')" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.language_use.total" @input="calculateGrade('language_use')" min="1">
-                                    </div>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.language_use.rate || '-'"></div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.language_use.level || '-'"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.language_use.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
-                                                </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.language_use.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.language_use.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.language_use.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('language_use', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.language_use.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-<!-- LearningLiteracy Section -->
-                <div class="tab-pane fade " id="learning_literacy" role="tabpanel" tabindex="0">
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="row g-4 align-items-center">
-                                <div class="col-md-3">
-                                    <label class="form-label fw-medium">测评卷种</label>
-                                    <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments.learning_literacy.examType" @change="calculateGrade('learning_literacy')">
-                                        <option value="KET">KET (剑桥通用英语第一级)</option>
-                                        <option value="PET">PET (剑桥通用英语第二级)</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-medium">得分 / 总分</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" x-model.number="assessments.learning_literacy.score" @input="calculateGrade('learning_literacy')" min="0">
-                                        <span class="input-group-text">/</span>
-                                        <input type="number" class="form-control text-center text-muted" x-model.number="assessments.learning_literacy.total" @input="calculateGrade('learning_literacy')" min="1">
-                                    </div>
-                                </div>
-                                <div class="col-md-5 d-flex justify-content-end align-items-center">
-                                    <div class="me-4 text-end">
-                                        <div class="text-muted small mb-1">综合正确率/得分</div>
-                                        <div class="fs-5 fw-bold" x-text="assessments.learning_literacy.rate || '-'"></div>
-                                    </div>
-                                    <div class="text-center">
-                                        <div class="text-muted small mb-1">自动判定等级</div>
-                                        <div class="auto-grade-display" x-text="assessments.learning_literacy.level || '-'"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Paper Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-card-checklist me-2"></i>A. 卷面分析表</h6>
-                        </div>
-                        <div class="p-4">
-                            <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
-                            <div x-show="!loading">
-                                <template x-for="(item, index) in assessments.learning_literacy.paperAnalysis" :key="index">
-                                    <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
-                                        <div class="col-md-3">
-                                            <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <div class="d-flex align-items-center gap-3">
-                                                <div class="btn-group shadow-sm" style="min-width: 220px;">
-                                                    <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
-                                                    <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
-                                                    <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
-                                                </div>
-                                                <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </template>
-                                <div x-show="assessments.learning_literacy.paperAnalysis.length === 0" class="text-muted small">暂无评价维度配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cause Analysis -->
-                    <div class="analysis-card">
-                        <div class="analysis-card-header">
-                            <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-tags me-2"></i>B. 成因分析标签库</h6>
-                        </div>
-                        <div class="p-4">
-                            <p class="text-muted small mb-3">点击选中认为符合实际情况的描述，支持多选：</p>
-                            <div class="text-center text-muted py-2 w-100" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载标签...</div>
-                            <div class="d-flex flex-wrap gap-2" x-show="!loading">
-                                <template x-for="(cause, index) in assessments.learning_literacy.causeOptions" :key="index">
-                                    <span class="badge rounded-pill border py-2 px-3 cause-tag text-dark" 
-                                          :class="assessments.learning_literacy.causeAnalysis.includes(cause) ? 'selected' : 'border-secondary'"
-                                          @click="toggleCause('learning_literacy', cause)"
-                                          x-text="cause"></span>
-                                </template>
-                                <div x-show="assessments.learning_literacy.causeOptions.length === 0" class="text-muted small w-100">暂无成因标签配置。</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </template>
             </div>
         </div>
-
+        
         <!-- Action Bar -->
         <footer class="bottom-action-bar">
             <div>
@@ -865,8 +450,7 @@
                 </button>
             </div>
         </footer>
-
-        <!-- Step 3: Language Teaching Plan -->
+        
         <div id="step3-content" class="step-content" style="display: none;" x-data="workspaceStep3()">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="fw-bold mb-0"><i class="bi bi-book-half text-primary me-2"></i>语言教学安排</h5>
@@ -899,9 +483,9 @@
                                 <tbody>
                                     <template x-for="(row, idx) in data.coursePlans" :key="idx">
                                         <tr class="border-bottom">
-                                            <td><input type="text" class="form-control form-control-sm" x-model="row.phase" placeholder="如 第一阶段"></td>
-                                            <td><input type="text" class="form-control form-control-sm" x-model="row.duration" placeholder="如 2h"></td>
-                                            <td><textarea class="form-control form-control-sm" rows="1" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.phase" placeholder="如 阶段1: 基础课程"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.duration" placeholder="如 2h"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
                                             <td>
                                                 <div class="dropdown">
                                                     <button class="form-select form-select-sm text-start w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
@@ -973,27 +557,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let dbState = {}; // The structured JSON data
-        let readingPaperTemplate = [];
-        let readingCauseTemplate = [];
-        let listeningPaperTemplate = [];
-        let listeningCauseTemplate = [];
-        let speakingPaperTemplate = [];
-        let speakingCauseTemplate = [];
-        let writingPaperTemplate = [];
-        let writingCauseTemplate = [];
-        let language_usePaperTemplate = [];
-        let language_useCauseTemplate = [];
-        let learning_literacyPaperTemplate = [];
-        let learning_literacyCauseTemplate = [];
-
-
-        // Formatting utilities
-        function numFormat(val) {
-            const parsed = parseFloat(val);
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
         // --- 1. Top Level Setup ---
         document.addEventListener('DOMContentLoaded', () => {
             // Parse initial State
@@ -1003,37 +566,8 @@
             } catch(e) {
                 dbState = {};
             }
-
-            Promise.all([
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_READING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_READING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LISTENING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LISTENING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_SPEAKING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_SPEAKING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_WRITING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_WRITING').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                fetch('/admin/api/config/GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY').then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
-            ]).then(resps => {
-                try {
-                    if(resps[0].value) readingPaperTemplate = JSON.parse(resps[0].value);
-                    if(resps[1].value) readingCauseTemplate = JSON.parse(resps[1].value);
-                    if(resps[2].value) listeningPaperTemplate = JSON.parse(resps[2].value);
-                    if(resps[3].value) listeningCauseTemplate = JSON.parse(resps[3].value);
-                    if(resps[4].value) speakingPaperTemplate = JSON.parse(resps[4].value);
-                    if(resps[5].value) speakingCauseTemplate = JSON.parse(resps[5].value);
-                    if(resps[6].value) writingPaperTemplate = JSON.parse(resps[6].value);
-                    if(resps[7].value) writingCauseTemplate = JSON.parse(resps[7].value);
-                    if(resps[8].value) language_usePaperTemplate = JSON.parse(resps[8].value);
-                    if(resps[9].value) language_useCauseTemplate = JSON.parse(resps[9].value);
-                    if(resps[10].value) learning_literacyPaperTemplate = JSON.parse(resps[10].value);
-                    if(resps[11].value) learning_literacyCauseTemplate = JSON.parse(resps[11].value);
-                } catch(e) { console.error('Failed to parse templates', e); }
-            });
         });
+
 
         // Tab Switcher
         function switchTab(step) {
@@ -1064,59 +598,110 @@
         function workspaceManager() {
             return {
                 loading: true,
-                assessments: {
-                    reading: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
-                    listening: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
-                    speaking: { examType: 'KET', score: null, total: null, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
-                    writing: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
-                    language_use: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] },
-                    learning_literacy: { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [] }
-                },
+                activeTab: '',
+                activeSubjects: [],
+                assessments: {},
+                currentAssessmentTypeId: '',
                 initData() {
                     globalWorkspaceManager = this;
+                    this.loading = false;
+                    
+                    const hiddenVal = document.getElementById('step1_type_hidden').value;
+                    setTimeout(() => {
+                        const radio = document.querySelector('input.step1-type-radio:checked');
+                        if(radio && radio.dataset.typeid) {
+                            this.loadTypeData(radio.dataset.typeid);
+                        } else if(hiddenVal) {
+                           // Attempt to find radio by value
+                           const rb = document.querySelector(`input.step1-type-radio[value="${hiddenVal}"]`);
+                           if(rb && rb.dataset.typeid) this.loadTypeData(rb.dataset.typeid);
+                        }
+                    }, 800); // give time for radios to mount
+                },
+                async loadTypeData(typeId) {
+                    if (this.currentAssessmentTypeId === typeId) return;
+                    this.currentAssessmentTypeId = typeId;
+                    this.loading = true;
+                    this.activeSubjects = [];
+                    
                     const rawJson = document.getElementById('initAssessmentResults').value;
                     let dbState = {};
                     try { dbState = JSON.parse(rawJson || '{}'); } catch(e) {}
+                    
+                    try {
+                        const tId = typeId.toUpperCase();
+                        const subjRes = await fetch(`/admin/api/config/GLOBAL_SUBJECTS_${tId}`).then(r=>r.json());
+                        if (subjRes.code === 200 && subjRes.data && subjRes.data.value) {
+                            this.activeSubjects = JSON.parse(subjRes.data.value);
+                        } else {
+                            this.activeSubjects = [];
+                        }
+                        
+                        if (this.activeSubjects.length > 0) {
+                            this.activeTab = this.activeSubjects[0].id;
+                        }
+                        
+                        this.activeSubjects.forEach(s => {
+                            if (!this.assessments[s.id]) {
+                                this.assessments[s.id] = { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [], scoreRule: null };
+                            }
+                        });
 
-                    const configs = [
-                        'GLOBAL_ANALYSIS_CONFIG_READING', 'GLOBAL_CAUSE_ANALYSIS_READING',
-                        'GLOBAL_ANALYSIS_CONFIG_LISTENING', 'GLOBAL_CAUSE_ANALYSIS_LISTENING',
-                        'GLOBAL_ANALYSIS_CONFIG_SPEAKING', 'GLOBAL_CAUSE_ANALYSIS_SPEAKING',
-                        'GLOBAL_ANALYSIS_CONFIG_WRITING', 'GLOBAL_CAUSE_ANALYSIS_WRITING',
-                        'GLOBAL_ANALYSIS_CONFIG_LANGUAGE_USE', 'GLOBAL_CAUSE_ANALYSIS_LANGUAGE_USE',
-                        'GLOBAL_ANALYSIS_CONFIG_LEARNING_LITERACY', 'GLOBAL_CAUSE_ANALYSIS_LEARNING_LITERACY'
-                    ];
+                        const promises = [];
+                        for (const subj of this.activeSubjects) {
+                            promises.push(
+                                fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tId}_${subj.key}`).then(r => r.json()).then(j => ({ type: 'paper', subj: subj.id, data: j.code===200?j.data.value:''}))
+                            );
+                            promises.push(
+                                fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tId}_${subj.key}`).then(r => r.json()).then(j => ({ type: 'cause', subj: subj.id, data: j.code===200?j.data.value:''}))
+                            );
+                            promises.push(
+                                fetch(`/admin/api/config/GLOBAL_SCORE_RULE_${tId}_${subj.key}`).then(r => r.json()).then(j => ({ type: 'scoreRule', subj: subj.id, data: j.code===200?j.data.value:''}))
+                            );
+                        }
+                        
+                        const resps = await Promise.all(promises);
+                        resps.forEach(res => {
+                            if (res.type === 'paper') {
+                                let pTpl = [];
+                                try { pTpl = JSON.parse(res.data || '[]'); } catch(e){}
+                                this.assessments[res.subj].paperAnalysis = pTpl.map(t => ({
+                                    dimension: t.dimension,
+                                    positiveText: t.positive || '',
+                                    negativeText: t.negative || '',
+                                    status: 'N/A',
+                                    text: ''
+                                }));
+                            } else if (res.type === 'cause') {
+                                let cTpl = [];
+                                try { cTpl = JSON.parse(res.data || '[]'); } catch(e){}
+                                this.assessments[res.subj].causeOptions = cTpl;
+                            } else if (res.type === 'scoreRule' && res.data) {
+                                try {
+                                    const rule = JSON.parse(res.data);
+                                    if (rule) {
+                                        this.assessments[res.subj].scoreRule = rule;
+                                        if (rule.total && this.assessments[res.subj].score === null) {
+                                            this.assessments[res.subj].total = parseFloat(rule.total);
+                                        }
+                                    }
+                                } catch(e){}
+                            }
+                        });
 
-                    Promise.all(configs.map(key => 
-                        fetch(`/admin/api/config/${key}`).then(r => r.json()).then(j => j.code === 200 ? j.data.value : '')
-                    )).then(resps => {
-                        const subjects = ['reading', 'listening', 'speaking', 'writing', 'language_use', 'learning_literacy'];
-                        subjects.forEach((subj, i) => {
-                            // Parse templates
-                            let pTpl = [], cTpl = [];
-                            try { if(resps[2*i]) pTpl = JSON.parse(resps[2*i]); } catch(e){}
-                            try { if(resps[2*i+1]) cTpl = JSON.parse(resps[2*i+1]); } catch(e){}
-                            
-                            this.assessments[subj].causeOptions = cTpl;
-                            
-                            // Initialize paperAnalysis array with defaults
-                            this.assessments[subj].paperAnalysis = pTpl.map(t => ({
-                                dimension: t.dimension,
-                                positiveText: t.positive || '',
-                                negativeText: t.negative || '',
-                                status: 'NA',
-                                text: ''
-                            }));
 
-                            // Hydrate from dbState
+                        this.activeSubjects.forEach(s => {
+                            const subj = s.id;
                             const saved = dbState[subj];
+                            this.calculateGrade(subj);
+
                             if (saved) {
-                                if (saved.testType) this.assessments[subj].examType = saved.testType;
+                                if (saved.examType) this.assessments[subj].examType = saved.examType;
+                                if (saved.testType) this.assessments[subj].examType = saved.testType; 
                                 if (saved.score !== undefined) this.assessments[subj].score = saved.score;
                                 if (saved.total !== undefined) this.assessments[subj].total = saved.total;
                                 this.calculateGrade(subj);
-                                
-                                // Hydrate paper analysis
+
                                 if (saved.paperAnalysis) {
                                     this.assessments[subj].paperAnalysis.forEach(row => {
                                         const r = saved.paperAnalysis[row.dimension];
@@ -1127,16 +712,14 @@
                                     });
                                 }
                                 
-                                // Hydrate cause analysis
                                 if (saved.causeAnalysis && Array.isArray(saved.causeAnalysis)) {
                                     this.assessments[subj].causeAnalysis = saved.causeAnalysis;
                                 }
-                            } else {
-                                this.calculateGrade(subj);
                             }
                         });
-                        this.loading = false;
-                    });
+
+                    } catch (e) { console.error('Error:', e); }
+                    this.loading = false;
                 },
                 calculateGrade(subj) {
                     const data = this.assessments[subj];
@@ -1148,36 +731,71 @@
                         return;
                     }
 
-                    if (subj === 'speaking') {
-                        data.rate = score; // Just echo score
-                        // Approximate IELTS bands mapped loosely to CEFR
-                        if (score >= 8.5) data.level = 'C2';
-                        else if (score >= 7.0) data.level = 'C1';
-                        else if (score >= 5.5) data.level = 'B2';
-                        else if (score >= 4.0) data.level = 'B1';
-                        else data.level = 'A2';
-                        return;
-                    }
-                    
-                    if (total > 0) {
-                        const rate = score / total;
-                        data.rate = (rate * 100).toFixed(1) + '%';
-                        
-                        // KET/PET Logic
-                        if (data.examType === 'KET') {
-                            if (rate <= 0.40) data.level = '低于A1';
-                            else if (rate <= 0.65) data.level = 'A1';
-                            else if (rate <= 0.90) data.level = 'A2';
-                            else data.level = 'B1';
-                        } else if (data.examType === 'PET') {
-                            if (rate <= 0.375) data.level = '低于A2';
-                            else if (rate <= 0.6875) data.level = 'A2';
-                            else if (rate <= 0.875) data.level = 'B1';
-                            else data.level = 'B2';
+                    let rule = data.scoreRule;
+                    if (rule && rule.calcType) {
+                        let compareValue = score;
+                        if (rule.calcType === 'RATE') {
+                            if (total > 0) {
+                                const rate = score / total;
+                                data.rate = (rate * 100).toFixed(1) + '%';
+                                compareValue = rate * 100; // use percentage for max matching
+                            } else {
+                                data.rate = '- %';
+                                data.level = '-';
+                                return;
+                            }
+                        } else {
+                            if (total > 0) {
+                                data.rate = ((score / total) * 100).toFixed(1) + '%';
+                            } else {
+                                data.rate = score; // directly echo score if it's absolute
+                            }
+                        }
+
+                        if (rule.rules && rule.rules.length > 0) {
+                            let matchedLevel = rule.rules[rule.rules.length - 1].level; // default to max
+                            for (let i = 0; i < rule.rules.length; i++) {
+                                if (compareValue <= parseFloat(rule.rules[i].max)) {
+                                    matchedLevel = rule.rules[i].level;
+                                    break;
+                                }
+                            }
+                            data.level = matchedLevel;
+                        } else {
+                            data.level = '-';
                         }
                     } else {
-                        data.rate = '- %';
-                        data.level = '-';
+                        // Fallback logic for legacy data if no score config
+                        if (subj === 'speaking') {
+                            data.rate = score; // Just echo score
+                            if (score >= 8.5) data.level = 'C2';
+                            else if (score >= 7.0) data.level = 'C1';
+                            else if (score >= 5.5) data.level = 'B2';
+                            else if (score >= 4.0) data.level = 'B1';
+                            else data.level = 'A2';
+                            return;
+                        }
+
+                        if (total > 0) {
+                            const rate = score / total;
+                            data.rate = (rate * 100).toFixed(1) + '%';
+                            
+                            // KET/PET Logic Fallback
+                            if (data.examType === 'KET') {
+                                if (rate <= 0.40) data.level = '低于A1';
+                                else if (rate <= 0.65) data.level = 'A1';
+                                else if (rate <= 0.90) data.level = 'A2';
+                                else data.level = 'B1';
+                            } else if (data.examType === 'PET') {
+                                if (rate <= 0.375) data.level = '低于A2';
+                                else if (rate <= 0.6875) data.level = 'A2';
+                                else if (rate <= 0.875) data.level = 'B1';
+                                else data.level = 'B2';
+                            }
+                        } else {
+                            data.rate = '- %';
+                            data.level = '-';
+                        }
                     }
                 },
                 toggleCause(subj, cause) {
@@ -1200,11 +818,6 @@
                         
                         let hasCause = src.causeAnalysis && src.causeAnalysis.length > 0;
                         
-                        // If completely untouched, skip entirely so backend knows it's skipped
-                        if ((src.score === null || src.score === '') && !hasPaper && !hasCause) {
-                            continue;
-                        }
-
                         const subjData = {
                             testType: src.examType,
                             score: src.score === null || src.score === '' ? null : (parseFloat(src.score) || 0),
@@ -1215,7 +828,7 @@
                             paperAnalysis: {}
                         };
                         src.paperAnalysis.forEach(row => {
-                            if (row.status !== 'NA' || row.text.trim() !== '') {
+                            if ((row.status !== 'NA' && row.status !== 'N/A') || row.text.trim() !== '') {
                                 subjData.paperAnalysis[row.dimension] = { status: row.status, text: row.text.trim() };
                             }
                         });
@@ -1287,7 +900,7 @@
                                     container.innerHTML += `
                                         <div class="form-check form-check-inline m-0">
                                             <input class="form-check-input shadow-sm step1-type-radio" type="radio" id="evalDync_${index}"
-                                                name="assessmentType" value="${item.name}" ${isChecked}>
+                                                name="assessmentType" value="${item.name}" ${isChecked} data-typeid="${item.id}" onchange="if(globalWorkspaceManager) globalWorkspaceManager.loadTypeData(\'${item.id}\')" data-typeid="${item.id}" onchange="if(globalWorkspaceManager) globalWorkspaceManager.loadTypeData(\'${item.id}\')">
                                             <label class="form-check-label" for="evalDync_${index}">${item.name}</label>
                                         </div>
                                     `;
@@ -1508,7 +1121,22 @@
                             const parsed = JSON.parse(existingDataRaw);
                             this.data = { ...this.data, ...parsed };
                             if (!this.data.coursePlans || this.data.coursePlans.length===0) {
-                                this.data.coursePlans = [{phase: '', duration: '', goal: '', textbook: '', hours: ''}];
+                                this.data.coursePlans = [
+                                    {
+                                        phase: '阶段1:\n基础课程', 
+                                        duration: '生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint', 
+                                        goal: '1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标', 
+                                        textbook: '', 
+                                        hours: ''
+                                    },
+                                    {
+                                        phase: '阶段2:\n中高级课程/\n应试培训+面试辅导', 
+                                        duration: '2h', 
+                                        goal: '1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标', 
+                                        textbook: '', 
+                                        hours: ''
+                                    }
+                                ];
                             }
                         } catch(e) {}
                     }

@@ -23,4 +23,6 @@ class TeachingPlan(
 
     @Column(name = "teaching_duration")
     var teachingDuration: String? = null
-)
+) {
+    constructor() : this(null, "", "", null, null, null)
+}

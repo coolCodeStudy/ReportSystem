@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Custom Styles -->
     <link href="/css/style.css" rel="stylesheet">
     <style>
@@ -93,8 +95,42 @@
                                 <!-- Panel: Analysis Config via Alpine.js -->
                                 <div id="panel-analysis" class="config-panel d-block" x-data="analysisConfigManager()" x-init="initData()">
                                     <div class="bg-white p-4 rounded-3 shadow-sm border mb-4">
+                                        <!-- Assessment Type Selector Header -->
+                                        <div class="d-flex align-items-center mb-4 bg-light p-3 rounded border">
+                                            <label class="fw-bold me-3 text-secondary"><i class="bi bi-diagram-3-fill me-1"></i> 当前业务类型:</label>
+                                            <div class="position-relative" @click.away="dropdownOpen = false">
+                                                <button type="button" @click="dropdownOpen = !dropdownOpen" class="btn btn-white bg-white border shadow-sm fw-bold d-flex align-items-center justify-content-between text-dark" style="min-width: 220px; border-radius: 8px;">
+                                                    <span x-text="activeAssessmentType ? assessmentTypes.find(t => t.id === activeAssessmentType)?.name : '请选择业务类型...'"></span>
+                                                    <i class="bi bi-chevron-down ms-3 text-muted small"></i>
+                                                </button>
+                                                <ul class="dropdown-menu shadow w-100 mt-1 border-0" 
+                                                    :class="{'d-block': dropdownOpen}"
+                                                    style="position: absolute; z-index: 1000; border-radius: 8px; overflow: hidden;" 
+                                                    x-show="dropdownOpen" x-transition.opacity.duration.200ms>
+                                                    <template x-for="type in assessmentTypes" :key="type.id">
+                                                        <li>
+                                                            <a class="dropdown-item py-2 px-3 fw-medium d-flex align-items-center" href="javascript:void(0)" 
+                                                               @click="activeAssessmentType = type.id; dropdownOpen = false; switchAssessmentType();"
+                                                               :class="{'bg-primary bg-opacity-10 text-primary': activeAssessmentType === type.id}">
+                                                                <i class="bi bi-check2 me-2" :style="{ visibility: activeAssessmentType === type.id ? 'visible' : 'hidden' }"></i>
+                                                                <span x-text="type.name"></span>
+                                                            </a>
+                                                        </li>
+                                                    </template>
+                                                </ul>
+                                            </div>
+                                            <div class="ms-auto d-flex gap-2">
+                                                <button class="btn btn-sm btn-outline-info bg-white shadow-sm" @click="openCopyModal()" x-show="activeAssessmentType && tabs.length > 0">
+                                                    <i class="bi bi-files me-1"></i> 复制配置至其他测评
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-primary bg-white shadow-sm" @click="openSubjectManager()" x-show="activeAssessmentType">
+                                                    <i class="bi bi-gear-fill me-1"></i> 管理科目与页卡
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <!-- Tab Headers -->
-                                        <ul class="nav nav-tabs mb-4 px-2 pt-2 bg-light rounded-top" role="tablist">
+                                        <ul class="nav nav-tabs mb-4 px-2 pt-2 bg-light rounded-top" role="tablist" x-show="tabs.length > 0">
                                             <template x-for="tab in tabs" :key="tab.id">
                                                 <li class="nav-item" role="presentation">
                                                     <button class="nav-link fw-bold" 
@@ -106,15 +142,77 @@
                                                 </li>
                                             </template>
                                         </ul>
+                                        
+                                        <!-- Empty State for Tabs -->
+                                        <div x-show="tabs.length === 0 && !loading" class="text-center p-5 text-muted border rounded bg-light">
+                                            <i class="bi bi-folder-x fs-1 text-secondary mb-3 d-block"></i>
+                                            <h5>该业务类型尚未配置任何科目</h5>
+                                            <p class="small">请点击右上角的“管理该体系包含的科目与页卡”按钮进行配置。</p>
+                                        </div>
+
+                                        <!-- Loading Spinner -->
+                                        <div x-show="loading" class="text-center p-5 text-muted">
+                                            <div class="spinner-border text-primary mb-3" role="status"></div>
+                                            <p>正在拉取配置...</p>
+                                        </div>
 
                                         <!-- Tab Contents -->
-                                        <div class="tab-content px-2" style="min-height: 400px; position: relative;">
-                                            
-                                            <!-- Loading overlay -->
-                                            <div x-show="loading" class="position-absolute top-0 start-0 w-100 h-100 bg-white z-3" style="opacity: 0.85; border-radius: 8px;">
-                                                <div class="d-flex flex-column justify-content-center align-items-center h-100">
-                                                    <div class="spinner-border text-primary fs-4" role="status" style="width: 3rem; height: 3rem;"></div>
-                                                    <span class="mt-3 fw-bold text-muted" style="letter-spacing: 1px;">正在载入最新配置架构...</span>
+                                        <div class="tab-content px-2" id="analysisTabContent" x-show="tabs.length > 0 && !loading" style="position: relative;">
+
+                                            <!-- Score Calculation Rule Configuration Box -->
+                                            <div class="card border mb-4 shadow-sm" style="border-radius: 0.5rem;" x-show="activeTab">
+                                                <div class="card-header bg-light py-2 border-bottom d-flex align-items-center">
+                                                    <i class="bi bi-123 me-2 text-primary"></i><span class="fw-bold small text-secondary">自动算分与等级换算规则 (可选)</span>
+                                                </div>
+                                                <div class="card-body p-3 bg-white">
+                                                    <template x-if="activeTab && configs[activeTab] && configs[activeTab].scoreRule">
+                                                        <div class="row g-3">
+                                                            <div class="col-md-5">
+                                                                <div class="input-group input-group-sm mb-2">
+                                                                    <span class="input-group-text bg-light text-secondary">结算模式</span>
+                                                                    <select class="form-select" x-model="configs[activeTab].scoreRule.calcType">
+                                                                        <option value="RATE">按正确率(%)换算等级</option>
+                                                                        <option value="SCORE">按纯卷面分数值换算等级</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="input-group input-group-sm">
+                                                                    <span class="input-group-text bg-light text-secondary">默认满分/题数</span>
+                                                                    <input type="number" class="form-control" x-model.number="configs[activeTab].scoreRule.total" placeholder="选填，如30题">
+                                                                </div>
+                                                                <div class="mt-3 small text-muted">
+                                                                    <p class="mb-1"><i class="bi bi-info-circle me-1"></i>如果填写则在工作台默认代入。</p>
+                                                                    <p class="mb-0"><i class="bi bi-info-circle me-1"></i>按从小到大依次遍历触发条件。</p>
+                                                                </div>
+                                                            </div>
+                                                            <!-- Dynamic thresholds list -->
+                                                            <div class="col-md-7 border-start pl-4">
+                                                                <h6 class="fs-6 fw-bold mb-3 d-flex align-items-center">
+                                                                    梯度规则
+                                                                    <button class="btn btn-sm btn-outline-primary ms-auto" style="padding: 0.1rem 0.5rem;" @click="configs[activeTab].scoreRule.rules.push({max: 0, level: ''})">
+                                                                        <i class="bi bi-plus-lg"></i> 增添一档
+                                                                    </button>
+                                                                </h6>
+                                                                <div class="list-group">
+                                                                    <template x-for="(rule, idx) in configs[activeTab].scoreRule.rules" :key="idx">
+                                                                        <div class="list-group-item px-2 py-1 border-0 mb-1 rounded bg-light" style="display: flex; gap: 8px; align-items: center;">
+                                                                            <span class="text-muted small text-nowrap">若是 </span>
+                                                                            <div class="input-group input-group-sm" style="min-width: 140px; max-width: 180px;">
+                                                                                <span class="input-group-text">≤</span>
+                                                                                <input type="number" class="form-control px-2 text-center" x-model="rule.max" placeholder="分数/率">
+                                                                                <span class="input-group-text" x-text="configs[activeTab].scoreRule.calcType === 'RATE' ? '%' : '分'"></span>
+                                                                            </div>
+                                                                            <span class="text-muted small text-nowrap">➡️ 则为</span>
+                                                                            <input type="text" class="form-control form-control-sm" style="max-width: 180px;" x-model="rule.level" placeholder="结论等级">
+                                                                            <button class="btn btn-sm text-danger border-0 ms-auto" @click="configs[activeTab].scoreRule.rules.splice(idx, 1)"><i class="bi bi-trash"></i></button>
+                                                                        </div>
+                                                                    </template>
+                                                                    <template x-if="configs[activeTab].scoreRule.rules.length === 0">
+                                                                        <div class="text-center text-muted small py-2">无可配置项。若不配置，仍支持直接手动填原分</div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </template>
                                                 </div>
                                             </div>
 
@@ -197,6 +295,89 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Copy Configuration Modal -->
+                <div class="modal fade" id="copyManagerModal" tabindex="-1" aria-hidden="true" x-data>
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold">复制配置至其他测评类型</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-info py-2 small border-0 bg-opacity-10 bg-info">
+                                    <i class="bi bi-info-circle-fill text-info me-1"></i>
+                                    这将会把当前 <strong x-text="document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType"></strong> 的全部科目、维度和成因分析标签，<strong>覆盖</strong>保存到下方选中的目标业务类型中。
+                                </div>
+                                <h6 class="fw-bold mb-3 fs-6">选择目标类型：</h6>
+                                <div class="row g-2">
+                                    <template x-for="type in document.querySelector('#panel-analysis')._x_dataStack[0].assessmentTypes.filter(t => t.id !== document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType)" :key="type.id">
+                                        <div class="col-6">
+                                            <div class="form-check border rounded px-3 py-2 ms-0 d-flex align-items-center"
+                                                 :class="document.querySelector('#panel-analysis')._x_dataStack[0].selectedCopyTargets.includes(type.id) ? 'border-info bg-info bg-opacity-10' : ''">
+                                                <input class="form-check-input ms-0 me-2" type="checkbox" :value="type.id" :id="'target_' + type.id"
+                                                    x-model="document.querySelector('#panel-analysis')._x_dataStack[0].selectedCopyTargets">
+                                                <label class="form-check-label flex-grow-1" :for="'target_' + type.id" style="cursor: pointer;" x-text="type.name"></label>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-info text-white shadow-sm" @click="document.querySelector('#panel-analysis')._x_dataStack[0].copyToSelectedTypes()" 
+                                        :disabled="document.querySelector('#panel-analysis')._x_dataStack[0].copying">
+                                    <span x-show="!document.querySelector('#panel-analysis')._x_dataStack[0].copying"><i class="bi bi-files me-1"></i> 确认覆盖</span>
+                                    <span x-show="document.querySelector('#panel-analysis')._x_dataStack[0].copying"><i class="spinner-border spinner-border-sm me-2"></i> 处理中...</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Subject Management Modal -->
+                <div class="modal fade" id="subjectManagerModal" tabindex="-1" aria-hidden="true" x-data>
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header border-0 pb-0">
+                                <h5 class="modal-title fw-bold">管理业务体系 [ <span class="text-primary" x-text="document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType"></span> ] 包含的科目</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning py-2 mb-3 small border-0 bg-opacity-10 bg-warning">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>
+                                    增删科目仅影响当前所选体系。删除科目不会删除历史数据，但会使其无法在界面上配置。
+                                </div>
+                                <ul class="list-group list-group-flush mb-3 border rounded">
+                                    <template x-for="(st, index) in document.querySelector('#panel-analysis')._x_dataStack[0].editingTabs" :key="index">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <i class="bi text-primary me-2" :class="st.icon"></i>
+                                                <span class="fw-bold" x-text="st.name"></span>
+                                                <span class="badge bg-light text-secondary ms-2 font-monospace" x-text="st.key"></span>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline-danger border-0" @click="document.querySelector('#panel-analysis')._x_dataStack[0].removeSubject(index)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </li>
+                                    </template>
+                                    <template x-if="document.querySelector('#panel-analysis')._x_dataStack[0].editingTabs.length === 0">
+                                        <li class="list-group-item text-muted text-center py-3">无科目</li>
+                                    </template>
+                                </ul>
+                                <button class="btn btn-sm btn-outline-primary w-100 border-dashed" @click="document.querySelector('#panel-analysis')._x_dataStack[0].addSubject()">
+                                    <i class="bi bi-plus"></i> 开通新页面科目
+                                </button>
+                            </div>
+                            <div class="modal-footer border-0 pt-0">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                                <button type="button" class="btn btn-primary px-4" @click="document.querySelector('#panel-analysis')._x_dataStack[0].saveSubjects()">保存并刷新</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </main>
         </div>
     </div>    
@@ -206,47 +387,213 @@
         // Alpine.js component definition
         function analysisConfigManager() {
             return {
-                activeTab: 'reading',
+                assessmentTypes: [],
+                activeAssessmentType: '',
+                activeTab: '',
+                dropdownOpen: false,
                 loading: true,
                 saving: false,
-                tabs: [
-                    { id: 'reading', name: '阅读理解', icon: 'bi-book', key: 'READING' },
-                    { id: 'listening', name: '听力理解', icon: 'bi-earbuds', key: 'LISTENING' },
-                    { id: 'speaking', name: '口语表达', icon: 'bi-mic', key: 'SPEAKING' },
-                    { id: 'writing', name: '写作表达', icon: 'bi-pencil-square', key: 'WRITING' },
-                    { id: 'language_use', name: '语言运用', icon: 'bi-translate', key: 'LANGUAGE_USE' },
-                    { id: 'learning_literacy', name: '学习素养', icon: 'bi-lightning-charge', key: 'LEARNING_LITERACY' }
-                ],
-                configs: {
-                    reading: { analysis: [], cause: [] },
-                    listening: { analysis: [], cause: [] },
-                    speaking: { analysis: [], cause: [] },
-                    writing: { analysis: [], cause: [] },
-                    language_use: { analysis: [], cause: [] },
-                    learning_literacy: { analysis: [], cause: [] }
-                },
+                tabs: [],
+                configs: {},
+                editingTabs: [],
+                selectedCopyTargets: [],
+                copying: false,
                 
                 async initData() {
                     this.loading = true;
-                    // Run requests concurrently
-                    const allTypes = this.tabs.map(tab => tab.key);
+                    try {
+                        const res = await fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS').then(r => r.json());
+                        if (res.code === 200 && res.data && res.data.value) {
+                            this.assessmentTypes = JSON.parse(res.data.value);
+                            // Filter valid IDs
+                            this.assessmentTypes = this.assessmentTypes.filter(t => t.id);
+                        }
+                    } catch(e) { console.error(e); }
+
+                    if (this.assessmentTypes.length > 0) {
+                        this.activeAssessmentType = this.assessmentTypes[0].id;
+                        await this.switchAssessmentType();
+                    } else {
+                        this.loading = false;
+                        Swal.fire({ icon: 'warning', title: '尚未配置测评体系', text: '请先在【测评类型配置】菜单中添加并设置具有唯一 ID 的测评体系再回到本页！' });
+                    }
+                },
+
+                async switchAssessmentType() {
+                    this.loading = true;
+                    this.tabs = [];
+                    this.configs = {};
+                    this.activeTab = '';
+                    
+                    try {
+                        const typeId = this.activeAssessmentType.toUpperCase();
+                        const subjRes = await fetch(`/admin/api/config/GLOBAL_SUBJECTS_${typeId}`).then(r => r.json());
+                        if (subjRes.code === 200 && subjRes.data && subjRes.data.value) {
+                            this.tabs = JSON.parse(subjRes.data.value);
+                        } else {
+                            // No subjects configured for this type yet
+                            this.tabs = [];
+                        }
+                    } catch(e) { console.error('Error fetching subjects', e); }
+
+                    this.tabs.forEach(tab => {
+                        this.configs[tab.id] = { analysis: [], cause: [], scoreRule: { total: 0, calcType: 'RATE', rules: [] } };
+                    });
+                    
+                    if (this.tabs.length > 0) {
+                        this.activeTab = this.tabs[0].id;
+                    }
+
+                    const typeId = this.activeAssessmentType.toUpperCase();
                     for (const tab of this.tabs) {
                         try {
-                            const [aRes, cRes] = await Promise.all([
-                                fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
-                                fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
+                            const [aRes, cRes, sRes] = await Promise.all([
+                                fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${typeId}_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                                fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${typeId}_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j)),
+                                fetch(`/admin/api/config/GLOBAL_SCORE_RULE_${typeId}_${tab.key}`).then(r => r.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : null))
                             ]);
-                            this.configs[tab.id].analysis = this.parseJsonAsArray(aRes.value);
+                            this.configs[tab.id].analysis = this.parseJsonAsArray(aRes ? aRes.value : null);
                             
-                            // For primitive arrays, map to objects so Alpine x-model works
-                            const causeArr = this.parseJsonAsArray(cRes.value);
+                            const causeArr = this.parseJsonAsArray(cRes ? cRes.value : null);
                             this.configs[tab.id].cause = causeArr.map(s => ({val: typeof s === 'string' ? s : ''}));
                             
+                            if (sRes && sRes.value) {
+                                try {
+                                    this.configs[tab.id].scoreRule = JSON.parse(sRes.value);
+                                } catch (e) {
+                                    this.configs[tab.id].scoreRule = { total: 0, calcType: 'RATE', rules: [] };
+                                }
+                            } else {
+                                this.configs[tab.id].scoreRule = { total: 0, calcType: 'RATE', rules: [] };
+                            }
                         } catch(e) {
                             console.error('Failed fetching data for', tab.key, e);
                         }
                     }
                     this.loading = false;
+                },
+
+                openCopyModal() {
+                    this.selectedCopyTargets = [];
+                    new bootstrap.Modal(document.getElementById('copyManagerModal')).show();
+                },
+
+                async copyToSelectedTypes() {
+                    if (this.selectedCopyTargets.length === 0) {
+                        Swal.fire({icon: 'warning', title: '未选择目标', text: '请至少选择一个目标测评类型！'});
+                        return;
+                    }
+                    this.copying = true;
+                    try {
+                        const promises = [];
+                        for (const targetType of this.selectedCopyTargets) {
+                            const targetId = targetType.toUpperCase();
+                            // Copy subjects
+                            promises.push(fetch(`/admin/api/config/GLOBAL_SUBJECTS_${targetId}`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({value: JSON.stringify(this.tabs)})
+                            }).then(r => r.json()));
+                            
+                            // Copy dimensions and causes
+                            for (const tab of this.tabs) {
+                                const cleanAnalysis = this.configs[tab.id].analysis.filter(a => a.dimension.trim() !== '');
+                                const cleanCause = this.configs[tab.id].cause.map(c => c.val.trim()).filter(v => v !== '');
+                                
+                                promises.push(fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${targetId}_${tab.key}`, {
+                                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({value: JSON.stringify(cleanAnalysis)})
+                                }).then(r => r.json()));
+                                promises.push(fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${targetId}_${tab.key}`, {
+                                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({value: JSON.stringify(cleanCause)})
+                                }).then(r => r.json()));
+                                
+                                promises.push(fetch(`/admin/api/config/GLOBAL_SCORE_RULE_${targetId}_${tab.key}`, {
+                                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                                    body: JSON.stringify({value: JSON.stringify(this.configs[tab.id].scoreRule)})
+                                }).then(r => r.json()));
+                            }
+                        }
+                        const results = await Promise.all(promises);
+                        const hasError = results.some(r => r.code !== 200);
+                        if (!hasError) {
+                            Swal.fire({ icon: 'success', title: '复制成功', text: '已将当前配置无缝覆盖到所选的测评分类。' });
+                            bootstrap.Modal.getInstance(document.getElementById('copyManagerModal')).hide();
+                            this.selectedCopyTargets = [];
+                        } else {
+                            Swal.fire({ icon: 'error', title: '部分保存失败', text: '部分配置上传失败，请刷新查看。' });
+                        }
+                    } catch (e) {
+                        Swal.fire({ icon: 'error', title: '复制异常', text: '网络异常，复制中止。' });
+                    } finally {
+                        this.copying = false;
+                    }
+                },
+
+                openSubjectManager() {
+                    this.editingTabs = JSON.parse(JSON.stringify(this.tabs));
+                    new bootstrap.Modal(document.getElementById('subjectManagerModal')).show();
+                },
+                async addSubject() {
+                    const { value: zhName } = await Swal.fire({
+                        title: '新增考评科目',
+                        input: 'text',
+                        inputLabel: '请输入新科目名称（如：自然拼读）：',
+                        inputPlaceholder: '例如：自然拼读',
+                        showCancelButton: true,
+                        confirmButtonText: '确定添加',
+                        cancelButtonText: '取消',
+                        inputValidator: (value) => {
+                            if (!value || value.trim() === '') {
+                                return '科目名称不能为空！'
+                            }
+                        }
+                    });
+                    
+                    if (zhName) {
+                        const idName = 'subj_' + Math.random().toString(36).substring(2, 8).toLowerCase();
+                        
+                        this.editingTabs.push({
+                            id: idName,
+                            name: zhName.trim(),
+                            icon: 'bi-bookmark-star',
+                            key: idName.toUpperCase()
+                        });
+                    }
+                },
+                removeSubject(index) {
+                    Swal.fire({
+                        title: '确认移除该科目吗？',
+                        text: `移除科目 [${this.editingTabs[index].name}] 会影响后续报表生成选项，确定移除吗？`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: '确定移除',
+                        cancelButtonText: '取消',
+                        confirmButtonColor: '#d33'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            this.editingTabs.splice(index, 1);
+                        }
+                    });
+                },
+                async saveSubjects() {
+                    try {
+                        const payload = JSON.stringify(this.editingTabs);
+                        const typeId = this.activeAssessmentType.toUpperCase();
+                        const res = await fetch(`/admin/api/config/GLOBAL_SUBJECTS_${typeId}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ value: payload })
+                        });
+                        const j = await res.json();
+                        if (j.code === 200) {
+                            Swal.fire({ icon: 'success', title: '保存成功', text: '科目配置已生效，重新加载中...', timer: 1500, showConfirmButton: false });
+                            bootstrap.Modal.getInstance(document.getElementById('subjectManagerModal')).hide();
+                            await this.switchAssessmentType();
+                        } else {
+                            Swal.fire({ icon: 'error', title: '保存失败', text: j.message });
+                        }
+                    } catch(e) { Swal.fire({ icon: 'error', title: '异常错误', text: '保存配置时出现异常，请重试！' }); }
                 },
 
                 parseJsonAsArray(val) {
@@ -285,16 +632,16 @@
                         
                         if (res.code === 200) {
                             if (res.data.length === 0) {
-                                alert('未能从 Excel 中识别到有效的维度信息。');
+                                Swal.fire({ icon: 'warning', title: '未识别到数据', text: '未能从 Excel 中识别到有效的维度信息，请检查文件格式。' });
                             } else {
                                 this.configs[type].analysis = res.data;
-                                alert(`成功导入并替换为 ${res.data.length} 个维度指标！\n请记得点击底部的“保存所有模板配置”使其生效。`);
+                                Swal.fire({ icon: 'success', title: `导入成功`, text: `已导入并替换为 ${res.data.length} 个维度指标，请记得点击底部的“保存所有模板配置”使其生效。` });
                             }
                         } else {
-                            alert('解析失败: ' + res.message);
+                            Swal.fire({ icon: 'error', title: '解析失败', text: res.message });
                         }
                     } catch (e) {
-                        alert('网络上传出现错误');
+                        Swal.fire({ icon: 'error', title: '网络错误', text: '上传文件时出现网络错误，请重试。' });
                     }
                     event.target.value = ''; // Reset file input
                 },
@@ -302,19 +649,23 @@
                 async saveAll() {
                     this.saving = true;
                     const promises = [];
+                    const typeId = this.activeAssessmentType.toUpperCase();
                     for (const tab of this.tabs) {
                         try {
-                            // Serialize state back to pure JSON strings. Filter empty/blank dimensions.
                             const cleanAnalysis = this.configs[tab.id].analysis.filter(a => a.dimension.trim() !== '');
                             const cleanCause = this.configs[tab.id].cause.map(c => c.val.trim()).filter(v => v !== '');
                             
-                            promises.push(fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tab.key}`, {
+                            promises.push(fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${typeId}_${tab.key}`, {
                                 method: 'POST', headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({value: JSON.stringify(cleanAnalysis)})
                             }).then(r => r.json()));
-                            promises.push(fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${tab.key}`, {
+                            promises.push(fetch(`/admin/api/config/GLOBAL_CAUSE_ANALYSIS_${typeId}_${tab.key}`, {
                                 method: 'POST', headers: {'Content-Type': 'application/json'},
                                 body: JSON.stringify({value: JSON.stringify(cleanCause)})
+                            }).then(r => r.json()));
+                            promises.push(fetch(`/admin/api/config/GLOBAL_SCORE_RULE_${typeId}_${tab.key}`, {
+                                method: 'POST', headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({value: JSON.stringify(this.configs[tab.id].scoreRule)})
                             }).then(r => r.json()));
                         } catch(e) {
                             console.error('Error stringifying state', tab.id, e);
@@ -323,11 +674,15 @@
                     
                     try {
                         const results = await Promise.all(promises);
-                        if (results.every(r => r.code === 200)) alert('✅ 模板配置保存成功！所有的改动已转化为规范JSON并存入系统，前端测评工作台将即刻生效。');
-                        else alert('❌ 保存部分失败，请重试！\n' + results.map(r => r.message || '').filter(Boolean).join('\n'));
+                        if (results.every(r => r.code === 200)) {
+                            Swal.fire({ icon: 'success', title: '保存成功 ✅', text: '所有模板配置已存入系统，前端测评工作台将即刻生效。' });
+                        } else {
+                            const errors = results.map(r => r.message || '').filter(Boolean).join('\n');
+                            Swal.fire({ icon: 'error', title: '部分保存失败', text: errors || '请重试' });
+                        }
                     } catch(e) {
                         console.error('网络异常:', e);
-                        alert('保存遇到网络异常');
+                        Swal.fire({ icon: 'error', title: '网络异常', text: '保存时遇到网络错误，请重试。' });
                     }
                     this.saving = false;
                 }

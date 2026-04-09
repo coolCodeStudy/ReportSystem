@@ -455,11 +455,15 @@
                 return;
             }
             assessmentDescs.forEach((item, index) => {
+                if (!item.id) {
+                    item.id = 'type_' + Math.random().toString(36).substring(2, 8).toLowerCase();
+                }
                 list.innerHTML += `
                     <div class="list-group-item bg-light mb-2 border rounded p-3">
                         <div class="row align-items-start">
+                            <input type="hidden" class="desc-id-input" value="${item.id}">
                             <div class="col-md-3">
-                                <label class="small text-muted mb-1 fw-bold">测评名称 / 关键词</label>
+                                <label class="small text-muted mb-1 fw-bold">展示名称</label>
                                 <input type="text" class="form-control form-control-sm desc-name-input" value="${item.name}" placeholder="如：KET">
                             </div>
                             <div class="col-md-8">
@@ -476,7 +480,7 @@
         }
 
         function addAssessmentDescRow() {
-            assessmentDescs.push({ name: '', description: '' });
+            assessmentDescs.push({ id: 'type_' + Math.random().toString(36).substring(2, 8).toLowerCase(), name: '', description: '' });
             renderAssessmentDescs();
             setTimeout(() => {
                 const list = document.getElementById('assessmentDescList');
@@ -490,14 +494,21 @@
         }
 
         function saveAssessmentDescs() {
+            const ids = document.querySelectorAll('.desc-id-input');
             const names = document.querySelectorAll('.desc-name-input');
             const texts = document.querySelectorAll('.desc-text-input');
             const newArray = [];
+            const idSet = new Set();
             for(let i=0; i<names.length; i++){
+                let idVal = ids[i].value.trim().toLowerCase();
                 const n = names[i].value.trim();
                 const t = texts[i].value.trim();
+                
                 if (n || t) {
-                    newArray.push({ name: n, description: t });
+                    if (!idVal) idVal = 'type_' + Math.random().toString(36).substring(2, 8).toLowerCase();
+                    if (idSet.has(idVal)) return alert(`由于操作过快出现标识重复，请刷新页面后重试！`);
+                    idSet.add(idVal);
+                    newArray.push({ id: idVal, name: n, description: t });
                 }
             }
             fetch('/admin/api/config/GLOBAL_ASSESSMENT_DESCRIPTIONS', {
