@@ -308,7 +308,6 @@
                             <input type="hidden" id="step1_studentType" th:value="${student.studentType}">
                         </div>
                         <div class="col-12 mt-4 text-end">
-                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="btnSaveStep1" onclick="saveStep1AndContinue()">保存测评基础配置</button>
                         </div>
                     </div>
                 </div>
@@ -349,7 +348,7 @@
                 <template x-for="(subj, index) in activeSubjects" :key="subj.id">
                     <div class="tab-pane fade" :class="{'show active': activeTab === subj.id}" role="tabpanel" tabindex="0">
 
-                        <div class="analysis-card">
+                        <div class="analysis-card" x-show="assessments[subj.id]?.scoreRule && assessments[subj.id]?.scoreRule?.mode !== 'NONE'">
                             <div class="analysis-card-header">
                                 <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-calculator me-2"></i>分数与等级自动换算</h6>
                             </div>
@@ -438,25 +437,11 @@
             </div>
         </div>
         
-        <!-- Action Bar -->
-        <footer class="bottom-action-bar">
-            <div>
-                <span class="text-success small fw-medium d-none" id="saveSuccessIndicator"><i class="bi bi-check-circle-fill me-1"></i>已保存</span>
-                <span class="text-muted small ms-2" id="lastSaveTime"></span>
-            </div>
-            <div>
-                <button class="btn btn-primary px-5 shadow-sm" onclick="saveWorkspaceData()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
-                    <i class="bi bi-cloud-arrow-up me-2"></i>保存所有修改
-                </button>
-            </div>
-        </footer>
         
-        <div id="step3-content" class="step-content" style="display: none;" x-data="workspaceStep3()">
+        <div id="step3-content" class="content-body" style="display: none;" x-data="workspaceStep3()">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h5 class="fw-bold mb-0"><i class="bi bi-book-half text-primary me-2"></i>语言教学安排</h5>
-                <button class="btn btn-primary" @click="saveStep3" :disabled="saving">
-                    <i class="bi bi-save me-1"></i> <span x-text="saving ? '保存中...' : '保存此页'"></span>
-                </button>
+
             </div>
             <div x-show="alertMsg" class="alert alert-success py-2 small mb-4" x-text="alertMsg"></div>
 
@@ -526,7 +511,20 @@
             <input type="hidden" id="initTeachingPlanData" th:value="${teachingPlanData}">
         </div>
 
+        <!-- Action Bar -->
+        <footer class="bottom-action-bar">
+            <div>
+                <span class="text-success small fw-medium d-none" id="saveSuccessIndicator"><i class="bi bi-check-circle-fill me-1"></i>已保存</span>
+                <span class="text-muted small ms-2" id="lastSaveTime"></span>
+            </div>
+            <div>
+                <button class="btn btn-primary px-5 shadow-sm" onclick="saveWorkspaceData()" style="background: linear-gradient(135deg, var(--primary) 0%, var(--purple) 100%); border:none;">
+                    <i class="bi bi-cloud-arrow-up me-2"></i>保存所有修改
+                </button>
+            </div>
+        </footer>
     </main>
+
 
     <!-- Export Columns Modal -->
     <div class="modal fade" id="exportColumnsModal" tabindex="-1" aria-labelledby="exportColumnsModalLabel" aria-hidden="true" style="z-index: 1060;">
@@ -583,17 +581,14 @@
             // Hide the global action bar when on Step 3 to prevent "double save button" confusion
             const actionBar = document.querySelector('.bottom-action-bar');
             if (actionBar) {
-                if (step === 'step3') {
-                    actionBar.style.setProperty('display', 'none', 'important');
-                } else {
-                    actionBar.style.setProperty('display', 'flex', 'important');
-                }
+                actionBar.style.setProperty('display', 'flex', 'important');
             }
         }
 
         
         // Alpine.js workspace manager
         let globalWorkspaceManager = null;
+        let globalWorkspaceStep3Manager = null;
         
         function workspaceManager() {
             return {
@@ -669,8 +664,8 @@
                                     dimension: t.dimension,
                                     positiveText: t.positive || '',
                                     negativeText: t.negative || '',
-                                    status: 'N/A',
-                                    text: ''
+                                    status: '✅',
+                                    text: t.positive || ''
                                 }));
                             } else if (res.type === 'cause') {
                                 let cTpl = [];
@@ -862,8 +857,23 @@
 
         // Helper override for save button in action bar
         window.saveWorkspaceData = function() {
-            if (globalWorkspaceManager) return globalWorkspaceManager.saveWorkspaceData();
-            return Promise.resolve();
+            const btn = document.querySelector('.bottom-action-bar .btn-primary');
+            const origHtml = btn ? btn.innerHTML : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
+            }
+            
+            let p1 = globalWorkspaceManager ? globalWorkspaceManager.saveWorkspaceData() : Promise.resolve();
+            let p2 = globalWorkspaceStep3Manager ? globalWorkspaceStep3Manager.saveStep3(true) : Promise.resolve();
+            let p3 = typeof saveStep1DataSilent === 'function' ? saveStep1DataSilent() : Promise.resolve();
+
+            return Promise.all([p1, p2, p3]).finally(() => {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origHtml;
+                }
+            });
         };
 
         function exportWord() {
@@ -1043,48 +1053,30 @@
             bootstrap.Modal.getInstance(document.getElementById('exportColumnsModal')).hide();
         };
 
-        function saveStep1AndContinue() {
-            const recordId = document.getElementById('recordIdSpan').innerText;
-            const btn = document.getElementById('btnSaveStep1');
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>保存中...';
-
-            // Find selected radio
+        function saveStep1DataSilent() {
+            const recordIdSpan = document.getElementById('recordIdSpan');
+            if (!recordIdSpan) return Promise.resolve();
+            const recordId = recordIdSpan.innerText;
+            if (!recordId || recordId === '0') return Promise.resolve();
+            
             let selectedType = '';
             document.querySelectorAll('.step1-type-radio').forEach(r => {
                 if (r.checked) selectedType = r.value;
             });
 
             const payload = {
-                lingolandLevel: document.getElementById('step1_level').value,
-                assessmentDate: document.getElementById('step1_date').value,
+                lingolandLevel: document.getElementById('step1_level') ? document.getElementById('step1_level').value : '',
+                assessmentDate: document.getElementById('step1_date') ? document.getElementById('step1_date').value : '',
                 assessmentType: selectedType,
-                selectedExportColumns: document.getElementById('step1_selectedExportColumns').value
+                selectedExportColumns: document.getElementById('step1_selectedExportColumns') ? document.getElementById('step1_selectedExportColumns').value : ''
             };
 
-            fetch(`/api/assessment/${recordId}/step1`, {
+            return fetch(`/api/assessment/${recordId}/step1`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
-            })
-            .then(res => res.json()).then(_j => _j.code === 200 ? _j.data : (_j.data !== undefined ? _j.data : _j))
-            .then(data => {
-                btn.disabled = false;
-                btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
-                if (data.success) {
-                    // Force UI transition to step 2 after save
-                    switchTab('step2');
-                } else {
-                    Swal.fire('提示', '保存失败。', 'error');
-                }
-            })
-            .catch(err => {
-                btn.disabled = false;
-                btn.innerHTML = '保存并进入下一步 <i class="bi bi-arrow-right ms-1"></i>';
-                Swal.fire('提示', '网络错误，保存失败。', 'error');
-            });
+            }).then(res => res.json()).catch(() => ({}));
         }
-
         // Initialize Step 1
         loadAssessmentTypeCheckboxes();
         loadExportColumns();
@@ -1108,37 +1100,61 @@
                 availableBooks: [],
                 
                 data: {
-                    coursePlans: [
-                        {phase: '', duration: '', goal: '', textbook: '', hours: ''}
-                    ],
+                    coursePlans: [],
                     coursePlanNote: ''
                 },
 
                 async init() {
+                    globalWorkspaceStep3Manager = this;
+                    
+                    // Fetch global defaults first
+                    let defaultPlans = [];
+                    let defaultNote = '';
+                    try {
+                        const [res1, res2] = await Promise.all([
+                            fetch('/admin/api/config/GLOBAL_COURSE_PLAN_DEFAULT').then(r=>r.json()),
+                            fetch('/admin/api/config/GLOBAL_COURSE_PLAN_NOTE_DEFAULT').then(r=>r.json())
+                        ]);
+                        if (res1.code === 200 && res1.data && res1.data.value) defaultPlans = JSON.parse(res1.data.value);
+                        if (res2.code === 200 && res2.data && res2.data.value) defaultNote = res2.data.value;
+                    } catch(e) {}
+                    
+                    const fallbackDefaultPlans = [
+                        {
+                            phase: '阶段1:\n基础课程', 
+                            duration: '生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint', 
+                            goal: '1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标', 
+                            textbook: '', 
+                            hours: ''
+                        },
+                        {
+                            phase: '阶段2:\n中高级课程/\n应试培训+面试辅导', 
+                            duration: '2h', 
+                            goal: '1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标', 
+                            textbook: '', 
+                            hours: ''
+                        }
+                    ];
+
+                    const defaultPlansToUse = defaultPlans.length > 0 ? defaultPlans : fallbackDefaultPlans;
+                    const defaultNoteToUse = defaultNote || '*第一阶段的课时浮动是由于...';
+
                     const existingDataRaw = document.getElementById('initTeachingPlanData').value;
                     if (existingDataRaw && existingDataRaw !== '{}') {
                         try {
                             const parsed = JSON.parse(existingDataRaw);
                             this.data = { ...this.data, ...parsed };
-                            if (!this.data.coursePlans || this.data.coursePlans.length===0) {
-                                this.data.coursePlans = [
-                                    {
-                                        phase: '阶段1:\n基础课程', 
-                                        duration: '生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint', 
-                                        goal: '1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标', 
-                                        textbook: '', 
-                                        hours: ''
-                                    },
-                                    {
-                                        phase: '阶段2:\n中高级课程/\n应试培训+面试辅导', 
-                                        duration: '2h', 
-                                        goal: '1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标', 
-                                        textbook: '', 
-                                        hours: ''
-                                    }
-                                ];
+                            if (!this.data.coursePlans || this.data.coursePlans.length===0 || (this.data.coursePlans.length === 1 && !this.data.coursePlans[0].phase)) {
+                                this.data.coursePlans = JSON.parse(JSON.stringify(defaultPlansToUse));
+                            }
+                            if (!this.data.coursePlanNote) {
+                                this.data.coursePlanNote = defaultNoteToUse;
                             }
                         } catch(e) {}
+                    } else {
+                        // Apply default plans and notes if no existing data
+                        this.data.coursePlans = JSON.parse(JSON.stringify(defaultPlansToUse));
+                        this.data.coursePlanNote = defaultNoteToUse;
                     }
 
                     try {
@@ -1190,9 +1206,9 @@
                     this.data.coursePlans.push({phase: '', duration: '', goal: '', textbook: '', hours: ''});
                 },
 
-                async saveStep3() {
+                async saveStep3(silent = false) {
                     this.saving = true;
-                    this.alertMsg = '';
+                    if(!silent) this.alertMsg = '';
                     const recordId = document.getElementById('recordIdSpan').innerText;
                     
                     try {
@@ -1203,7 +1219,10 @@
                         });
                         const resData = await res.json();
                         if (resData.code === 200) {
-                            this.alertMsg = '教学安排内容已保存成功！';
+                            if(!silent) { this.alertMsg = '教学安排内容已保存成功！'; }
+                            // also trigger global indicator since we unified it
+                            const ind = document.getElementById("saveSuccessIndicator");
+                            if(ind) { ind.classList.remove("d-none"); setTimeout(() => ind.classList.add("d-none"), 3000); }
                             setTimeout(() => this.alertMsg='', 3000);
                         } else {
                             Swal.fire('提示', '保存失败: ' + resData.message, 'error');

@@ -273,7 +273,7 @@
                                             </div>
 
                                             <!-- 方案风险模板 -->
-                                            <div class="col-md-12">
+                                            <div class="col-md-12 mb-4">
                                                 <div class="card">
                                                     <div class="card-header bg-white">
                                                         <span class="fw-bold">默认方案风险模板</span>
@@ -281,6 +281,54 @@
                                                     </div>
                                                     <div class="card-body">
                                                         <textarea class="form-control" rows="8" x-model="planRiskTemplate" placeholder="在此输入所有预估风险条目..."></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 课时规划表默认数据 -->
+                                            <div class="col-md-12">
+                                                <div class="card">
+                                                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <span class="fw-bold">课时规划表默认模板</span>
+                                                            <span class="text-muted small ms-2">配置工作台【语言教学安排】的默认拉起数据，支持多行。</span>
+                                                        </div>
+                                                        <button class="btn btn-sm btn-outline-primary" @click="defaultCoursePlans.push({phase: '阶段名称', duration: '2h', goal: '1. 强化语言基础...', hours: ''})">+ 添加一行</button>
+                                                    </div>
+                                                    <div class="card-body p-0">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-borderless table-striped mb-0">
+                                                                <thead class="bg-light border-bottom">
+                                                                    <tr>
+                                                                        <th>阶段名称</th>
+                                                                        <th>段落时长</th>
+                                                                        <th>目标描述</th>
+                                                                        <th>预计课时</th>
+                                                                        <th style="width: 60px;">操作</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <template x-for="(row, idx) in defaultCoursePlans" :key="idx">
+                                                                        <tr class="border-bottom">
+                                                                            <td><textarea class="form-control form-control-sm" rows="2" x-model="row.phase" placeholder="如 阶段1: 基础课程"></textarea></td>
+                                                                            <td><textarea class="form-control form-control-sm" rows="2" x-model="row.duration" placeholder="如 2h"></textarea></td>
+                                                                            <td><textarea class="form-control form-control-sm" rows="2" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
+                                                                            <td><textarea class="form-control form-control-sm" rows="2" x-model="row.hours" placeholder="如 8h"></textarea></td>
+                                                                            <td class="text-center align-middle">
+                                                                                <button class="btn btn-sm btn-outline-danger border-0" @click="defaultCoursePlans.splice(idx, 1)"><i class="bi bi-trash"></i></button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    </template>
+                                                                    <tr x-show="defaultCoursePlans.length === 0">
+                                                                        <td colspan="5" class="text-center text-muted small py-3">暂无默认规划行，点击右上方添加。</td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                        <div class="p-3 border-top bg-light">
+                                                            <label class="form-label small fw-bold">课时浮动影响因素默认文案</label>
+                                                            <textarea class="form-control form-control-sm" rows="2" x-model="defaultCoursePlanNote" placeholder="如 *第一阶段的课时浮动是由于..."></textarea>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -545,6 +593,8 @@
                 teachingChecklistTemplate: '',
                 courseFrequencyTemplate: '',
                 planRiskTemplate: '',
+                defaultCoursePlans: [],
+                defaultCoursePlanNote: '',
                 alertMsg: '',
                 saving: false,
 
@@ -563,14 +613,32 @@
                         fetchConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE'),
                         fetchConfig('GLOBAL_TEACHING_CHECKLIST_TEMPLATE'),
                         fetchConfig('GLOBAL_COURSE_FREQUENCY_TEMPLATE'),
-                        fetchConfig('GLOBAL_PLAN_RISK_TEMPLATE')
-                    ]).then(([teacherData, bookData, approachData, checklistData, frequencyData, riskData]) => {
+                        fetchConfig('GLOBAL_PLAN_RISK_TEMPLATE'),
+                        fetchConfig('GLOBAL_COURSE_PLAN_DEFAULT'),
+                        fetchConfig('GLOBAL_COURSE_PLAN_NOTE_DEFAULT')
+                    ]).then(([teacherData, bookData, approachData, checklistData, frequencyData, riskData, coursePlansData, coursePlanNoteData]) => {
                         try { this.teacherIntros = teacherData ? JSON.parse(teacherData) : []; } catch (e) { this.teacherIntros = []; }
                         try { this.bookIntros = bookData ? JSON.parse(bookData) : []; } catch (e) { this.bookIntros = []; }
+                        try { this.defaultCoursePlans = coursePlansData ? JSON.parse(coursePlansData) : [
+                            {
+                                phase: '阶段1:\n基础课程', 
+                                duration: '生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint', 
+                                goal: '1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标', 
+                                hours: ''
+                            },
+                            {
+                                phase: '阶段2:\n中高级课程/\n应试培训+面试辅导', 
+                                duration: '2h', 
+                                goal: '1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标', 
+                                hours: ''
+                            }
+                        ]; } catch (e) { this.defaultCoursePlans = []; }
+                        
                         this.teachingApproachTemplate = approachData || '';
                         this.teachingChecklistTemplate = checklistData || '';
                         this.courseFrequencyTemplate = frequencyData || '';
                         this.planRiskTemplate = riskData || '';
+                        this.defaultCoursePlanNote = coursePlanNoteData || '';
                     });
                 },
 
@@ -601,7 +669,9 @@
                             saveConfig('GLOBAL_TEACHING_APPROACH_TEMPLATE', this.teachingApproachTemplate),
                             saveConfig('GLOBAL_TEACHING_CHECKLIST_TEMPLATE', this.teachingChecklistTemplate),
                             saveConfig('GLOBAL_COURSE_FREQUENCY_TEMPLATE', this.courseFrequencyTemplate),
-                            saveConfig('GLOBAL_PLAN_RISK_TEMPLATE', this.planRiskTemplate)
+                            saveConfig('GLOBAL_PLAN_RISK_TEMPLATE', this.planRiskTemplate),
+                            saveConfig('GLOBAL_COURSE_PLAN_DEFAULT', this.defaultCoursePlans.length ? JSON.stringify(this.defaultCoursePlans) : ''),
+                            saveConfig('GLOBAL_COURSE_PLAN_NOTE_DEFAULT', this.defaultCoursePlanNote)
                         ]);
                         this.alertMsg = '配置已成功保存！';
                         setTimeout(() => this.alertMsg = '', 3000);
