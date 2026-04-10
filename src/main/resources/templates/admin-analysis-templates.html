@@ -288,16 +288,8 @@
                                             </button>
                                         </div>
                                     </div>
-                                </div>
-
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Copy Configuration Modal -->
-                <div class="modal fade" id="copyManagerModal" tabindex="-1" aria-hidden="true" x-data>
+<!-- Copy Configuration Modal -->
+                <div class="modal fade" id="copyManagerModal" tabindex="-1" aria-hidden="true" data-bs-focus="false">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header border-0 pb-0">
@@ -307,16 +299,16 @@
                             <div class="modal-body">
                                 <div class="alert alert-info py-2 small border-0 bg-opacity-10 bg-info">
                                     <i class="bi bi-info-circle-fill text-info me-1"></i>
-                                    这将会把当前 <strong x-text="document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType"></strong> 的全部科目、维度和成因分析标签，<strong>覆盖</strong>保存到下方选中的目标业务类型中。
+                                    这将会把当前 <strong x-text="activeAssessmentType"></strong> 的全部科目、维度和成因分析标签，<strong>覆盖</strong>保存到下方选中的目标业务类型中。
                                 </div>
                                 <h6 class="fw-bold mb-3 fs-6">选择目标类型：</h6>
                                 <div class="row g-2">
-                                    <template x-for="type in document.querySelector('#panel-analysis')._x_dataStack[0].assessmentTypes.filter(t => t.id !== document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType)" :key="type.id">
+                                    <template x-for="type in assessmentTypes.filter(t => t.id !== activeAssessmentType)" :key="type.id">
                                         <div class="col-6">
                                             <div class="form-check border rounded px-3 py-2 ms-0 d-flex align-items-center"
-                                                 :class="document.querySelector('#panel-analysis')._x_dataStack[0].selectedCopyTargets.includes(type.id) ? 'border-info bg-info bg-opacity-10' : ''">
+                                                 :class="selectedCopyTargets.includes(type.id) ? 'border-info bg-info bg-opacity-10' : ''">
                                                 <input class="form-check-input ms-0 me-2" type="checkbox" :value="type.id" :id="'target_' + type.id"
-                                                    x-model="document.querySelector('#panel-analysis')._x_dataStack[0].selectedCopyTargets">
+                                                    x-model="selectedCopyTargets">
                                                 <label class="form-check-label flex-grow-1" :for="'target_' + type.id" style="cursor: pointer;" x-text="type.name"></label>
                                             </div>
                                         </div>
@@ -325,10 +317,10 @@
                             </div>
                             <div class="modal-footer border-0 pt-0">
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
-                                <button type="button" class="btn btn-info text-white shadow-sm" @click="document.querySelector('#panel-analysis')._x_dataStack[0].copyToSelectedTypes()" 
-                                        :disabled="document.querySelector('#panel-analysis')._x_dataStack[0].copying">
-                                    <span x-show="!document.querySelector('#panel-analysis')._x_dataStack[0].copying"><i class="bi bi-files me-1"></i> 确认覆盖</span>
-                                    <span x-show="document.querySelector('#panel-analysis')._x_dataStack[0].copying"><i class="spinner-border spinner-border-sm me-2"></i> 处理中...</span>
+                                <button type="button" class="btn btn-info text-white shadow-sm" @click="copyToSelectedTypes()" 
+                                        :disabled="copying">
+                                    <span x-show="!copying"><i class="bi bi-files me-1"></i> 确认覆盖</span>
+                                    <span x-show="copying"><i class="spinner-border spinner-border-sm me-2"></i> 处理中...</span>
                                 </button>
                             </div>
                         </div>
@@ -337,11 +329,11 @@
 
 
                 <!-- Subject Management Modal -->
-                <div class="modal fade" id="subjectManagerModal" tabindex="-1" aria-hidden="true" x-data>
+                <div class="modal fade" id="subjectManagerModal" aria-hidden="true" data-bs-focus="false">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header border-0 pb-0">
-                                <h5 class="modal-title fw-bold">管理业务体系 [ <span class="text-primary" x-text="document.querySelector('#panel-analysis')._x_dataStack[0].activeAssessmentType"></span> ] 包含的科目</h5>
+                                <h5 class="modal-title fw-bold">管理业务体系 [ <span class="text-primary" x-text="activeAssessmentType"></span> ] 包含的科目</h5>
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
@@ -350,35 +342,44 @@
                                     增删科目仅影响当前所选体系。删除科目不会删除历史数据，但会使其无法在界面上配置。
                                 </div>
                                 <ul class="list-group list-group-flush mb-3 border rounded">
-                                    <template x-for="(st, index) in document.querySelector('#panel-analysis')._x_dataStack[0].editingTabs" :key="index">
+                                    <template x-for="(st, index) in editingTabs" :key="index">
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <div>
                                                 <i class="bi text-primary me-2" :class="st.icon"></i>
                                                 <span class="fw-bold" x-text="st.name"></span>
                                                 <span class="badge bg-light text-secondary ms-2 font-monospace" x-text="st.key"></span>
                                             </div>
-                                            <button class="btn btn-sm btn-outline-danger border-0" @click="document.querySelector('#panel-analysis')._x_dataStack[0].removeSubject(index)">
+                                            <button class="btn btn-sm btn-outline-danger border-0" @click="removeSubject(index)">
                                                 <i class="bi bi-trash"></i>
                                             </button>
                                         </li>
                                     </template>
-                                    <template x-if="document.querySelector('#panel-analysis')._x_dataStack[0].editingTabs.length === 0">
+                                    <template x-if="editingTabs.length === 0">
                                         <li class="list-group-item text-muted text-center py-3">无科目</li>
                                     </template>
                                 </ul>
-                                <button class="btn btn-sm btn-outline-primary w-100 border-dashed" @click="document.querySelector('#panel-analysis')._x_dataStack[0].addSubject()">
+                                <button class="btn btn-sm btn-outline-primary w-100 border-dashed" @click="addSubject()">
                                     <i class="bi bi-plus"></i> 开通新页面科目
                                 </button>
                             </div>
                             <div class="modal-footer border-0 pt-0">
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
-                                <button type="button" class="btn btn-primary px-4" @click="document.querySelector('#panel-analysis')._x_dataStack[0].saveSubjects()">保存并刷新</button>
+                                <button type="button" class="btn btn-primary px-4" @click="saveSubjects()">保存并刷新</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-            </main>
+            
+                                </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                </main>
         </div>
     </div>    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
