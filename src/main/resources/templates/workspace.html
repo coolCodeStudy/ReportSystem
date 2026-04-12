@@ -506,6 +506,54 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 教学思路 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-lightbulb me-2 text-warning"></i>教学思路</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <textarea class="form-control border-0 p-3" style="resize: vertical; min-height: 100px;" rows="4" x-model="data.teachingApproach" placeholder="输入教学思路..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 助教课打卡清单 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-check2-square me-2 text-success"></i>助教课打卡清单</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <textarea class="form-control border-0 p-3" style="resize: vertical; min-height: 80px;" rows="3" x-model="data.teachingChecklist" placeholder="输入打卡清单内容..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 课程频次 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="mb-0 fw-bold"><i class="bi bi-calendar-range me-2 text-primary"></i>课程频次</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <textarea class="form-control border-0 p-3" style="resize: vertical; min-height: 60px;" rows="2" x-model="data.courseFrequency" placeholder="输入课程频次..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 方案风险提示 -->
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0 border-danger border-opacity-25">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="mb-0 fw-bold text-danger"><i class="bi bi-exclamation-triangle me-2"></i>方案风险提示</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <textarea class="form-control border-0 p-3" style="resize: vertical; min-height: 80px;" rows="3" x-model="data.planRisk" placeholder="输入方案风险提示..."></textarea>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <input type="hidden" id="initTeachingPlanData" th:value="${teachingPlanData}">
@@ -1101,7 +1149,11 @@
                 
                 data: {
                     coursePlans: [],
-                    coursePlanNote: ''
+                    coursePlanNote: '',
+                    teachingApproach: '',
+                    teachingChecklist: '',
+                    courseFrequency: '',
+                    planRisk: ''
                 },
 
                 async init() {
@@ -1110,13 +1162,25 @@
                     // Fetch global defaults first
                     let defaultPlans = [];
                     let defaultNote = '';
+                    let defaultApproach = '';
+                    let defaultChecklist = '';
+                    let defaultFrequency = '';
+                    let defaultRisk = '';
                     try {
-                        const [res1, res2] = await Promise.all([
+                        const [res1, res2, res3, res4, res5, res6] = await Promise.all([
                             fetch('/admin/api/config/GLOBAL_COURSE_PLAN_DEFAULT').then(r=>r.json()),
-                            fetch('/admin/api/config/GLOBAL_COURSE_PLAN_NOTE_DEFAULT').then(r=>r.json())
+                            fetch('/admin/api/config/GLOBAL_COURSE_PLAN_NOTE_DEFAULT').then(r=>r.json()),
+                            fetch('/admin/api/config/GLOBAL_TEACHING_APPROACH_TEMPLATE').then(r=>r.json()),
+                            fetch('/admin/api/config/GLOBAL_TEACHING_CHECKLIST_TEMPLATE').then(r=>r.json()),
+                            fetch('/admin/api/config/GLOBAL_COURSE_FREQUENCY_TEMPLATE').then(r=>r.json()),
+                            fetch('/admin/api/config/GLOBAL_PLAN_RISK_TEMPLATE').then(r=>r.json())
                         ]);
                         if (res1.code === 200 && res1.data && res1.data.value) defaultPlans = JSON.parse(res1.data.value);
                         if (res2.code === 200 && res2.data && res2.data.value) defaultNote = res2.data.value;
+                        if (res3.code === 200 && res3.data && res3.data.value) defaultApproach = res3.data.value;
+                        if (res4.code === 200 && res4.data && res4.data.value) defaultChecklist = res4.data.value;
+                        if (res5.code === 200 && res5.data && res5.data.value) defaultFrequency = res5.data.value;
+                        if (res6.code === 200 && res6.data && res6.data.value) defaultRisk = res6.data.value;
                     } catch(e) {}
                     
                     const fallbackDefaultPlans = [
@@ -1150,11 +1214,19 @@
                             if (!this.data.coursePlanNote) {
                                 this.data.coursePlanNote = defaultNoteToUse;
                             }
+                            if (!this.data.teachingApproach) this.data.teachingApproach = defaultApproach;
+                            if (!this.data.teachingChecklist) this.data.teachingChecklist = defaultChecklist;
+                            if (!this.data.courseFrequency) this.data.courseFrequency = defaultFrequency;
+                            if (!this.data.planRisk) this.data.planRisk = defaultRisk;
                         } catch(e) {}
                     } else {
                         // Apply default plans and notes if no existing data
                         this.data.coursePlans = JSON.parse(JSON.stringify(defaultPlansToUse));
                         this.data.coursePlanNote = defaultNoteToUse;
+                        this.data.teachingApproach = defaultApproach;
+                        this.data.teachingChecklist = defaultChecklist;
+                        this.data.courseFrequency = defaultFrequency;
+                        this.data.planRisk = defaultRisk;
                     }
 
                     try {

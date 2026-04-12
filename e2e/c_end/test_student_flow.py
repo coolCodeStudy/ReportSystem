@@ -167,7 +167,7 @@ async def run():
         await asyncio.sleep(0.5)
 
         print("💾 Saving Step 1...")
-        await frame.locator("#btnSaveStep1").evaluate("node => node.click()")
+        await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
         await asyncio.sleep(2)
         
         # ═══════════════════════════════════════════════════════════════
@@ -282,20 +282,32 @@ async def run():
             await step3_content.locator("h5").first.evaluate("node => node.click()")
             await asyncio.sleep(0.5)
 
-        # Save Step 3
-        print("💾 Saving Step 3...")
-        save_step3_btn = step3_content.locator("button:has-text('保存此页')")
-        if await save_step3_btn.count() > 0:
-            await save_step3_btn.evaluate("node => node.click()")
-            await asyncio.sleep(3)
-            # Dismiss any Swal/alert overlay
-            try:
-                await frame.locator("body").evaluate("node => { const s = node.ownerDocument.querySelector('.swal2-container'); if(s) s.remove(); }")
-            except Exception:
-                pass
-            print("    -> Step 3 saved successfully")
-        else:
-            print("    ⚠️ Save button for Step 3 not found")
+        # Fill new textareas for teaching strategy, checklist, frequency, and risk
+        print("    -> Filling editable config fields: Approach, Checklist, Frequency, Risk")
+        approach_ta = step3_content.locator("textarea[x-model='data.teachingApproach']")
+        if await approach_ta.count() > 0:
+            await approach_ta.fill("E2E 测试专属：针对该学生的独特教学思路。")
+            await approach_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
+        
+        checklist_ta = step3_content.locator("textarea[x-model='data.teachingChecklist']")
+        if await checklist_ta.count() > 0:
+            await checklist_ta.fill("E2E 测试定制清单：\n1. 助教课定制要求\n2. E2E测试打卡任务")
+            await checklist_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
+        
+        frequency_ta = step3_content.locator("textarea[x-model='data.courseFrequency']")
+        if await frequency_ta.count() > 0:
+            await frequency_ta.fill("E2E 测试定制频次：每周二次必修，一次选修。")
+            await frequency_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
+            
+        risk_ta = step3_content.locator("textarea[x-model='data.planRisk']")
+        if await risk_ta.count() > 0:
+            await risk_ta.fill("E2E 测试定制风险：学生可能存在作业拖延的风险。")
+            await risk_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
+
+        # Save all changes using the global action bar
+        print("💾 Saving all workspace data...")
+        await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
+        await asyncio.sleep(3)
 
         # ═══════════════════════════════════════════════════════════════
         # EXPORT — Generate Word document

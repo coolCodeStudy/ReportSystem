@@ -291,18 +291,24 @@ object DocxTeachingPlanRenderer {
                     createPara().spacingAfter = 200
         }
 
-        // --- 助教课打卡清单：从全局配置读取 ---
-        val teachingChecklistTemplate = systemConfigRepository.findByConfigKey("GLOBAL_TEACHING_CHECKLIST_TEMPLATE")?.configValue
-        if (!teachingChecklistTemplate.isNullOrBlank()) {
+        // --- 助教课打卡清单：优先使用该学生的数据，若为空则从全局模板配置兜底读取 ---
+        var teachingChecklist = data.path("teachingChecklist").asText()
+        if (teachingChecklist.isBlank()) {
+            teachingChecklist = systemConfigRepository.findByConfigKey("GLOBAL_TEACHING_CHECKLIST_TEMPLATE")?.configValue ?: ""
+        }
+        if (teachingChecklist.isNotBlank()) {
             addStarredSectionTitle("助教课打卡清单")
-            addTextParagraphs(createPara, teachingChecklistTemplate.removePrefix("助教课打卡清单").trim())
+            addTextParagraphs(createPara, teachingChecklist.removePrefix("助教课打卡清单").trim())
         }
 
-        // --- 课程频次：从全局配置读取 ---
-        val courseFrequencyTemplate = systemConfigRepository.findByConfigKey("GLOBAL_COURSE_FREQUENCY_TEMPLATE")?.configValue
-        if (!courseFrequencyTemplate.isNullOrBlank()) {
+        // --- 课程频次：优先使用该学生的数据，若为空则从全局模板配置兜底读取 ---
+        var courseFrequency = data.path("courseFrequency").asText()
+        if (courseFrequency.isBlank()) {
+            courseFrequency = systemConfigRepository.findByConfigKey("GLOBAL_COURSE_FREQUENCY_TEMPLATE")?.configValue ?: ""
+        }
+        if (courseFrequency.isNotBlank()) {
             addStarredSectionTitle("课程频次")
-            addTextParagraphs(createPara, courseFrequencyTemplate.removePrefix("课程频次").trim())
+            addTextParagraphs(createPara, courseFrequency.removePrefix("课程频次").trim())
         }
 
         var planRisk = data.path("planRisk").asText()
