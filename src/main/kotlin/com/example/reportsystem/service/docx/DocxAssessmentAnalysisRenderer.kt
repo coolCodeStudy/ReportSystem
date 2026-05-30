@@ -9,6 +9,14 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 object DocxAssessmentAnalysisRenderer {
+    private enum class SubjectKind(val displayName: String, val scorePrefix: String) {
+        READING("阅读", "正确率"),
+        LISTENING("听力", "正确率"),
+        SPEAKING("口语", "得分"),
+        WRITING("写作", "得分"),
+        LANGUAGE_USE("语言应用", "得分"),
+        LEARNING_LITERACY("学习素养", "得分")
+    }
 
     fun render(
         document: XWPFDocument, 
@@ -115,7 +123,7 @@ object DocxAssessmentAnalysisRenderer {
                 while (fields.hasNext()) {
                     val entry = fields.next()
                     if (!usedKeys.contains(entry.key.lowercase()) && hasRenderableContent(entry.value)) {
-                        renderItems.add(mapOf("id" to entry.key, "name" to displayNameFromKey(entry.key)) to entry.value)
+                        renderItems.add(mapOf("id" to entry.key, "name" to displayNameFromNode(entry.key, entry.value)) to entry.value)
                     }
                 }
             }
@@ -143,7 +151,7 @@ object DocxAssessmentAnalysisRenderer {
                 val score = subjNode.path("score").asText()
                 val total = subjNode.path("total").asText()
                 val level = subjNode.path("level").asText()
-                val prefix = if (key.contains("reading", ignoreCase = true) || key.contains("listening", ignoreCase = true)) "正确率" else "得分"
+                val prefix = scorePrefix(key, displayName, subjNode)
 
                 var headerText = "▎ ${displayName}"
                 if (score.isNotBlank() && score != "null" && total.isNotBlank() && total != "null") {
@@ -372,19 +380,123 @@ object DocxAssessmentAnalysisRenderer {
     }
 
     private fun displayNameFromKey(key: String): String {
+        return subjectKindFromKey(key)?.displayName ?: key
+    }
+
+    private fun subjectKindFromKey(key: String): SubjectKind? {
         val cleanKey = key
             .replace(Regex("^[A-Z]+_"), "")
             .replace(Regex("^SUBJ_", RegexOption.IGNORE_CASE), "")
             .lowercase()
         return when (cleanKey) {
-            "reading" -> "阅读"
-            "listening" -> "听力"
-            "speaking" -> "口语"
-            "writing" -> "写作"
-            "language", "language_use" -> "语言应用"
-            "literacy", "learning_literacy" -> "学习素养"
-            else -> key
+            "reading" -> SubjectKind.READING
+            "listening" -> SubjectKind.LISTENING
+            "speaking" -> SubjectKind.SPEAKING
+            "writing" -> SubjectKind.WRITING
+            "language", "language_use" -> SubjectKind.LANGUAGE_USE
+            "literacy", "learning_literacy" -> SubjectKind.LEARNING_LITERACY
+            else -> null
         }
+    }
+
+    private fun displayNameFromNode(key: String, node: JsonNode): String {
+        val explicitName = explicitDisplayNameFromNode(node)
+        if (explicitName != null) return explicitName
+
+        val nameFromKey = displayNameFromKey(key)
+        if (nameFromKey != key) return nameFromKey
+
+        return inferSubjectKindFromNode(node)?.displayName ?: key
+    }
+
+    private fun explicitDisplayNameFromNode(node: JsonNode): String? {
+        val fields = listOf(
+            "name",
+            "displayName",
+            "subjectName",
+            "subject",
+            "subjectDisplayName",
+            "subjectTitle",
+            "title",
+            "label"
+        )
+
+        for (field in fields) {
+            val value = node.path(field).asText().trim()
+            if (value.isNotBlank() && value != "null" && !value.isTechnicalSubjectId()) {
+                return normalizeSubjectDisplayName(value)
+            }
+        }
+
+        return null
+    }
+
+    private fun String.isTechnicalSubjectId(): Boolean {
+        return matches(Regex("(?i)^(subj|subject)_[a-z0-9_-]+$")) ||
+            matches(Regex("(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"))
+    }
+
+    private fun normalizeSubjectDisplayName(name: String): String {
+        subjectKindFromKey(name)?.let { return it.displayName }
+        return when {
+            name.endsWith("理解") || name.endsWith("表达") -> name.substring(0, 2)
+            else -> name
+        }
+    }
+
+    private fun inferSubjectKindFromNode(node: JsonNode): SubjectKind? {
+        val dimensions = node.path("paperAnalysis").fieldNames().asSequence().toList()
+        if (dimensions.isEmpty()) return null
+
+        val scores = mutableMapOf<SubjectKind, Int>()
+        fun score(kind: SubjectKind, weight: Int, vararg signatures: String) {
+            val hits = dimensions.count { dim -> signatures.any { signature -> dim.contains(signature) } }
+            if (hits > 0) {
+                scores[kind] = (scores[kind] ?: 0) + hits * weight
+            }
+        }
+
+        score(SubjectKind.WRITING, 5, "写作惯例")
+        score(SubjectKind.WRITING, 4, "拼写", "标点符号")
+        score(SubjectKind.WRITING, 3, "语法多样性", "结构（Intro", "表达（清晰")
+
+        score(SubjectKind.LANGUAGE_USE, 5, "词形变化", "语音与拼读", "句型结构与语法形式", "词汇识别与语法迁移", "语法意识与自我校正")
+
+        score(SubjectKind.READING, 5, "阅读速度", "阅读策略")
+        score(SubjectKind.READING, 3, "背景知识", "考试技巧")
+
+        score(SubjectKind.LISTENING, 5, "单词辨音", "语速适应", "语音变体", "焦虑与压力", "考试策略")
+        score(SubjectKind.LISTENING, 3, "语音现象")
+
+        score(SubjectKind.LEARNING_LITERACY, 5, "学习策略", "畏难情绪", "笔记习惯", "复习习惯", "依从性")
+
+        score(SubjectKind.SPEAKING, 5, "口音", "流利", "互动和回应", "突发情况应对", "语音、语句现象")
+        score(SubjectKind.SPEAKING, 3, "问题理解", "思维能力")
+
+        val ranked = scores.entries.sortedByDescending { it.value }
+        val best = ranked.firstOrNull() ?: return null
+        val runnerUpScore = ranked.getOrNull(1)?.value ?: 0
+        return if (best.value >= 3 && best.value > runnerUpScore) best.key else null
+    }
+
+    private fun inferSubjectKindFromDisplayName(displayName: String): SubjectKind? {
+        subjectKindFromKey(displayName)?.let { return it }
+        return when {
+            displayName.contains("阅读") || displayName.contains("Reading", ignoreCase = true) -> SubjectKind.READING
+            displayName.contains("听力") || displayName.contains("Listening", ignoreCase = true) -> SubjectKind.LISTENING
+            displayName.contains("口语") || displayName.contains("Speaking", ignoreCase = true) -> SubjectKind.SPEAKING
+            displayName.contains("写作") || displayName.contains("Writing", ignoreCase = true) -> SubjectKind.WRITING
+            displayName.contains("语言应用") || displayName.contains("Language", ignoreCase = true) -> SubjectKind.LANGUAGE_USE
+            displayName.contains("学习素养") || displayName.contains("Literacy", ignoreCase = true) -> SubjectKind.LEARNING_LITERACY
+            else -> null
+        }
+    }
+
+    private fun scorePrefix(key: String, displayName: String, node: JsonNode): String {
+        val kind = subjectKindFromKey(key)
+            ?: inferSubjectKindFromDisplayName(displayName)
+            ?: inferSubjectKindFromNode(node)
+        return kind?.scorePrefix ?: "得分"
     }
 
     private fun getConfigValue(systemConfigRepository: SystemConfigRepository, key: String): String? {

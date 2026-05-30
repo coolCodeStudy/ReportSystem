@@ -257,7 +257,7 @@ object DocxTeachingPlanRenderer {
         
         if (finalTeachingApproach.isNotBlank()) {
             addStarredSectionTitle("教学思路")
-            addTextParagraphs(createPara, finalTeachingApproach)
+            addTextParagraphs(createPara, finalTeachingApproach, emphasizeNumberedLines = true)
         }
 
         var plans = mutableListOf<com.example.reportsystem.entity.TeachingPlan>()
@@ -355,8 +355,13 @@ object DocxTeachingPlanRenderer {
         r.color = DocxStyleUtils.THEME_PRIMARY
     }
 
-    private fun addTextParagraphs(createPara: () -> XWPFParagraph, text: String) {
+    private fun addTextParagraphs(
+        createPara: () -> XWPFParagraph,
+        text: String,
+        emphasizeNumberedLines: Boolean = false
+    ) {
         val pattern = Regex("^((\\d+\\.[\\s\\S]*?[：:]|【[\\s\\S]*?】[：:]?))(.*)$")
+        val numberedLinePattern = Regex("^\\d+\\.\\s+.+$")
         text.split("\n").forEach { line ->
             if (line.isNotBlank()) {
                 val p = createPara()
@@ -371,7 +376,14 @@ object DocxTeachingPlanRenderer {
                 
                 val trimmedLine = line.trim()
                 val match = pattern.find(trimmedLine)
-                if (match != null) {
+                if (emphasizeNumberedLines && numberedLinePattern.matches(trimmedLine)) {
+                    val r = p.createRun()
+                    r.setText(trimmedLine)
+                    r.fontFamily = DocxStyleUtils.FONT_MAIN
+                    r.fontSize = 10
+                    r.isBold = true
+                    r.color = DocxStyleUtils.THEME_PRIMARY
+                } else if (match != null) {
                     // 如果匹配到诸如 "1. 词汇：" 或 "【听力】："，就加粗前半段
                     val prefixRun = p.createRun()
                     prefixRun.setText(match.groupValues[1])

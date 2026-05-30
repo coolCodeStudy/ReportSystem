@@ -157,6 +157,92 @@ class DocxGeneratorServiceTest {
     }
 
     @Test
+    fun `generateDocx should infer subject display names from cloud subject dimensions`() {
+        val assessmentResultsJson = """
+            {
+              "subj_8swx8y": {
+                "score": 22,
+                "total": 25,
+                "level": "B1",
+                "paperAnalysis": {
+                  "拼写": { "status": "✅", "text": "拼写基本准确。" },
+                  "标点符号": { "status": "✅", "text": "能正确使用常见标点。" },
+                  "写作惯例（Cohesion, Unity, Completeness）": { "status": "⚠️", "text": "段落衔接还可以继续强化。" }
+                },
+                "causeAnalysis": []
+              },
+              "subj_gpuo0p": {
+                "score": 23,
+                "total": 25,
+                "level": "B1",
+                "paperAnalysis": {
+                  "阅读速度": { "status": "✅", "text": "阅读速度稳定。" },
+                  "阅读策略": { "status": "✅", "text": "能抓住关键信息。" }
+                },
+                "causeAnalysis": []
+              },
+              "subj_explicit": {
+                "subjectName": "Listening",
+                "score": 19,
+                "total": 25,
+                "level": "A2",
+                "paperAnalysis": {
+                  "信息理解": { "status": "✅", "text": "能听懂主要信息。" }
+                },
+                "causeAnalysis": []
+              }
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            assessmentResultsJson = assessmentResultsJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val allText = documentText(document)
+
+        assertThat(allText).contains("▎ 写作")
+        assertThat(allText).contains("得分 22/25")
+        assertThat(allText).contains("▎ 阅读")
+        assertThat(allText).contains("正确率 23/25")
+        assertThat(allText).contains("▎ 听力")
+        assertThat(allText).contains("正确率 19/25")
+        assertThat(allText).doesNotContain("subj_8swx8y")
+        assertThat(allText).doesNotContain("subj_gpuo0p")
+        assertThat(allText).doesNotContain("subj_explicit")
+    }
+
+    @Test
+    fun `generateDocx should style teaching approach numbered headings consistently`() {
+        val teachingPlanDataJson = """
+            {
+              "teachingApproach": "1. 强化语言基础：语法和词汇\n通过专项训练补足基础。\n2. 重点强化写作能力，坚固口语能力\n通过输出任务提升表达。"
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val firstHeading = document.paragraphs.first { it.text == "1. 强化语言基础：语法和词汇" }
+        val secondHeading = document.paragraphs.first { it.text == "2. 重点强化写作能力，坚固口语能力" }
+
+        assertNumberedHeadingStyle(firstHeading)
+        assertNumberedHeadingStyle(secondHeading)
+    }
+
+    @Test
     fun `generateDocx should format and keep course plan total row with the schedule table`() {
         val teachingPlanDataJson = """
             {
@@ -214,6 +300,16 @@ class DocxGeneratorServiceTest {
                 cell.paragraphs.flatMap { it.runs } +
                     cell.tables.flatMap { collectRuns(it) }
             }
+        }
+    }
+
+    private fun assertNumberedHeadingStyle(paragraph: org.apache.poi.xwpf.usermodel.XWPFParagraph) {
+        val runsWithText = paragraph.runs.filter { it.text().isNotBlank() }
+
+        assertThat(runsWithText).isNotEmpty()
+        runsWithText.forEach { run ->
+            assertThat(run.isBold).isTrue()
+            assertThat(run.color).isEqualTo(DocxStyleUtils.THEME_PRIMARY)
         }
     }
 
