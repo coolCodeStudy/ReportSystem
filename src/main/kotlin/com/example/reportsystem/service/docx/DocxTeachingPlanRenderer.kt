@@ -13,21 +13,29 @@ object DocxTeachingPlanRenderer {
     private val COURSE_PLAN_TABLE_WIDTH = COURSE_PLAN_COL_WIDTHS.sum()
 
     fun render(document: XWPFDocument, teachingPlanDataJson: String, teachingPlanRepository: TeachingPlanRepository, textbookConfigRepository: TextbookConfigRepository, systemConfigRepository: SystemConfigRepository) {
-        val mapper = jacksonObjectMapper()
-        val data = try {
-            mapper.readTree(teachingPlanDataJson)
-        } catch (e: Exception) {
-            return
-        }
-        
-        if (data.isMissingNode || data.isEmpty) return
-        
         var targetPara: XWPFParagraph? = null
         for (p in document.paragraphs) {
             if (p.text.contains("{course_schedule}")) {
                 targetPara = p
                 break
             }
+        }
+
+        fun clearPlaceholder() {
+            targetPara?.runs?.forEach { it.setText("", 0) }
+        }
+
+        val mapper = jacksonObjectMapper()
+        val data = try {
+            mapper.readTree(teachingPlanDataJson)
+        } catch (e: Exception) {
+            clearPlaceholder()
+            return
+        }
+        
+        if (data.isMissingNode || data.isEmpty) {
+            clearPlaceholder()
+            return
         }
 
         val createPara: () -> XWPFParagraph = {
@@ -338,7 +346,7 @@ object DocxTeachingPlanRenderer {
         }
         
         if (targetPara != null) {
-            targetPara!!.runs.forEach { it.setText("", 0) }
+            clearPlaceholder()
         }
     }
 

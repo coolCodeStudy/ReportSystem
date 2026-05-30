@@ -175,9 +175,13 @@ G11,,1225L,17500,,,,,,
             document, assessmentResultsJson, typeId, systemConfigRepository
         )
 
-        if (!teachingPlanDataJson.isNullOrBlank() && teachingPlanDataJson != "{}") {
-            com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository, systemConfigRepository)
-        }
+        com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(
+            document,
+            teachingPlanDataJson?.takeIf { it.isNotBlank() } ?: "{}",
+            teachingPlanRepository,
+            textbookConfigRepository,
+            systemConfigRepository
+        )
 
         com.example.reportsystem.service.docx.DocxStyleUtils.applyDocumentFont(document)
 
@@ -188,4 +192,3 @@ G11,,1225L,17500,,,,,,
         return bytes
     }
 }
-

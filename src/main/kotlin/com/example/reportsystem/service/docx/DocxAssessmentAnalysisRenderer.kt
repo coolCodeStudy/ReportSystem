@@ -24,47 +24,70 @@ object DocxAssessmentAnalysisRenderer {
         typeId: String?, 
         systemConfigRepository: SystemConfigRepository
     ) {
-        if (assessmentResultsJson.isNullOrBlank()) return
+        var targetPara: XWPFParagraph? = null
+        for (p in document.paragraphs) {
+            if (p.text.contains("{assessment_analysis}")) {
+                targetPara = p
+                break
+            }
+        }
+
+        fun createPara(): XWPFParagraph {
+            return if (targetPara != null) {
+                val c = targetPara.ctp.newCursor()
+                val p = document.insertNewParagraph(c)
+                c.dispose()
+                p
+            } else {
+                document.createParagraph()
+            }
+        }
+
+        fun createTableWrappen(rows: Int, cols: Int): XWPFTable {
+            return if (targetPara != null) {
+                val c = targetPara.ctp.newCursor()
+                val t = document.insertNewTbl(c)
+                c.dispose()
+                if (t.rows.isNotEmpty()) t.removeRow(0)
+                for (r in 0 until rows) {
+                    val row = t.createRow()
+                    while (row.tableCells.size < cols) {
+                        row.addNewTableCell()
+                    }
+                }
+                t
+            } else {
+                document.createTable(rows, cols)
+            }
+        }
+
+        fun clearPlaceholder() {
+            targetPara?.runs?.forEach { it.setText("", 0) }
+        }
+
+        fun renderNoData() {
+            val p = createPara()
+            p.spacingAfter = 200
+            p.indentationLeft = 300
+            val r = p.createRun()
+            DocxStyleUtils.applyRunFont(r)
+            r.fontSize = 10
+            r.color = "7F7F7F"
+            r.setText("暂无测评分析数据。")
+            clearPlaceholder()
+        }
+
+        if (assessmentResultsJson.isNullOrBlank()) {
+            renderNoData()
+            return
+        }
+
         try {
             val mapper = jacksonObjectMapper()
             val analysis = mapper.readTree(assessmentResultsJson)
-            if (analysis.isMissingNode || analysis.isEmpty) return
-
-            var targetPara: XWPFParagraph? = null
-            for (p in document.paragraphs) {
-                if (p.text.contains("{assessment_analysis}")) {
-                    targetPara = p
-                    break
-                }
-            }
-
-            fun createPara(): XWPFParagraph {
-                return if (targetPara != null) {
-                    val c = targetPara.ctp.newCursor()
-                    val p = document.insertNewParagraph(c)
-                    c.dispose()
-                    p
-                } else {
-                    document.createParagraph()
-                }
-            }
-
-            fun createTableWrappen(rows: Int, cols: Int): XWPFTable {
-                return if (targetPara != null) {
-                    val c = targetPara.ctp.newCursor()
-                    val t = document.insertNewTbl(c)
-                    c.dispose()
-                    if (t.rows.isNotEmpty()) t.removeRow(0)
-                    for (r in 0 until rows) {
-                        val row = t.createRow()
-                        while (row.tableCells.size < cols) {
-                            row.addNewTableCell()
-                        }
-                    }
-                    t
-                } else {
-                    document.createTable(rows, cols)
-                }
+            if (analysis.isMissingNode || analysis.isEmpty) {
+                renderNoData()
+                return
             }
 
             var subjects: List<Map<String, String>> = emptyList()
@@ -129,14 +152,8 @@ object DocxAssessmentAnalysisRenderer {
             }
 
             if (renderItems.isEmpty()) {
-                val p = createPara()
-                p.spacingAfter = 200
-                p.indentationLeft = 300
-                val r = p.createRun()
-                DocxStyleUtils.applyRunFont(r)
-                r.fontSize = 10
-                r.color = "7F7F7F"
-                r.setText("暂无测评分析数据。")
+                renderNoData()
+                return
             }
 
             for ((subjInfo, subjNode) in renderItems) {
@@ -323,12 +340,11 @@ object DocxAssessmentAnalysisRenderer {
                 createPara().spacingAfter = 300
             }
             
-            if (targetPara != null) {
-                targetPara.runs.forEach { it.setText("", 0) }
-            }
+            clearPlaceholder()
             
         } catch (e: Exception) {
             System.err.println("Failed to parse assessment results for docx: ${e.message}")
+            clearPlaceholder()
         }
     }
 
