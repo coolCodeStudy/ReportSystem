@@ -119,7 +119,7 @@ G11,,1225L,17500,,,,,,
         
         fun addRun(text: String, bold: Boolean = false) {
             val r = legendPara.createRun()
-            r.fontFamily = "微软雅黑"
+            DocxStyleUtils.applyRunFont(r)
             r.fontSize = 9
             r.isBold = bold
             r.setText(text)
@@ -139,7 +139,7 @@ G11,,1225L,17500,,,,,,
             DocxStyleUtils.setCellText(cell, colHeader, bold = true, fontSize = 8)
             // 紧凑内边距（2pt 上下）
             cell.paragraphs.forEach { p -> p.spacingBefore = 40; p.spacingAfter = 40 }
-            DocxStyleUtils.setCellShading(cell, "4472C4") // 恢复原始的蓝色主色调
+            DocxStyleUtils.setCellShading(cell, DocxStyleUtils.THEME_PRIMARY)
             DocxStyleUtils.setCellTextColor(cell, "FFFFFF")
             DocxStyleUtils.setCellAlignment(cell, ParagraphAlignment.CENTER)
             DocxStyleUtils.setCellBorders(cell, isHeader = true, isFirstRow = true, isLastRow = false, isFirstCol = (i == 0), isLastCol = (i == headers.size - 1))

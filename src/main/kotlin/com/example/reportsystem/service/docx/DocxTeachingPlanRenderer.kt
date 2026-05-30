@@ -161,7 +161,7 @@ object DocxTeachingPlanRenderer {
             val pNote = createPara()
             pNote.spacingAfter = 200
             val rNote = pNote.createRun()
-            rNote.fontFamily = "微软雅黑"
+            DocxStyleUtils.applyRunFont(rNote)
             rNote.fontSize = 9
             rNote.color = "7F7F7F"
             rNote.setText("*备注：$coursePlanNote")
@@ -200,7 +200,7 @@ object DocxTeachingPlanRenderer {
                             lp.indentationLeft = 300
                             val lr = lp.createRun()
                             lr.setText(level)
-                            lr.fontFamily = "微软雅黑"
+                            DocxStyleUtils.applyRunFont(lr)
                             lr.fontSize = 10
                             lr.isBold = true
                         }

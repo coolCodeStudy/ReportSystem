@@ -7,7 +7,7 @@ import java.math.BigInteger
 object DocxStyleUtils {
 
     // ── 字体系统 ──────────────────────────────────────────────
-    const val FONT_MAIN = "微软雅黑"       // 全文唯一正文字体
+    const val FONT_MAIN = "华文宋体"       // 全文唯一正文字体
 
     // ── 间距系统（单位：twentieths of a point，即 1pt = 20）────
     // 三档固定间距，杜绝"6种间距并存"的混乱
@@ -16,7 +16,7 @@ object DocxStyleUtils {
     const val SPACING_MAJOR   = 360  // 18pt — 一/二/三 大节标题前
 
     // ── 品牌色值定义 ─────────────────────────────────────────
-    val THEME_PRIMARY  = "4A60BA"     // 克莱因蓝主色
+    val THEME_PRIMARY  = "003277"     // 导出表格主色
     val THEME_BG_LIGHT = "F8F9FA"     // 极浅灰底（斑马纹白）
     val THEME_BG_DARK  = "F1F3F5"     // 稍深灰底（斑马纹灰）
     val THEME_ACCENT   = "ED7D31"     // 重点强调色（橙）
@@ -24,6 +24,42 @@ object DocxStyleUtils {
 
     fun getOrCreateCell(row: XWPFTableRow, index: Int): XWPFTableCell {
         return row.getCell(index) ?: row.addNewTableCell()
+    }
+
+    fun applyRunFont(run: XWPFRun) {
+        run.fontFamily = FONT_MAIN
+        val rPr = run.ctr.rPr ?: run.ctr.addNewRPr()
+        val fonts = if (rPr.sizeOfRFontsArray() > 0) rPr.getRFontsArray(0) else rPr.addNewRFonts()
+        fonts.ascii = FONT_MAIN
+        fonts.hAnsi = FONT_MAIN
+        fonts.eastAsia = FONT_MAIN
+        fonts.cs = FONT_MAIN
+    }
+
+    fun applyDocumentFont(document: XWPFDocument) {
+        document.paragraphs.forEach { applyParagraphFont(it) }
+        document.tables.forEach { applyTableFont(it) }
+        document.headerList.forEach { header ->
+            header.paragraphs.forEach { applyParagraphFont(it) }
+            header.tables.forEach { applyTableFont(it) }
+        }
+        document.footerList.forEach { footer ->
+            footer.paragraphs.forEach { applyParagraphFont(it) }
+            footer.tables.forEach { applyTableFont(it) }
+        }
+    }
+
+    private fun applyTableFont(table: XWPFTable) {
+        table.rows.forEach { row ->
+            row.tableCells.forEach { cell ->
+                cell.paragraphs.forEach { applyParagraphFont(it) }
+                cell.tables.forEach { applyTableFont(it) }
+            }
+        }
+    }
+
+    private fun applyParagraphFont(paragraph: XWPFParagraph) {
+        paragraph.runs.forEach { applyRunFont(it) }
     }
 
     fun setCellText(cell: XWPFTableCell, text: String, bold: Boolean = false, color: String? = null, fontSize: Int = 10) {
@@ -51,7 +87,7 @@ object DocxStyleUtils {
         
         run.isBold = bold
         run.fontSize = fontSize
-        run.fontFamily = FONT_MAIN
+        applyRunFont(run)
         if (color != null) {
             run.setColor(color)
         }

@@ -179,6 +179,8 @@ G11,,1225L,17500,,,,,,
             com.example.reportsystem.service.docx.DocxTeachingPlanRenderer.render(document, teachingPlanDataJson, teachingPlanRepository, textbookConfigRepository, systemConfigRepository)
         }
 
+        com.example.reportsystem.service.docx.DocxStyleUtils.applyDocumentFont(document)
+
         val out = ByteArrayOutputStream()
         document.write(out)
         val bytes = out.toByteArray()
@@ -186,5 +188,4 @@ G11,,1225L,17500,,,,,,
         return bytes
     }
 }
-
 

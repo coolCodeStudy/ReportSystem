@@ -4,6 +4,9 @@ import com.example.reportsystem.entity.SystemConfig
 import com.example.reportsystem.entity.StudentTypeDictionary
 import com.example.reportsystem.repository.StudentTypeDictionaryRepository
 import com.example.reportsystem.repository.SystemConfigRepository
+import com.example.reportsystem.service.docx.DocxStyleUtils
+import org.apache.poi.xwpf.usermodel.XWPFRun
+import org.apache.poi.xwpf.usermodel.XWPFTable
 import io.mockk.every
 import io.mockk.mockk
 import org.apache.poi.xwpf.usermodel.XWPFDocument
@@ -84,6 +87,23 @@ class DocxGeneratorServiceTest {
     }
 
     @Test
+    fun `generateDocx should apply export table color and font`() {
+        val resultBytes = docxGeneratorService.generateDocx("B2-", "G5", "TEST", null, listOf("Lingoland", "CEFR", "雅思"))
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+
+        val headerFill = normalizeHexColor(document.tables.first().getRow(0).getCell(0).ctTc.tcPr.shd.fill)
+        assertThat(headerFill).isEqualTo(DocxStyleUtils.THEME_PRIMARY)
+
+        val runsWithText = collectRuns(document)
+            .filter { it.text().isNotBlank() }
+
+        assertThat(runsWithText).isNotEmpty()
+        runsWithText.forEach { run ->
+            assertThat(run.ctr.rPr.getRFontsArray(0).eastAsia).isEqualTo(DocxStyleUtils.FONT_MAIN)
+        }
+    }
+
+    @Test
     fun `generateDocx should append assessment descriptions when assessmentTypes matches configuration`() {
         // "B1-" logic is valid CEFR
         val resultBytes = docxGeneratorService.generateDocx("B1-", "G5", "TEST", listOf("KET", "NoneExistingType"), null)
@@ -96,5 +116,26 @@ class DocxGeneratorServiceTest {
         assertThat(allText).contains("KET考试说明")
         
         // Since "NoneExistingType" is not in our mock configuration, its text shouldn't be here
+    }
+
+    private fun collectRuns(document: XWPFDocument): List<XWPFRun> {
+        return document.paragraphs.flatMap { it.runs } +
+            document.tables.flatMap { collectRuns(it) }
+    }
+
+    private fun collectRuns(table: XWPFTable): List<XWPFRun> {
+        return table.rows.flatMap { row ->
+            row.tableCells.flatMap { cell ->
+                cell.paragraphs.flatMap { it.runs } +
+                    cell.tables.flatMap { collectRuns(it) }
+            }
+        }
+    }
+
+    private fun normalizeHexColor(value: Any): String {
+        return when (value) {
+            is ByteArray -> value.joinToString("") { "%02X".format(it.toInt() and 0xFF) }
+            else -> value.toString().uppercase()
+        }
     }
 }
