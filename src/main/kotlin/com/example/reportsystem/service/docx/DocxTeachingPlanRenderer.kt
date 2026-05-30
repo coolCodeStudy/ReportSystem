@@ -1,7 +1,7 @@
 package com.example.reportsystem.service.docx
 
 import org.apache.poi.xwpf.usermodel.*
-import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.*
 import java.math.BigInteger
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.example.reportsystem.repository.SystemConfigRepository
@@ -9,6 +9,8 @@ import com.example.reportsystem.repository.TeachingPlanRepository
 import com.example.reportsystem.repository.TextbookConfigRepository
 
 object DocxTeachingPlanRenderer {
+    private val COURSE_PLAN_COL_WIDTHS = listOf(1500L, 800L, 1900L, 1900L, 2200L)
+    private val COURSE_PLAN_TABLE_WIDTH = COURSE_PLAN_COL_WIDTHS.sum()
 
     fun render(document: XWPFDocument, teachingPlanDataJson: String, teachingPlanRepository: TeachingPlanRepository, textbookConfigRepository: TextbookConfigRepository, systemConfigRepository: SystemConfigRepository) {
         val mapper = jacksonObjectMapper()
@@ -93,13 +95,17 @@ object DocxTeachingPlanRenderer {
                 addSectionTitle(createPara, "课时规划")
                 val table = createTableWrappen(validRowData.size + 2, 5)
                 val tblW = table.ctTbl.tblPr?.addNewTblW() ?: table.ctTbl.addNewTblPr().addNewTblW()
-                tblW.type = STTblWidth.PCT
-                tblW.w = BigInteger.valueOf(5000)
+                tblW.type = STTblWidth.DXA
+                tblW.w = BigInteger.valueOf(COURSE_PLAN_TABLE_WIDTH)
+                val tblPr = table.ctTbl.tblPr ?: table.ctTbl.addNewTblPr()
+                val tblLayout = tblPr.tblLayout ?: tblPr.addNewTblLayout()
+                tblLayout.type = STTblLayoutType.FIXED
 
                 val headerRow = table.getRow(0)
                 val headers = listOf("阶段", "时长", "目标", "教材", "预计课时")
                 headers.forEachIndexed { col, text ->
                     DocxStyleUtils.setCellText(headerRow.getCell(col), text, bold = true, color = "FFFFFF", fontSize = 10)
+                    DocxStyleUtils.setCellWidth(headerRow.getCell(col), COURSE_PLAN_COL_WIDTHS[col])
                     DocxStyleUtils.setCellShading(headerRow.getCell(col), DocxStyleUtils.THEME_PRIMARY)
                     DocxStyleUtils.setZebraBorders(headerRow.getCell(col), isHeader = true)
                 }
@@ -111,12 +117,14 @@ object DocxTeachingPlanRenderer {
                         rowNode.path("duration").asText(),
                         rowNode.path("goal").asText(),
                         rowNode.path("textbook").asText(),
-                        rowNode.path("hours").asText()
+                        formatHoursText(rowNode.path("hours").asText())
                     )
                     cellsText.forEachIndexed { col, text ->
                         DocxStyleUtils.setCellText(row.getCell(col), text, bold = false, fontSize = 9)
+                        DocxStyleUtils.setCellWidth(row.getCell(col), COURSE_PLAN_COL_WIDTHS[col])
                         DocxStyleUtils.setCellShading(row.getCell(col), if (index % 2 == 0) DocxStyleUtils.THEME_BG_LIGHT else "FFFFFF")
                         DocxStyleUtils.setZebraBorders(row.getCell(col), isLast = false)
+                        DocxStyleUtils.setCellAlignment(row.getCell(col), if (col == 1) ParagraphAlignment.CENTER else ParagraphAlignment.LEFT)
                     }
                 }
                 
@@ -137,21 +145,29 @@ object DocxTeachingPlanRenderer {
                 val totalText = phaseTotals.joinToString("\n")
                 
                 DocxStyleUtils.setCellText(totalRow.getCell(0), "预计总课时", bold = true, color = "FFFFFF", fontSize = 10)
+                DocxStyleUtils.setCellWidth(totalRow.getCell(0), COURSE_PLAN_COL_WIDTHS[0])
                 DocxStyleUtils.setCellShading(totalRow.getCell(0), DocxStyleUtils.THEME_PRIMARY)
                 DocxStyleUtils.setZebraBorders(totalRow.getCell(0), isHeader = false, isLast = true)
                 
                 val cell1 = totalRow.getCell(1)
-                cell1.ctTc.addNewTcPr().addNewHMerge().`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge.RESTART
+                val cell1Pr = cell1.ctTc.tcPr ?: cell1.ctTc.addNewTcPr()
+                val cell1HMerge = if (cell1Pr.isSetHMerge) cell1Pr.hMerge else cell1Pr.addNewHMerge()
+                cell1HMerge.`val` = STMerge.RESTART
                 DocxStyleUtils.setCellText(cell1, totalText, bold = false, fontSize = 9)
+                DocxStyleUtils.setCellWidth(cell1, COURSE_PLAN_COL_WIDTHS.drop(1).sum())
                 DocxStyleUtils.setCellShading(cell1, "E9EDF6")
                 DocxStyleUtils.setZebraBorders(cell1, isHeader = false, isLast = true)
                 
                 for (col in 2..4) {
                     val c = totalRow.getCell(col) ?: totalRow.addNewTableCell()
-                    c.ctTc.addNewTcPr().addNewHMerge().`val` = org.openxmlformats.schemas.wordprocessingml.x2006.main.STMerge.CONTINUE
+                    val cPr = c.ctTc.tcPr ?: c.ctTc.addNewTcPr()
+                    val hMerge = if (cPr.isSetHMerge) cPr.hMerge else cPr.addNewHMerge()
+                    hMerge.`val` = STMerge.CONTINUE
+                    DocxStyleUtils.setCellWidth(c, COURSE_PLAN_COL_WIDTHS[col])
                     DocxStyleUtils.setZebraBorders(c, isHeader = false, isLast = true)
                 }
                 
+                DocxStyleUtils.keepTableRowsTogether(table)
                 createPara().spacingAfter = 100
             }
         }
@@ -377,5 +393,12 @@ object DocxTeachingPlanRenderer {
                 }
             }
         }
+    }
+
+    private fun formatHoursText(rawText: String): String {
+        return rawText
+            .replace("\r\n", "\n")
+            .replace("\r", "\n")
+            .replace(Regex("(?<=h)(?=\\S+?:)"), "\n")
     }
 }

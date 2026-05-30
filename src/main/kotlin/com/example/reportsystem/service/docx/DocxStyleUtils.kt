@@ -164,6 +164,32 @@ object DocxStyleUtils {
         cell.setVerticalAlignment(XWPFTableCell.XWPFVertAlign.CENTER)
     }
 
+    fun setCellWidth(cell: XWPFTableCell, width: Long) {
+        val tcPr = cell.ctTc.tcPr ?: cell.ctTc.addNewTcPr()
+        val tcW = tcPr.tcW ?: tcPr.addNewTcW()
+        tcW.type = STTblWidth.DXA
+        tcW.w = BigInteger.valueOf(width)
+    }
+
+    fun keepTableRowsTogether(table: XWPFTable) {
+        table.rows.forEachIndexed { rowIndex, row ->
+            val trPr = row.ctRow.trPr ?: row.ctRow.addNewTrPr()
+            if (trPr.sizeOfCantSplitArray() == 0) {
+                trPr.addNewCantSplit()
+            }
+            if (rowIndex < table.rows.size - 1) {
+                row.tableCells.forEach { cell ->
+                    cell.paragraphs.forEach { paragraph ->
+                        val pPr = paragraph.ctp.pPr ?: paragraph.ctp.addNewPPr()
+                        if (!pPr.isSetKeepNext) {
+                            pPr.addNewKeepNext()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fun setCellBorders(cell: XWPFTableCell, isHeader: Boolean, isFirstRow: Boolean, isLastRow: Boolean, isFirstCol: Boolean, isLastCol: Boolean) {
         val tcPr = cell.ctTc.tcPr ?: cell.ctTc.addNewTcPr()
         val tcBorders = tcPr.tcBorders ?: tcPr.addNewTcBorders()

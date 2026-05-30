@@ -4,6 +4,7 @@ import org.apache.poi.xwpf.usermodel.*
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*
 import java.math.BigInteger
 import com.example.reportsystem.repository.SystemConfigRepository
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
@@ -63,7 +64,7 @@ object DocxAssessmentAnalysisRenderer {
             var actualTypeId = typeId
             if (!actualTypeId.isNullOrBlank()) {
                 // If the stored value in DB is the human-readable name (e.g., "剑桥考试体系"), map it back to the UUID.
-                val descJson = systemConfigRepository.findByConfigKey("GLOBAL_ASSESSMENT_DESCRIPTIONS")?.configValue
+                val descJson = getConfigValue(systemConfigRepository, "GLOBAL_ASSESSMENT_DESCRIPTIONS")
                 if (!descJson.isNullOrBlank()) {
                     try {
                         val arr = mapper.readTree(descJson)
@@ -76,7 +77,7 @@ object DocxAssessmentAnalysisRenderer {
                     } catch (e: Exception) {}
                 }
 
-                val dbSubj = systemConfigRepository.findByConfigKey("GLOBAL_SUBJECTS_${actualTypeId?.uppercase()}")?.configValue
+                val dbSubj = getConfigValue(systemConfigRepository, "GLOBAL_SUBJECTS_${actualTypeId?.uppercase()}")
                 if (!dbSubj.isNullOrBlank()) {
                     try {
                         subjects = mapper.readValue<List<Map<String, String>>>(dbSubj)
@@ -84,25 +85,59 @@ object DocxAssessmentAnalysisRenderer {
                 }
             }
 
+            val renderItems = mutableListOf<Pair<Map<String, String>, JsonNode>>()
+            val usedKeys = mutableSetOf<String>()
+
             for (subjInfo in subjects) {
                 val rawKey = subjInfo["id"] ?: continue
-                
-                // Match frontend prefixing logic (e.g. subj_5gq4dy -> STARTERS_SUBJ_5GQ4DY)
-                var key = rawKey
-                if (!key.uppercase().contains(actualTypeId?.uppercase() ?: "")) {
-                    key = "${actualTypeId?.uppercase()}_${key}".uppercase()
+                val normalizedKey = normalizedSubjectKey(rawKey, actualTypeId)
+                val subjNode = findSubjectNode(
+                    analysis,
+                    listOfNotNull(
+                        normalizedKey,
+                        rawKey,
+                        rawKey.uppercase(),
+                        rawKey.lowercase(),
+                        subjInfo["key"],
+                        subjInfo["key"]?.uppercase(),
+                        subjInfo["key"]?.lowercase()
+                    )
+                ) ?: continue
+
+                if (hasRenderableContent(subjNode)) {
+                    renderItems.add(subjInfo to subjNode)
+                    usedKeys.add(subjNode.fieldNameFrom(analysis).lowercase())
                 }
+            }
+
+            if (renderItems.isEmpty()) {
+                val fields = analysis.fields()
+                while (fields.hasNext()) {
+                    val entry = fields.next()
+                    if (!usedKeys.contains(entry.key.lowercase()) && hasRenderableContent(entry.value)) {
+                        renderItems.add(mapOf("id" to entry.key, "name" to displayNameFromKey(entry.key)) to entry.value)
+                    }
+                }
+            }
+
+            if (renderItems.isEmpty()) {
+                val p = createPara()
+                p.spacingAfter = 200
+                p.indentationLeft = 300
+                val r = p.createRun()
+                DocxStyleUtils.applyRunFont(r)
+                r.fontSize = 10
+                r.color = "7F7F7F"
+                r.setText("暂无测评分析数据。")
+            }
+
+            for ((subjInfo, subjNode) in renderItems) {
+                val rawKey = subjInfo["id"] ?: continue
+                val key = normalizedSubjectKey(rawKey, actualTypeId)
 
                 var displayName = subjInfo["name"] ?: rawKey
                 if (displayName.endsWith("理解") || displayName.endsWith("表达")) {
                     displayName = displayName.substring(0, 2)
-                }
-
-                var subjNode = analysis.path(key)
-                if (subjNode.isMissingNode || subjNode.isEmpty) {
-                    // Fallback to raw key just in case some legacy data exists
-                    subjNode = analysis.path(rawKey)
-                    if (subjNode.isMissingNode || subjNode.isEmpty) continue
                 }
                 
                 val score = subjNode.path("score").asText()
@@ -286,6 +321,77 @@ object DocxAssessmentAnalysisRenderer {
             
         } catch (e: Exception) {
             System.err.println("Failed to parse assessment results for docx: ${e.message}")
+        }
+    }
+
+    private fun normalizedSubjectKey(rawKey: String, typeId: String?): String {
+        return if (!typeId.isNullOrBlank() && !rawKey.uppercase().contains(typeId.uppercase())) {
+            "${typeId.uppercase()}_${rawKey}".uppercase()
+        } else {
+            rawKey
+        }
+    }
+
+    private fun findSubjectNode(analysis: JsonNode, keys: List<String>): JsonNode? {
+        for (key in keys.distinct()) {
+            val direct = analysis.path(key)
+            if (!direct.isMissingNode && !direct.isEmpty) return direct
+        }
+
+        val fields = analysis.fields()
+        while (fields.hasNext()) {
+            val entry = fields.next()
+            if (keys.any { it.equals(entry.key, ignoreCase = true) } && !entry.value.isEmpty) {
+                return entry.value
+            }
+        }
+        return null
+    }
+
+    private fun JsonNode.fieldNameFrom(parent: JsonNode): String {
+        val fields = parent.fields()
+        while (fields.hasNext()) {
+            val entry = fields.next()
+            if (entry.value === this) return entry.key
+        }
+        return ""
+    }
+
+    private fun hasRenderableContent(node: JsonNode): Boolean {
+        val score = node.path("score").asText()
+        val total = node.path("total").asText()
+        val level = node.path("level").asText()
+        val paper = node.path("paperAnalysis")
+        val cause = node.path("causeAnalysis")
+
+        return (score.isNotBlank() && score != "null") ||
+            (total.isNotBlank() && total != "null" && total != "0") ||
+            (level.isNotBlank() && level != "null" && level != "-") ||
+            (!paper.isMissingNode && paper.isObject && paper.size() > 0) ||
+            (!cause.isMissingNode && cause.isArray && cause.size() > 0)
+    }
+
+    private fun displayNameFromKey(key: String): String {
+        val cleanKey = key
+            .replace(Regex("^[A-Z]+_"), "")
+            .replace(Regex("^SUBJ_", RegexOption.IGNORE_CASE), "")
+            .lowercase()
+        return when (cleanKey) {
+            "reading" -> "阅读"
+            "listening" -> "听力"
+            "speaking" -> "口语"
+            "writing" -> "写作"
+            "language", "language_use" -> "语言应用"
+            "literacy", "learning_literacy" -> "学习素养"
+            else -> key
+        }
+    }
+
+    private fun getConfigValue(systemConfigRepository: SystemConfigRepository, key: String): String? {
+        return try {
+            systemConfigRepository.findByConfigKey(key)?.configValue
+        } catch (e: Exception) {
+            null
         }
     }
 }

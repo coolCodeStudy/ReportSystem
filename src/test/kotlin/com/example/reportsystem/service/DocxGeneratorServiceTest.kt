@@ -33,6 +33,10 @@ class DocxGeneratorServiceTest {
             textbookConfigRepository
         )
 
+        every { systemConfigRepository.findByConfigKey(any()) } returns null
+        every { teachingPlanRepository.findByBookNameIn(any()) } returns emptyList()
+        every { textbookConfigRepository.findByBookName(any()) } returns null
+
         // Mock basic configurations
         val mockCsv = """
             "Lingoland","CEFR","蓝思值","词汇量","雅思","体外"
@@ -118,9 +122,90 @@ class DocxGeneratorServiceTest {
         // Since "NoneExistingType" is not in our mock configuration, its text shouldn't be here
     }
 
+    @Test
+    fun `generateDocx should render assessment analysis from saved results even when subject config is missing`() {
+        val assessmentResultsJson = """
+            {
+              "reading": {
+                "score": 18,
+                "total": 30,
+                "level": "A2",
+                "paperAnalysis": {
+                  "信息理解": { "status": "✅", "text": "理解主旨和关键信息。" }
+                },
+                "causeAnalysis": ["阅读量不足，缺乏语感"]
+              }
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            assessmentResultsJson = assessmentResultsJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val allText = documentText(document)
+
+        assertThat(allText).contains("卷面分析")
+        assertThat(allText).contains("信息理解")
+        assertThat(allText).contains("理解主旨和关键信息。")
+        assertThat(allText).doesNotContain("暂无测评分析数据")
+    }
+
+    @Test
+    fun `generateDocx should format and keep course plan total row with the schedule table`() {
+        val teachingPlanDataJson = """
+            {
+              "coursePlans": [
+                {
+                  "phase": "基础课程",
+                  "duration": "2h",
+                  "goal": "强化语言基础",
+                  "textbook": "NEF-PI, Unlock4",
+                  "hours": "NEF-PI: 68hUnlock4: 40h"
+                }
+              ],
+              "coursePlanNote": "不知道为什么我不是大明星"
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val coursePlanTable = document.tables.first { table ->
+            table.getRow(0).tableCells.map { it.text }.containsAll(listOf("阶段", "时长", "目标", "教材", "预计课时"))
+        }
+
+        assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("NEF-PI: 68h")
+        assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("Unlock4: 40h")
+        assertThat(coursePlanTable.getRow(2).getCell(0).text).isEqualTo("预计总课时")
+        assertThat(coursePlanTable.getRow(0).ctRow.trPr.sizeOfCantSplitArray()).isGreaterThan(0)
+        assertThat(coursePlanTable.getRow(1).getCell(0).paragraphs.first().ctp.pPr.isSetKeepNext).isTrue()
+    }
+
     private fun collectRuns(document: XWPFDocument): List<XWPFRun> {
         return document.paragraphs.flatMap { it.runs } +
             document.tables.flatMap { collectRuns(it) }
+    }
+
+    private fun documentText(document: XWPFDocument): String {
+        return document.paragraphs.joinToString("\n") { it.text } + "\n" +
+            document.tables.joinToString("\n") { table ->
+                table.rows.joinToString("\n") { row ->
+                    row.tableCells.joinToString("\t") { cell -> cell.text }
+                }
+            }
     }
 
     private fun collectRuns(table: XWPFTable): List<XWPFRun> {
