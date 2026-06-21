@@ -4,6 +4,7 @@ import org.apache.poi.xwpf.usermodel.*
 import org.openxmlformats.schemas.wordprocessingml.x2006.main.*
 import java.math.BigInteger
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.example.reportsystem.entity.TeachingPlan
 import com.example.reportsystem.repository.SystemConfigRepository
 import com.example.reportsystem.repository.TeachingPlanRepository
 import com.example.reportsystem.repository.TextbookConfigRepository
@@ -11,6 +12,7 @@ import com.example.reportsystem.repository.TextbookConfigRepository
 object DocxTeachingPlanRenderer {
     private val COURSE_PLAN_COL_WIDTHS = listOf(1500L, 800L, 1900L, 1900L, 2200L)
     private val COURSE_PLAN_TABLE_WIDTH = COURSE_PLAN_COL_WIDTHS.sum()
+    private val SYLLABUS_HEADERS = listOf("教材", "单元", "课程内容", "学习目标")
 
     fun render(document: XWPFDocument, teachingPlanDataJson: String, teachingPlanRepository: TeachingPlanRepository, textbookConfigRepository: TextbookConfigRepository, systemConfigRepository: SystemConfigRepository) {
         var targetPara: XWPFParagraph? = null
@@ -268,7 +270,7 @@ object DocxTeachingPlanRenderer {
             addTextParagraphs(createPara, finalTeachingApproach, emphasizeNumberedLines = true)
         }
 
-        var plans = mutableListOf<com.example.reportsystem.entity.TeachingPlan>()
+        var plans = mutableListOf<TeachingPlan>()
         val selectedPlanIdsArray = data.path("selectedPlanIds")
         if (selectedPlanIdsArray.isArray && selectedPlanIdsArray.size() > 0) {
             val ids = selectedPlanIdsArray.map { it.asLong() }
@@ -281,38 +283,12 @@ object DocxTeachingPlanRenderer {
 
         if (plans.isNotEmpty()) {
             addSectionTitle(createPara, "教学计划大纲")
-            
-            val table = createTableWrappen(plans.size + 1, 4)
-                    val tblW = table.ctTbl.tblPr?.addNewTblW() ?: table.ctTbl.addNewTblPr().addNewTblW()
-                    tblW.type = STTblWidth.PCT
-                    tblW.w = BigInteger.valueOf(5000)
-
-                    val headerRow = table.getRow(0)
-                    DocxStyleUtils.setCellText(headerRow.getCell(0), "教材", bold = true, color = "FFFFFF", fontSize = 10)
-                    DocxStyleUtils.setCellText(headerRow.getCell(1), "单元", bold = true, color = "FFFFFF", fontSize = 10)
-                    DocxStyleUtils.setCellText(headerRow.getCell(2), "课程内容", bold = true, color = "FFFFFF", fontSize = 10)
-                    DocxStyleUtils.setCellText(headerRow.getCell(3), "学习目标", bold = true, color = "FFFFFF", fontSize = 10)
-                    
-                    headerRow.tableCells.forEach {
-                        DocxStyleUtils.setCellShading(it, DocxStyleUtils.THEME_PRIMARY)
-                        DocxStyleUtils.setZebraBorders(it, isHeader = true)
-                    }
-
-                    plans.forEachIndexed { index, plan ->
-                        val row = table.getRow(index + 1)
-                        DocxStyleUtils.setCellText(row.getCell(0), plan.bookName ?: "", bold = false, fontSize = 9)
-                        DocxStyleUtils.setCellText(row.getCell(1), plan.unitCode ?: "", bold = false, fontSize = 9)
-                        DocxStyleUtils.setCellText(row.getCell(2), plan.courseContent ?: "", bold = false, fontSize = 9)
-                        DocxStyleUtils.setCellText(row.getCell(3), plan.learningObjectives ?: "", bold = false, fontSize = 9)
-                        
-                        val isLastDataRow = index == plans.size - 1
-                        row.tableCells.forEach {
-                            DocxStyleUtils.setCellShading(it, if (index % 2 == 0) DocxStyleUtils.THEME_BG_LIGHT else "FFFFFF")
-                            DocxStyleUtils.setZebraBorders(it, isLast = isLastDataRow)
-                            DocxStyleUtils.setCellAlignment(it, ParagraphAlignment.LEFT)
-                        }
-                    }
-                    createPara().spacingAfter = 200
+            val groups = buildSyllabusGroups(plans, coursePlans)
+            groups.forEachIndexed { groupIndex, group ->
+                addSyllabusGroupTitle(createPara, group.title)
+                renderSyllabusTable(createTableWrappen, group.plans)
+                createPara().spacingAfter = if (groupIndex == groups.lastIndex) 200 else 120
+            }
         }
 
         // --- 助教课打卡清单：优先使用该学生的数据，若为空则从全局模板配置兜底读取 ---
@@ -361,6 +337,110 @@ object DocxTeachingPlanRenderer {
         r.fontSize = 12
         r.isBold = true
         r.color = DocxStyleUtils.THEME_PRIMARY
+    }
+
+    private fun addSyllabusGroupTitle(createPara: () -> XWPFParagraph, title: String) {
+        val p = createPara()
+        p.spacingBefore = DocxStyleUtils.SPACING_SECTION
+        p.spacingAfter = DocxStyleUtils.SPACING_BODY
+        p.indentationLeft = 300
+        val r = p.createRun()
+        r.setText(title)
+        r.fontFamily = DocxStyleUtils.FONT_MAIN
+        r.fontSize = 11
+        r.isBold = true
+        r.color = DocxStyleUtils.THEME_PRIMARY
+    }
+
+    private fun renderSyllabusTable(createTable: (Int, Int) -> XWPFTable, plans: List<TeachingPlan>) {
+        val table = createTable(plans.size + 1, SYLLABUS_HEADERS.size)
+        val tblPr = table.ctTbl.tblPr ?: table.ctTbl.addNewTblPr()
+        val tblW = tblPr.tblW ?: tblPr.addNewTblW()
+        tblW.type = STTblWidth.PCT
+        tblW.w = BigInteger.valueOf(5000)
+        val tblLayout = tblPr.tblLayout ?: tblPr.addNewTblLayout()
+        tblLayout.type = STTblLayoutType.FIXED
+
+        val headerRow = table.getRow(0)
+        SYLLABUS_HEADERS.forEachIndexed { col, header ->
+            val cell = headerRow.getCell(col)
+            DocxStyleUtils.setCellText(cell, header, bold = true, color = "FFFFFF", fontSize = 10)
+            DocxStyleUtils.setCellShading(cell, DocxStyleUtils.THEME_PRIMARY)
+            DocxStyleUtils.setZebraBorders(cell, isHeader = true)
+        }
+
+        plans.forEachIndexed { index, plan ->
+            val row = table.getRow(index + 1)
+            val cellsText = listOf(
+                plan.bookName,
+                plan.unitCode,
+                plan.courseContent.orEmpty(),
+                plan.learningObjectives.orEmpty()
+            )
+            cellsText.forEachIndexed { col, text ->
+                val cell = row.getCell(col)
+                DocxStyleUtils.setCellText(cell, text, bold = false, fontSize = 9)
+                DocxStyleUtils.setCellShading(cell, if (index % 2 == 0) DocxStyleUtils.THEME_BG_LIGHT else "FFFFFF")
+                DocxStyleUtils.setZebraBorders(cell, isLast = index == plans.lastIndex)
+                DocxStyleUtils.setCellAlignment(cell, ParagraphAlignment.LEFT)
+            }
+        }
+    }
+
+    private fun buildSyllabusGroups(plans: List<TeachingPlan>, coursePlans: com.fasterxml.jackson.databind.JsonNode): List<SyllabusGroup> {
+        val indexedPlans = plans.withIndex().toList()
+        val consumedBookNames = mutableSetOf<String>()
+        val groups = mutableListOf<SyllabusGroup>()
+
+        if (coursePlans.isArray && coursePlans.size() > 0) {
+            coursePlans.forEach { row ->
+                val bookNames = splitBookNames(row.path("textbook").asText())
+                    .filterNot { it in consumedBookNames }
+                if (bookNames.isEmpty()) return@forEach
+
+                val groupPlans = indexedPlans
+                    .filter { (_, plan) -> plan.bookName in bookNames }
+                    .sortedWith(compareBy<IndexedValue<TeachingPlan>>(
+                        { bookNames.indexOf(it.value.bookName).takeIf { index -> index >= 0 } ?: Int.MAX_VALUE },
+                        { it.index }
+                    ))
+                    .map { it.value }
+
+                if (groupPlans.isNotEmpty()) {
+                    groups.add(SyllabusGroup(buildSyllabusGroupTitle(row.path("phase").asText(), bookNames), groupPlans))
+                    consumedBookNames.addAll(bookNames)
+                }
+            }
+        }
+
+        val remainingPlans = indexedPlans
+            .filter { (_, plan) -> plan.bookName !in consumedBookNames }
+            .map { it.value }
+        if (remainingPlans.isNotEmpty()) {
+            remainingPlans
+                .groupBy { it.bookName }
+                .forEach { (bookName, bookPlans) ->
+                    groups.add(SyllabusGroup("${bookName} 教学计划", bookPlans))
+                }
+        }
+
+        return groups
+    }
+
+    private fun splitBookNames(rawText: String): List<String> {
+        return rawText.split(",", "，", "、", "/", "／", "\n")
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+    }
+
+    private fun buildSyllabusGroupTitle(phase: String, bookNames: List<String>): String {
+        val textbookLabel = bookNames.joinToString(" / ")
+        return if (phase.isBlank()) {
+            "$textbookLabel 教学计划"
+        } else {
+            "$phase（$textbookLabel）"
+        }
     }
 
     private fun addTextParagraphs(
@@ -421,4 +501,9 @@ object DocxTeachingPlanRenderer {
             .replace("\r", "\n")
             .replace(Regex("(?<=h)(?=\\S+?:)"), "\n")
     }
+
+    private data class SyllabusGroup(
+        val title: String,
+        val plans: List<TeachingPlan>
+    )
 }

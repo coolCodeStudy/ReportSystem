@@ -1,5 +1,6 @@
 package com.example.reportsystem.service
 
+import com.example.reportsystem.entity.TeachingPlan
 import com.example.reportsystem.entity.SystemConfig
 import com.example.reportsystem.entity.StudentTypeDictionary
 import com.example.reportsystem.repository.StudentTypeDictionaryRepository
@@ -278,6 +279,66 @@ class DocxGeneratorServiceTest {
         assertThat(coursePlanTable.getRow(2).getCell(0).text).isEqualTo("预计总课时")
         assertThat(coursePlanTable.getRow(0).ctRow.trPr.sizeOfCantSplitArray()).isGreaterThan(0)
         assertThat(coursePlanTable.getRow(1).getCell(0).paragraphs.first().ctp.pPr.isSetKeepNext).isTrue()
+    }
+
+    @Test
+    fun `generateDocx should split syllabus outline tables by course plan phase and keep headers consistent`() {
+        val teachingPlanDataJson = """
+            {
+              "coursePlans": [
+                {
+                  "phase": "阶段1: 自然拼读与拼写基础",
+                  "duration": "主课 1.5h",
+                  "goal": "建立音形对应意识",
+                  "textbook": "自然拼读Set 1, 自然拼读Set 2&3",
+                  "hours": "自然拼读Set 1: 7h自然拼读Set 2&3: 21h"
+                },
+                {
+                  "phase": "阶段2: English Language Arts",
+                  "duration": "主课 1.5h",
+                  "goal": "提升综合语言运用",
+                  "textbook": "Power Up 2",
+                  "hours": "Power Up 2: 47h"
+                }
+              ]
+            }
+        """.trimIndent()
+        val syllabusPlans = listOf(
+            TeachingPlan(unitCode = "Power Up 2 - Unit 0", bookName = "Power Up 2", courseContent = "人物名字", learningObjectives = "描述人物"),
+            TeachingPlan(unitCode = "自然拼读set 1 - 第1课", bookName = "自然拼读Set 1", courseContent = "字母发音", learningObjectives = "看到字母能读音"),
+            TeachingPlan(unitCode = "自然拼读Set 2&3 - 第1课", bookName = "自然拼读Set 2&3", courseContent = "Magic E", learningObjectives = "拼读长元音")
+        )
+        every {
+            teachingPlanRepository.findByBookNameIn(match {
+                it.containsAll(listOf("自然拼读Set 1", "自然拼读Set 2&3", "Power Up 2"))
+            })
+        } returns syllabusPlans
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val syllabusTables = document.tables.filter { table ->
+            table.getRow(0).tableCells.map { it.text } == listOf("教材", "单元", "课程内容", "学习目标")
+        }
+
+        assertThat(syllabusTables).hasSize(2)
+        assertThat(document.paragraphs.map { it.text }).contains(
+            "阶段1: 自然拼读与拼写基础（自然拼读Set 1 / 自然拼读Set 2&3）",
+            "阶段2: English Language Arts（Power Up 2）"
+        )
+        assertThat(syllabusTables[0].rows.drop(1).flatMap { row -> row.tableCells.map { it.text } })
+            .contains("自然拼读Set 1", "自然拼读Set 2&3")
+            .doesNotContain("Power Up 2")
+        assertThat(syllabusTables[1].rows.drop(1).flatMap { row -> row.tableCells.map { it.text } })
+            .contains("Power Up 2")
+            .doesNotContain("自然拼读Set 1", "自然拼读Set 2&3")
     }
 
     private fun collectRuns(document: XWPFDocument): List<XWPFRun> {
