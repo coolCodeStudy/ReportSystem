@@ -99,6 +99,7 @@ class StudentController(
                 this.dynamicData = form.dynamicData
             }
         } else {
+            if (student.name != name) student.name = name
             if (form.phone != null) student.phone = form.phone
             if (form.age != null) student.age = form.age
             if (form.gender != null) student.gender = form.gender
