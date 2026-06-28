@@ -77,11 +77,11 @@ object DocxStyleUtils {
         para.runs.forEach { it.setText("", 0) }
         val run = if (para.runs.isEmpty()) para.createRun() else para.runs[0]
         
-        val lines = text.split("\n")
+        val lines = normalizeLineBreaks(text).split("\n")
         lines.forEachIndexed { index, line ->
             run.setText(line)
             if (index < lines.size - 1) {
-                run.addCarriageReturn()
+                run.addBreak()
             }
         }
         
@@ -91,6 +91,10 @@ object DocxStyleUtils {
         if (color != null) {
             run.setColor(color)
         }
+    }
+
+    private fun normalizeLineBreaks(text: String): String {
+        return text.replace("\r\n", "\n").replace("\r", "\n")
     }
 
     fun setWhiteBorders(cell: XWPFTableCell) {

@@ -443,6 +443,55 @@ class DocxGeneratorServiceTest {
             .doesNotContain("Hidden Book", "隐藏课程内容")
     }
 
+    @Test
+    fun `generateDocx should preserve syllabus learning objective line breaks`() {
+        val teachingPlanDataJson = """
+            {
+              "coursePlans": [
+                {
+                  "phase": "阶段1: 基础课程",
+                  "duration": "主课 1.5h",
+                  "goal": "基础语言能力",
+                  "textbook": "NEF-E",
+                  "hours": "NEF-E: 68h"
+                }
+              ]
+            }
+        """.trimIndent()
+        every {
+            teachingPlanRepository.findByBookNameIn(match { it.contains("NEF-E") })
+        } returns listOf(
+            TeachingPlan(
+                unitCode = "NEF-E-1A",
+                bookName = "NEF-E",
+                courseContent = "语法：be动词\r\n词汇：数字1-20",
+                learningObjectives = "• 用英文介绍自己\r\n• 简单描述他人\n• 数数1-20"
+            )
+        )
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val syllabusTable = document.tables.first { table ->
+            table.getRow(0).tableCells.map { it.text } == listOf("教材", "单元", "课程内容", "学习目标")
+        }
+        val objectiveRun = syllabusTable.getRow(1).getCell(3).paragraphs.first().runs.first()
+
+        assertThat(objectiveRun.ctr.sizeOfBrArray()).isEqualTo(2)
+        assertThat(objectiveRun.ctr.sizeOfCrArray()).isEqualTo(0)
+        assertThat(syllabusTable.getRow(1).getCell(3).text)
+            .contains("• 用英文介绍自己")
+            .contains("• 简单描述他人")
+            .contains("• 数数1-20")
+    }
+
     private fun collectRuns(document: XWPFDocument): List<XWPFRun> {
         return document.paragraphs.flatMap { it.runs } +
             document.tables.flatMap { collectRuns(it) }
