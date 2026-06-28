@@ -158,6 +158,52 @@ class DocxGeneratorServiceTest {
     }
 
     @Test
+    fun `generateDocx should skip excluded assessment subjects`() {
+        val assessmentResultsJson = """
+            {
+              "reading": {
+                "score": 18,
+                "total": 30,
+                "level": "A2",
+                "paperAnalysis": {
+                  "信息理解": { "status": "✅", "text": "理解主旨和关键信息。" }
+                },
+                "causeAnalysis": []
+              },
+              "listening": {
+                "excluded": true,
+                "score": 20,
+                "total": 25,
+                "level": "B1",
+                "paperAnalysis": {
+                  "单词辨音": { "status": "✅", "text": "连读弱读识别稳定。" }
+                },
+                "causeAnalysis": ["听力训练充分。"]
+              }
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            assessmentResultsJson = assessmentResultsJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val allText = documentText(document)
+
+        assertThat(allText).contains("▎ 阅读")
+        assertThat(allText).contains("理解主旨和关键信息。")
+        assertThat(allText).doesNotContain("▎ 听力")
+        assertThat(allText).doesNotContain("单词辨音")
+        assertThat(allText).doesNotContain("连读弱读识别稳定。")
+        assertThat(allText).doesNotContain("听力训练充分。")
+    }
+
+    @Test
     fun `generateDocx should infer subject display names from cloud subject dimensions`() {
         val assessmentResultsJson = """
             {

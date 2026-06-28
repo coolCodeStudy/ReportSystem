@@ -1,9 +1,10 @@
 import asyncio
+import os
 import random
 import string
 from playwright.async_api import async_playwright
 
-BASE_URL = "http://localhost:8080"
+BASE_URL = os.getenv("BASE_URL", "http://localhost:18080")
 
 # ─── helpers ─────────────────────────────────────────────────────────────────
 

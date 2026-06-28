@@ -17,7 +17,13 @@
    ```
 
 3. Once the application starts (you will see "Started ReportSystemApplicationKt"), open your browser and visit:
-   [http://localhost:8080](http://localhost:8080)
+   [http://localhost:18080](http://localhost:18080)
+
+By default, local `bootRun` uses port `18080` to avoid conflicts with other repositories that commonly use `8080`.
+To use another local port temporarily:
+   ```bash
+   ./gradlew bootRun -PlocalPort=18081
+   ```
 
 ## Stopping the Application
 To stop the application, press `Ctrl + C` in the terminal window where it is running.

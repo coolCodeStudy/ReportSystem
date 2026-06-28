@@ -135,6 +135,11 @@ object DocxAssessmentAnalysisRenderer {
                     )
                 ) ?: continue
 
+                if (isExcluded(subjNode)) {
+                    usedKeys.add(subjNode.fieldNameFrom(analysis).lowercase())
+                    continue
+                }
+
                 if (hasRenderableContent(subjNode)) {
                     renderItems.add(subjInfo to subjNode)
                     usedKeys.add(subjNode.fieldNameFrom(analysis).lowercase())
@@ -145,7 +150,7 @@ object DocxAssessmentAnalysisRenderer {
                 val fields = analysis.fields()
                 while (fields.hasNext()) {
                     val entry = fields.next()
-                    if (!usedKeys.contains(entry.key.lowercase()) && hasRenderableContent(entry.value)) {
+                    if (!usedKeys.contains(entry.key.lowercase()) && !isExcluded(entry.value) && hasRenderableContent(entry.value)) {
                         renderItems.add(mapOf("id" to entry.key, "name" to displayNameFromNode(entry.key, entry.value)) to entry.value)
                     }
                 }
@@ -393,6 +398,15 @@ object DocxAssessmentAnalysisRenderer {
             (level.isNotBlank() && level != "null" && level != "-") ||
             (!paper.isMissingNode && paper.isObject && paper.size() > 0) ||
             (!cause.isMissingNode && cause.isArray && cause.size() > 0)
+    }
+
+    private fun isExcluded(node: JsonNode): Boolean {
+        val excluded = node.path("excluded")
+        return when {
+            excluded.isBoolean -> excluded.asBoolean()
+            excluded.isTextual -> excluded.asText().equals("true", ignoreCase = true)
+            else -> false
+        }
     }
 
     private fun displayNameFromKey(key: String): String {

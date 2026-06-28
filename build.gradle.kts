@@ -53,4 +53,5 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 
 tasks.withType<org.springframework.boot.gradle.tasks.run.BootRun> {
     sourceResources(sourceSets.main.get())
+    systemProperty("server.port", project.findProperty("localPort") ?: "18080")
 }

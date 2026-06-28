@@ -1,6 +1,9 @@
 import asyncio
+import os
 import random
 from playwright.async_api import async_playwright
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:18080")
 
 # Core Mapping Configuration — only subjects that have scores
 SCORING_CONFIG = {
@@ -115,7 +118,7 @@ async def run():
 
         # Navigate
         print("📡 Navigating to Students Management...")
-        await page.goto("http://localhost:8080/")
+        await page.goto(f"{BASE_URL}/")
         await asyncio.sleep(2)
 
         # Create student 
@@ -325,4 +328,3 @@ async def run():
 
 if __name__ == "__main__":
     asyncio.run(run())
-

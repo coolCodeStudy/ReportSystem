@@ -192,6 +192,34 @@
             border-color: var(--primary) !important;
         }
 
+        .subject-tab-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .subject-tab-remove {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            margin-left: 0.25rem;
+            color: inherit;
+            opacity: 0.65;
+            transition: all 0.15s ease;
+        }
+
+        .subject-tab-remove:hover {
+            background: rgba(255, 255, 255, 0.24);
+            opacity: 1;
+        }
+
+        .nav-link:not(.active) .subject-tab-remove:hover {
+            background: rgba(79, 70, 229, 0.1);
+        }
+
         .course-plan-table {
             table-layout: fixed;
             min-width: 1180px;
@@ -363,19 +391,36 @@
             </div>
 
             <!-- Subject Tabs -->
-            <ul class="nav nav-pills mb-4" id="subjectTabs" role="tablist" x-show="activeSubjects.length > 0">
+            <ul class="nav nav-pills align-items-center gap-2 mb-4" id="subjectTabs" role="tablist" x-show="activeSubjects.length > 0 || excludedSubjects().length > 0">
                 <template x-for="(subj, index) in activeSubjects" :key="subj.id">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link fw-medium px-4" 
+                        <button class="nav-link fw-medium px-4 subject-tab-button"
                                 :class="{'active': activeTab === subj.id}" 
                                 @click="activeTab = subj.id" 
                                 type="button" role="tab">
                             <i class="bi me-1" :class="subj.icon"></i><span x-text="subj.name"></span>
+                            <span class="subject-tab-remove" x-show="activeSubjects.length > 1" @click.stop.prevent="excludeSubject(subj.id)" title="从当前报告中移除此科目">
+                                <i class="bi bi-x-lg"></i>
+                            </span>
                         </button>
                     </li>
                 </template>
+                <li class="nav-item dropdown" x-show="excludedSubjects().length > 0">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-plus-circle me-1"></i>恢复科目
+                    </button>
+                    <ul class="dropdown-menu shadow-sm">
+                        <template x-for="subj in excludedSubjects()" :key="'restore_'+subj.id">
+                            <li>
+                                <button type="button" class="dropdown-item" @click="restoreSubject(subj.id)">
+                                    <i class="bi me-2" :class="subj.icon"></i><span x-text="subj.name"></span>
+                                </button>
+                            </li>
+                        </template>
+                    </ul>
+                </li>
             </ul>
-            <div x-show="activeSubjects.length === 0 && !loading" class="text-center text-muted p-5 bg-light rounded border mb-4">
+            <div x-show="allSubjects.length === 0 && !loading" class="text-center text-muted p-5 bg-light rounded border mb-4">
                 当前勾选的<strong class="text-primary">参考测评体系</strong>尚未配置任何考评科目，请前往后台【测评科目与评价管理】页面，点击【管理开通科目】配置好再刷新本页面。
             </div>
             <div x-show="loading" class="text-center text-muted p-5 bg-light rounded border mb-4">
@@ -689,6 +734,7 @@
                 loading: true,
                 activeTab: '',
                 activeSubjects: [],
+                allSubjects: [],
                 assessments: {},
                 currentAssessmentTypeId: '',
                 initData() {
@@ -712,6 +758,7 @@
                     this.currentAssessmentTypeId = typeId;
                     this.loading = true;
                     this.activeSubjects = [];
+                    this.allSubjects = [];
                     
                     const rawJson = document.getElementById('initAssessmentResults').value;
                     let dbState = {};
@@ -721,23 +768,19 @@
                         const tId = typeId.toUpperCase();
                         const subjRes = await fetch(`/admin/api/config/GLOBAL_SUBJECTS_${tId}`).then(r=>r.json());
                         if (subjRes.code === 200 && subjRes.data && subjRes.data.value) {
-                            this.activeSubjects = JSON.parse(subjRes.data.value);
+                            this.allSubjects = JSON.parse(subjRes.data.value);
                         } else {
-                            this.activeSubjects = [];
+                            this.allSubjects = [];
                         }
-                        
-                        if (this.activeSubjects.length > 0) {
-                            this.activeTab = this.activeSubjects[0].id;
-                        }
-                        
-                        this.activeSubjects.forEach(s => {
+
+                        this.allSubjects.forEach(s => {
                             if (!this.assessments[s.id]) {
-                                this.assessments[s.id] = { examType: 'KET', score: null, total: 30, rate: null, level: null, paperAnalysis: [], causeOptions: [], causeAnalysis: [], scoreRule: null };
+                                this.assessments[s.id] = { examType: 'KET', score: null, total: 30, rate: null, level: null, excluded: false, paperAnalysis: [], causeOptions: [], causeAnalysis: [], scoreRule: null };
                             }
                         });
 
                         const promises = [];
-                        for (const subj of this.activeSubjects) {
+                        for (const subj of this.allSubjects) {
                             promises.push(
                                 fetch(`/admin/api/config/GLOBAL_ANALYSIS_CONFIG_${tId}_${subj.key}`).then(r => r.json()).then(j => ({ type: 'paper', subj: subj.id, data: j.code===200?j.data.value:''}))
                             );
@@ -779,7 +822,7 @@
                         });
 
 
-                        this.activeSubjects.forEach(s => {
+                        this.allSubjects.forEach(s => {
                             const subj = s.id;
                             const saved = dbState[subj];
                             this.calculateGrade(subj);
@@ -789,6 +832,7 @@
                                 if (saved.testType) this.assessments[subj].examType = saved.testType; 
                                 if (saved.score !== undefined) this.assessments[subj].score = saved.score;
                                 if (saved.total !== undefined) this.assessments[subj].total = saved.total;
+                                this.assessments[subj].excluded = saved.excluded === true || saved.excluded === 'true';
                                 this.calculateGrade(subj);
 
                                 if (saved.paperAnalysis) {
@@ -806,9 +850,39 @@
                                 }
                             }
                         });
+                        this.refreshActiveSubjects();
 
                     } catch (e) { console.error('Error:', e); }
                     this.loading = false;
+                },
+                isSubjectExcluded(subjId) {
+                    return this.assessments[subjId]?.excluded === true;
+                },
+                excludedSubjects() {
+                    return this.allSubjects.filter(s => this.isSubjectExcluded(s.id));
+                },
+                refreshActiveSubjects() {
+                    this.activeSubjects = this.allSubjects.filter(s => !this.isSubjectExcluded(s.id));
+                    if (!this.activeSubjects.some(s => s.id === this.activeTab)) {
+                        this.activeTab = this.activeSubjects.length > 0 ? this.activeSubjects[0].id : '';
+                    }
+                },
+                excludeSubject(subjId) {
+                    if (this.activeSubjects.length <= 1) {
+                        SwalToast.fire({ icon: 'info', title: '至少保留一个科目' });
+                        return;
+                    }
+                    if (!this.assessments[subjId]) return;
+                    this.assessments[subjId].excluded = true;
+                    this.refreshActiveSubjects();
+                    this.saveWorkspaceData();
+                },
+                restoreSubject(subjId) {
+                    if (!this.assessments[subjId]) return;
+                    this.assessments[subjId].excluded = false;
+                    this.refreshActiveSubjects();
+                    this.activeTab = subjId;
+                    this.saveWorkspaceData();
                 },
                 calculateGrade(subj) {
                     const data = this.assessments[subj];
@@ -913,6 +987,7 @@
                             total: parseFloat(src.total) || 0,
                             rate: src.rate,
                             level: src.level,
+                            excluded: src.excluded === true,
                             causeAnalysis: src.causeAnalysis,
                             paperAnalysis: {}
                         };
