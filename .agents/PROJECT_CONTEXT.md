@@ -111,6 +111,7 @@ ReportSystem 是一个面向 Lingoland 测评报告生成的 Kotlin + Spring Boo
 - 页面保持 Thymeleaf 原生模板，不引入重型前端构建链。
 - 文档生成相关改动要优先关注模板占位符、POI 表格结构和导出后可打开性。
 - 提交或推送前必须按仓库 workflow 跑全量测试；未被明确要求时不要主动 push。
+- 用户明确说“push/推送”时，视为已要求执行推送：跑完全量测试后直接提交/推送，不要展开解释审查流程；若底层平台强制拦截并要求二次确认，只用一句简短确认请求，用户确认后立即继续。
 
 ## 容易踩坑
 
@@ -120,6 +121,9 @@ ReportSystem 是一个面向 Lingoland 测评报告生成的 Kotlin + Spring Boo
 - `DocxGeneratorService` 已明确禁止旧版 `G1-G11` 作为 `targetLevel`，应传 CEFR 类值，例如 `B1-`。
 - 软删除依赖 Hibernate `@Where`，普通 repository 查询默认看不到已删除数据。
 - 根目录有若干历史修复脚本和样例产物，阅读系统时优先看 `src`、`.agents`、Gradle 配置和模板。
+- Word 表格单元格需要保留用户输入的分行时，先统一 `\r\n` / `\r` 为 `\n`，再用 Apache POI 的 `XWPFRun.addBreak()` 生成 `<w:br/>`；不要用 `addCarriageReturn()`，否则导出的表格内容在 Word 里容易显得挤在一起或版式混乱。
+- 导出设置属于横跨工作台和档案履历的共用行为，新增选项时应优先收口到同一套前端交互和保存字段，再让所有导出入口复用，避免一个入口支持、另一个入口漏掉。
+- 前端初始化依赖第三方弹窗或 CDN 脚本时要防御加载顺序，调用 `Swal` 等全局对象前先判断是否存在，并提供原生交互兜底。
 
 ## 后续待办线索
 
