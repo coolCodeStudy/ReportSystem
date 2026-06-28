@@ -191,6 +191,44 @@
             color: white !important;
             border-color: var(--primary) !important;
         }
+
+        .course-plan-table {
+            table-layout: fixed;
+            min-width: 1180px;
+        }
+
+        .course-plan-table th,
+        .course-plan-table td {
+            vertical-align: top;
+        }
+
+        .course-plan-table textarea {
+            line-height: 1.45;
+        }
+
+        .course-plan-field {
+            min-height: 96px;
+        }
+
+        .course-plan-textbook-button {
+            align-items: flex-start;
+            min-height: 96px;
+            padding-top: 0.75rem;
+            white-space: normal;
+        }
+
+        .course-plan-textbook-button span {
+            white-space: normal;
+        }
+
+        .course-plan-goal-input {
+            min-height: 96px;
+        }
+
+        .teaching-approach-textarea {
+            min-height: 260px;
+            line-height: 1.6;
+        }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -453,14 +491,22 @@
                             <h6 class="mb-0 fw-bold"><i class="bi bi-calendar3 me-2"></i>课时规划表</h6>
                             <button class="btn btn-sm btn-outline-primary" @click="addCoursePlanRow()">+ 添加一行</button>
                         </div>
-                        <div class="card-body p-0">
-                            <table class="table table-borderless table-striped mb-0">
+                        <div class="card-body p-0 table-responsive">
+                            <table class="table table-borderless table-striped mb-0 course-plan-table">
+                                <colgroup>
+                                    <col style="width: 16%;">
+                                    <col style="width: 15%;">
+                                    <col style="width: 31%;">
+                                    <col style="width: 23%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 60px;">
+                                </colgroup>
                                 <thead class="bg-light border-bottom">
                                     <tr>
                                         <th>阶段名称</th>
                                         <th>段落时长</th>
                                         <th>目标描述</th>
-                                        <th style="width: 25%">主要教材</th>
+                                        <th>主要教材</th>
                                         <th>预计课时</th>
                                         <th style="width: 60px;">操作</th>
                                     </tr>
@@ -468,12 +514,12 @@
                                 <tbody>
                                     <template x-for="(row, idx) in data.coursePlans" :key="idx">
                                         <tr class="border-bottom">
-                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.phase" placeholder="如 阶段1: 基础课程"></textarea></td>
-                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.duration" placeholder="如 2h"></textarea></td>
-                                            <td><textarea class="form-control form-control-sm" style="resize: vertical; min-height: 40px;" rows="2" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm course-plan-field" style="resize: vertical;" rows="4" x-model="row.phase" placeholder="如 阶段1: 基础课程"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm course-plan-field" style="resize: vertical;" rows="4" x-model="row.duration" placeholder="如 2h"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm course-plan-goal-input" style="resize: vertical;" rows="4" x-model="row.goal" placeholder="如 强化语言基础"></textarea></td>
                                             <td>
                                                 <div class="dropdown">
-                                                    <button class="form-select form-select-sm text-start w-100" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                                    <button class="form-select form-select-sm text-start w-100 d-flex course-plan-textbook-button" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
                                                         <span x-text="row.textbook ? row.textbook : '选择教材...'" class="text-truncate d-inline-block" style="max-width: 90%;"></span>
                                                     </button>
                                                     <ul class="dropdown-menu shadow-sm p-2" style="min-width: 220px; max-height: 250px; overflow-y: auto;">
@@ -491,7 +537,7 @@
                                                     </ul>
                                                 </div>
                                             </td>
-                                            <td><textarea class="form-control form-control-sm" rows="1" style="resize: vertical; min-height: 38px;" x-model="row.hours" placeholder="如 8h"></textarea></td>
+                                            <td><textarea class="form-control form-control-sm course-plan-field" rows="4" style="resize: vertical;" x-model="row.hours" placeholder="如 8h"></textarea></td>
                                             <td class="text-center align-middle">
                                                 <button class="btn btn-sm btn-outline-danger border-0" @click="data.coursePlans.splice(idx, 1)"><i class="bi bi-trash"></i></button>
                                             </td>
@@ -514,7 +560,7 @@
                             <h6 class="mb-0 fw-bold"><i class="bi bi-lightbulb me-2 text-warning"></i>教学思路</h6>
                         </div>
                         <div class="card-body p-0">
-                            <textarea class="form-control border-0 p-3" style="resize: vertical; min-height: 100px;" rows="4" x-model="data.teachingApproach" placeholder="输入教学思路..."></textarea>
+                            <textarea class="form-control border-0 p-3 teaching-approach-textarea" style="resize: vertical;" rows="10" x-model="data.teachingApproach" placeholder="输入教学思路..."></textarea>
                         </div>
                     </div>
                 </div>
