@@ -38,7 +38,8 @@ data class AssessmentHistoryDto(
     val targetGrade: String,
     val level: String,
     val goal: String,
-    val studentTypeCode: String?
+    val studentTypeCode: String?,
+    val teachingPlanData: String?
 )
 
 @Controller
@@ -128,7 +129,8 @@ class StudentController(
                 targetGrade = it.targetGrade ?: "-",
                 level = it.lingolandLevel ?: "-",
                 goal = it.studyGoal ?: "-",
-                studentTypeCode = it.student?.studentType
+                studentTypeCode = it.student?.studentType,
+                teachingPlanData = it.teachingPlanData ?: "{}"
             )
         }
         return ResponseEntity.ok(dtos)

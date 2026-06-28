@@ -78,9 +78,16 @@ object DocxTeachingPlanRenderer {
 
 
         val coursePlans = data.path("coursePlans")
+        val excludedOutlineBookNames = data.path("outlineExcludedBooks")
+            .takeIf { it.isArray }
+            ?.map { it.asText().trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.toSet()
+            ?: emptySet()
         
         val allSelectedSeries = mutableSetOf<String>()
         val exactBookNames = mutableSetOf<String>()
+        val printableOutlineBookNames = mutableSetOf<String>()
         if (coursePlans.isArray && coursePlans.size() > 0) {
             coursePlans.forEach { row ->
                 val tbStr = row.path("textbook").asText()
@@ -92,6 +99,9 @@ object DocxTeachingPlanRenderer {
                             val series = bookName.substringBefore("-").trim()
                             allSelectedSeries.add(series) 
                             exactBookNames.add(bookName)
+                            if (isOutlineEnabled(row) && bookName !in excludedOutlineBookNames) {
+                                printableOutlineBookNames.add(bookName)
+                            }
                         }
                 }
             }
@@ -278,12 +288,25 @@ object DocxTeachingPlanRenderer {
                 plans.addAll(teachingPlanRepository.findAllById(ids))
             }
         } else if (exactBookNames.isNotEmpty()) {
-            plans.addAll(teachingPlanRepository.findByBookNameIn(exactBookNames.toList()))
+            val queryBookNames = if (coursePlans.isArray && coursePlans.size() > 0) {
+                printableOutlineBookNames
+            } else {
+                exactBookNames
+            }
+            if (queryBookNames.isNotEmpty()) {
+                plans.addAll(teachingPlanRepository.findByBookNameIn(queryBookNames.toList()))
+            }
         }
 
-        if (plans.isNotEmpty()) {
+        val printablePlans = if (coursePlans.isArray && coursePlans.size() > 0) {
+            plans.filter { it.bookName in printableOutlineBookNames }
+        } else {
+            plans
+        }
+
+        if (printablePlans.isNotEmpty()) {
             addSectionTitle(createPara, "教学计划大纲")
-            val groups = buildSyllabusGroups(plans, coursePlans)
+            val groups = buildSyllabusGroups(printablePlans, coursePlans, printableOutlineBookNames)
             groups.forEachIndexed { groupIndex, group ->
                 addSyllabusGroupTitle(createPara, group.title)
                 renderSyllabusTable(createTableWrappen, group.plans)
@@ -387,14 +410,21 @@ object DocxTeachingPlanRenderer {
         }
     }
 
-    private fun buildSyllabusGroups(plans: List<TeachingPlan>, coursePlans: com.fasterxml.jackson.databind.JsonNode): List<SyllabusGroup> {
+    private fun buildSyllabusGroups(
+        plans: List<TeachingPlan>,
+        coursePlans: com.fasterxml.jackson.databind.JsonNode,
+        printableBookNames: Set<String>
+    ): List<SyllabusGroup> {
         val indexedPlans = plans.withIndex().toList()
         val consumedBookNames = mutableSetOf<String>()
         val groups = mutableListOf<SyllabusGroup>()
 
         if (coursePlans.isArray && coursePlans.size() > 0) {
             coursePlans.forEach { row ->
+                if (!isOutlineEnabled(row)) return@forEach
+
                 val bookNames = splitBookNames(row.path("textbook").asText())
+                    .filter { it in printableBookNames }
                     .filterNot { it in consumedBookNames }
                 if (bookNames.isEmpty()) return@forEach
 
@@ -425,6 +455,10 @@ object DocxTeachingPlanRenderer {
         }
 
         return groups
+    }
+
+    private fun isOutlineEnabled(row: com.fasterxml.jackson.databind.JsonNode): Boolean {
+        return row.path("outlineEnabled").asBoolean(true)
     }
 
     private fun splitBookNames(rawText: String): List<String> {

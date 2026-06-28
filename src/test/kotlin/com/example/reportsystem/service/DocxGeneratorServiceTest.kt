@@ -387,6 +387,62 @@ class DocxGeneratorServiceTest {
             .doesNotContain("自然拼读Set 1", "自然拼读Set 2&3")
     }
 
+    @Test
+    fun `generateDocx should keep textbooks in schedule but skip excluded syllabus books`() {
+        val teachingPlanDataJson = """
+            {
+              "outlineExcludedBooks": ["Hidden Book"],
+              "coursePlans": [
+                {
+                  "phase": "阶段1: 混合教材",
+                  "duration": "主课 1.5h",
+                  "goal": "保留在课时表",
+                  "textbook": "Hidden Book, Visible Book",
+                  "hours": "Hidden Book: 12h\nVisible Book: 20h"
+                }
+              ]
+            }
+        """.trimIndent()
+        val visiblePlans = listOf(
+            TeachingPlan(
+                unitCode = "Visible Book - Unit 1",
+                bookName = "Visible Book",
+                courseContent = "可打印课程内容",
+                learningObjectives = "可打印学习目标"
+            )
+        )
+        every {
+            teachingPlanRepository.findByBookNameIn(match {
+                it.contains("Visible Book") && !it.contains("Hidden Book")
+            })
+        } returns visiblePlans
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val coursePlanTable = document.tables.first { table ->
+            table.getRow(0).tableCells.map { it.text }.containsAll(listOf("阶段", "时长", "目标", "教材", "预计课时"))
+        }
+        val syllabusTables = document.tables.filter { table ->
+            table.getRow(0).tableCells.map { it.text } == listOf("教材", "单元", "课程内容", "学习目标")
+        }
+
+        assertThat(coursePlanTable.rows.flatMap { row -> row.tableCells.map { it.text } })
+            .contains("阶段1: 混合教材", "Hidden Book, Visible Book")
+        assertThat(syllabusTables).hasSize(1)
+        assertThat(document.paragraphs.map { it.text }).contains("阶段1: 混合教材（Visible Book）")
+        assertThat(syllabusTables[0].rows.drop(1).flatMap { row -> row.tableCells.map { it.text } })
+            .contains("Visible Book", "可打印课程内容")
+            .doesNotContain("Hidden Book", "隐藏课程内容")
+    }
+
     private fun collectRuns(document: XWPFDocument): List<XWPFRun> {
         return document.paragraphs.flatMap { it.runs } +
             document.tables.flatMap { collectRuns(it) }

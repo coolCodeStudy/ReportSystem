@@ -257,6 +257,7 @@
             min-height: 260px;
             line-height: 1.6;
         }
+
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
@@ -270,13 +271,13 @@
         }
         
         // SweetAlert2 Setup
-        const SwalToast = Swal.mixin({
+        const SwalToast = window.Swal ? Swal.mixin({
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
             timer: 3000,
             timerProgressBar: true
-        });
+        }) : { fire: () => {} };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
@@ -315,7 +316,7 @@
                 <div class="text-muted small mt-1">记录ID：<span th:text="${recordId}" id="recordIdSpan">0</span></div>
             </div>
             <div>
-                <button class="btn btn-outline-primary shadow-sm" onclick="exportWord()">
+                <button class="btn btn-outline-primary shadow-sm" id="exportReportBtn" onclick="exportWord()">
                     <i class="bi bi-file-earmark-word me-1"></i>导出报告
                 </button>
             </div>
@@ -693,6 +694,7 @@
     <input type="hidden" id="initAssessmentResults" th:value="${assessmentResults}">
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/report-export.js"></script>
     <script>
         // --- 1. Top Level Setup ---
         document.addEventListener('DOMContentLoaded', () => {
@@ -1046,17 +1048,20 @@
         };
 
         function exportWord() {
-            // Best practice: save before exporting
-            const btn = document.querySelector('button[onclick="exportWord()"]');
-            const origText = btn ? btn.innerHTML : '';
-            if (btn) btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>正在生成...';
-            
-            saveWorkspaceData().then(() => {
-                const recordId = document.getElementById('recordIdSpan').innerText;
-                window.location.href = `/student/history/${recordId}/export`;
-                if (btn) setTimeout(() => { btn.innerHTML = origText; }, 2000); // restore after a short wait
-            }).catch(e => {
-                if (btn) btn.innerHTML = origText;
+            const exportBtn = document.getElementById('exportReportBtn');
+            const recordId = document.getElementById('recordIdSpan').innerText;
+            ReportExport.open({
+                recordId,
+                triggerButton: exportBtn,
+                getTeachingPlanData: () => globalWorkspaceStep3Manager && globalWorkspaceStep3Manager.data
+                    ? globalWorkspaceStep3Manager.data
+                    : document.getElementById('initTeachingPlanData')?.value,
+                saveTeachingPlanData: async (data) => {
+                    if (globalWorkspaceStep3Manager) {
+                        globalWorkspaceStep3Manager.data = { ...globalWorkspaceStep3Manager.data, ...data };
+                    }
+                    await saveWorkspaceData();
+                }
             });
         }
 
@@ -1396,7 +1401,7 @@
                 },
 
                 addCoursePlanRow() {
-                    this.data.coursePlans.push({phase: '', duration: '', goal: '', textbook: '', hours: ''});
+                    this.data.coursePlans.push({phase: '', duration: '', goal: '', textbook: '', hours: '', outlineEnabled: true});
                 },
 
                 async saveStep3(silent = false) {
