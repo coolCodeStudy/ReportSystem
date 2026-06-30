@@ -183,6 +183,7 @@ G11,,1225L,17500,,,,,,
             systemConfigRepository
         )
 
+        com.example.reportsystem.service.docx.DocxPageBrandRenderer.render(document)
         com.example.reportsystem.service.docx.DocxStyleUtils.applyDocumentFont(document)
 
         val out = ByteArrayOutputStream()

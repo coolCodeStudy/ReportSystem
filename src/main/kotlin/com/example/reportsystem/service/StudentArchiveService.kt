@@ -67,7 +67,7 @@ class StudentArchiveService(
             this.student = student
             this.assessmentType = assessmentTypesStr
             this.otherAssessment = form.otherAssessment
-            this.targetGrade = form.grade
+            this.targetGrade = form.grade ?: student.grade
             this.lingolandLevel = form.lingolandLevel
             this.studyGoal = form.studyGoal
             this.assessmentDate = parsedDate
@@ -75,6 +75,17 @@ class StudentArchiveService(
         }
         assessmentRecordRepository.save(record)
         return student
+    }
+
+    @Transactional
+    fun syncBlankTargetGrades(studentId: Long, targetGrade: String) {
+        val recordsToUpdate = assessmentRecordRepository.findByStudentId(studentId)
+            .filter { it.targetGrade.isNullOrBlank() }
+
+        if (recordsToUpdate.isEmpty()) return
+
+        recordsToUpdate.forEach { it.targetGrade = targetGrade }
+        assessmentRecordRepository.saveAll(recordsToUpdate)
     }
 
     @Transactional

@@ -25,6 +25,7 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            overscroll-behavior-x: contain;
         }
 
         /* Sidebar Styling */
@@ -96,6 +97,8 @@
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior-x: contain;
             position: relative;
         }
 
@@ -114,6 +117,8 @@
         .content-body {
             padding: 2rem;
             flex: 1;
+            overflow-x: hidden;
+            overscroll-behavior-x: contain;
         }
 
         /* Action Footer */
@@ -256,6 +261,39 @@
         .teaching-approach-textarea {
             min-height: 260px;
             line-height: 1.6;
+        }
+
+        .paper-analysis-row {
+            row-gap: 1rem;
+        }
+
+        .paper-analysis-controls {
+            display: flex;
+            align-items: stretch;
+            gap: 1rem;
+            min-width: 0;
+        }
+
+        .paper-analysis-status-group {
+            min-width: 220px;
+        }
+
+        .paper-analysis-textarea {
+            min-height: 72px;
+            line-height: 1.55;
+            resize: vertical;
+            overflow-x: hidden;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 992px) {
+            .paper-analysis-controls {
+                flex-direction: column;
+            }
+
+            .paper-analysis-status-group {
+                width: 100%;
+            }
         }
 
     </style>
@@ -440,7 +478,7 @@
                                 <div class="row g-4 align-items-center">
                                     <div class="col-md-3">
                                         <label class="form-label fw-medium">测评卷种</label>
-                                        <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments[subj.id].examType" @change="calculateGrade(subj.id)">
+                                        <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments[subj.id].examType" @change="markExamTypeManual(subj.id); calculateGrade(subj.id)">
                                             <option value="KET">KET (剑桥通用英语第一级)</option>
                                             <option value="PET">PET (剑桥通用英语第二级)</option>
                                         </select>
@@ -476,18 +514,18 @@
                                 <div class="text-center text-muted py-3" x-show="loading"><div class="spinner-border spinner-border-sm me-2"></div>加载中...</div>
                                 <div x-show="!loading">
                                     <template x-for="(item, index) in assessments[subj.id].paperAnalysis" :key="index">
-                                        <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row">
+                                        <div class="row align-items-center mb-3 p-3 bg-light rounded border border-light-subtle position-relative logic-row paper-analysis-row">
                                             <div class="col-md-3">
                                                 <div class="fw-bold text-dark mb-1" x-text="item.dimension"></div>
                                             </div>
                                             <div class="col-md-9">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="btn-group shadow-sm" style="min-width: 220px;">
+                                                <div class="paper-analysis-controls">
+                                                    <div class="btn-group shadow-sm paper-analysis-status-group">
                                                         <button type="button" class="btn btn-outline-success three-state-btn px-3" :class="{'active': item.status === '✅'}" @click="item.status = '✅'; item.text = item.positiveText">达标 ✅</button>
                                                         <button type="button" class="btn btn-outline-danger three-state-btn px-3" :class="{'active': item.status === '❗'}" @click="item.status = '❗'; item.text = item.negativeText">待提升 ❗</button>
                                                         <button type="button" class="btn btn-outline-secondary three-state-btn px-3" :class="{'active': item.status === 'N/A'}" @click="item.status = 'N/A'; item.text = ''">不适用</button>
                                                     </div>
-                                                    <input type="text" class="form-control" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述...">
+                                                    <textarea class="form-control paper-analysis-textarea" rows="3" x-model="item.text" :disabled="item.status === 'N/A'" placeholder="评语描述..."></textarea>
                                                 </div>
                                             </div>
                                         </div>
@@ -758,6 +796,7 @@
                 async loadTypeData(typeId) {
                     if (this.currentAssessmentTypeId === typeId) return;
                     this.currentAssessmentTypeId = typeId;
+                    const linkedExamType = this.resolveLinkedExamType(typeId);
                     this.loading = true;
                     this.activeSubjects = [];
                     this.allSubjects = [];
@@ -777,7 +816,9 @@
 
                         this.allSubjects.forEach(s => {
                             if (!this.assessments[s.id]) {
-                                this.assessments[s.id] = { examType: 'KET', score: null, total: 30, rate: null, level: null, excluded: false, paperAnalysis: [], causeOptions: [], causeAnalysis: [], scoreRule: null };
+                                this.assessments[s.id] = { examType: linkedExamType || 'KET', score: null, total: 30, rate: null, level: null, excluded: false, paperAnalysis: [], causeOptions: [], causeAnalysis: [], scoreRule: null, examTypeManuallySet: false };
+                            } else {
+                                this.syncExamTypeWithAssessmentType(s.id, linkedExamType);
                             }
                         });
 
@@ -827,11 +868,19 @@
                         this.allSubjects.forEach(s => {
                             const subj = s.id;
                             const saved = dbState[subj];
+                            this.syncExamTypeWithAssessmentType(subj, linkedExamType);
                             this.calculateGrade(subj);
 
                             if (saved) {
-                                if (saved.examType) this.assessments[subj].examType = saved.examType;
-                                if (saved.testType) this.assessments[subj].examType = saved.testType; 
+                                const savedExamType = saved.examType || saved.testType;
+                                const hasEnteredScore = saved.score !== undefined && saved.score !== null && saved.score !== '';
+                                if (savedExamType) {
+                                    if (linkedExamType && !hasEnteredScore && !this.assessments[subj].examTypeManuallySet) {
+                                        this.assessments[subj].examType = linkedExamType;
+                                    } else {
+                                        this.assessments[subj].examType = savedExamType;
+                                    }
+                                }
                                 if (saved.score !== undefined) this.assessments[subj].score = saved.score;
                                 if (saved.total !== undefined) this.assessments[subj].total = saved.total;
                                 this.assessments[subj].excluded = saved.excluded === true || saved.excluded === 'true';
@@ -867,6 +916,27 @@
                     this.activeSubjects = this.allSubjects.filter(s => !this.isSubjectExcluded(s.id));
                     if (!this.activeSubjects.some(s => s.id === this.activeTab)) {
                         this.activeTab = this.activeSubjects.length > 0 ? this.activeSubjects[0].id : '';
+                    }
+                },
+                resolveLinkedExamType(typeId) {
+                    const radio = Array.from(document.querySelectorAll('.step1-type-radio'))
+                        .find(r => r.dataset.typeid === typeId);
+                    const raw = `${typeId || ''} ${radio ? radio.value : ''}`.toUpperCase();
+                    if (raw.includes('PET')) return 'PET';
+                    if (raw.includes('KET')) return 'KET';
+                    return '';
+                },
+                syncExamTypeWithAssessmentType(subjId, linkedExamType) {
+                    if (!linkedExamType || !this.assessments[subjId]) return;
+                    const data = this.assessments[subjId];
+                    const hasEnteredScore = data.score !== null && data.score !== undefined && data.score !== '';
+                    if (!data.examType || (!data.examTypeManuallySet && !hasEnteredScore)) {
+                        data.examType = linkedExamType;
+                    }
+                },
+                markExamTypeManual(subjId) {
+                    if (this.assessments[subjId]) {
+                        this.assessments[subjId].examTypeManuallySet = true;
                     }
                 },
                 excludeSubject(subjId) {
@@ -1084,7 +1154,7 @@
                                     container.innerHTML += `
                                         <div class="form-check form-check-inline m-0">
                                             <input class="form-check-input shadow-sm step1-type-radio" type="radio" id="evalDync_${index}"
-                                                name="assessmentType" value="${item.name}" ${isChecked} data-typeid="${item.id}" onchange="if(globalWorkspaceManager) globalWorkspaceManager.loadTypeData(\'${item.id}\')" data-typeid="${item.id}" onchange="if(globalWorkspaceManager) globalWorkspaceManager.loadTypeData(\'${item.id}\')">
+                                                name="assessmentType" value="${item.name}" ${isChecked} data-typeid="${item.id}" onchange="if(globalWorkspaceManager) globalWorkspaceManager.loadTypeData(\'${item.id}\')">
                                             <label class="form-check-label" for="evalDync_${index}">${item.name}</label>
                                         </div>
                                     `;

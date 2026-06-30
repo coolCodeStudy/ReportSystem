@@ -15,6 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
+import java.math.BigInteger
 
 class DocxExportGoldenSampleTest {
 
@@ -112,7 +113,10 @@ class DocxExportGoldenSampleTest {
         assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("NEF-PI: 68h")
         assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("Unlock4: 40h")
         assertThat(coursePlanTable.getRow(2).getCell(4).text).contains("Unlock4: 24h")
-        assertThat(coursePlanTable.getRow(3).getCell(0).text).isEqualTo("预计总课时")
+        val totalRow = coursePlanTable.getRow(3)
+        assertThat(totalRow.getCell(0).text).isEqualTo("预计总课时")
+        assertThat(totalRow.tableCells).hasSize(2)
+        assertThat(totalRow.getCell(1).ctTc.tcPr.gridSpan.`val`).isEqualTo(BigInteger.valueOf(4))
     }
 
     @Test

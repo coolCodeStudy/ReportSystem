@@ -171,20 +171,18 @@ object DocxTeachingPlanRenderer {
                 
                 val cell1 = totalRow.getCell(1)
                 val cell1Pr = cell1.ctTc.tcPr ?: cell1.ctTc.addNewTcPr()
-                val cell1HMerge = if (cell1Pr.isSetHMerge) cell1Pr.hMerge else cell1Pr.addNewHMerge()
-                cell1HMerge.`val` = STMerge.RESTART
+                val cell1GridSpan = if (cell1Pr.isSetGridSpan) cell1Pr.gridSpan else cell1Pr.addNewGridSpan()
+                cell1GridSpan.`val` = BigInteger.valueOf(4)
+                if (cell1Pr.isSetHMerge) cell1Pr.unsetHMerge()
                 DocxStyleUtils.setCellText(cell1, totalText, bold = false, fontSize = 9)
                 DocxStyleUtils.setCellWidth(cell1, COURSE_PLAN_COL_WIDTHS.drop(1).sum())
                 DocxStyleUtils.setCellShading(cell1, "E9EDF6")
                 DocxStyleUtils.setZebraBorders(cell1, isHeader = false, isLast = true)
                 
-                for (col in 2..4) {
-                    val c = totalRow.getCell(col) ?: totalRow.addNewTableCell()
-                    val cPr = c.ctTc.tcPr ?: c.ctTc.addNewTcPr()
-                    val hMerge = if (cPr.isSetHMerge) cPr.hMerge else cPr.addNewHMerge()
-                    hMerge.`val` = STMerge.CONTINUE
-                    DocxStyleUtils.setCellWidth(c, COURSE_PLAN_COL_WIDTHS[col])
-                    DocxStyleUtils.setZebraBorders(c, isHeader = false, isLast = true)
+                for (col in 4 downTo 2) {
+                    if (totalRow.tableCells.size > col) {
+                        totalRow.removeCell(col)
+                    }
                 }
                 
                 DocxStyleUtils.keepTableRowsTogether(table)

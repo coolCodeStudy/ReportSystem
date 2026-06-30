@@ -110,7 +110,10 @@ class StudentController(
             if (form.dynamicData != null) student.dynamicData = form.dynamicData
         }
         
-        studentRepository.save(student)
+        val savedStudent = studentRepository.save(student)
+        if (!form.grade.isNullOrBlank() && savedStudent.id != null) {
+            studentArchiveService.syncBlankTargetGrades(savedStudent.id!!, form.grade)
+        }
         return "redirect:/"
     }
 
@@ -126,7 +129,7 @@ class StudentController(
                 id = it.id,
                 date = dateStr,
                 type = it.assessmentType ?: "-",
-                targetGrade = it.targetGrade ?: "-",
+                targetGrade = it.targetGrade ?: it.student?.grade ?: "-",
                 level = it.lingolandLevel ?: "-",
                 goal = it.studyGoal ?: "-",
                 studentTypeCode = it.student?.studentType,
@@ -156,7 +159,7 @@ class StudentController(
 
         val modifiedBytes = docxGeneratorService.generateDocx(
             record.lingolandLevel,
-            record.targetGrade,
+            record.targetGrade ?: record.student?.grade,
             record.student?.studentType,
             assessmentTypeList,
             selectedColumns,

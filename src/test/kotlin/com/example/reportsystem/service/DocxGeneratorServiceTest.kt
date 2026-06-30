@@ -16,6 +16,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.io.ByteArrayInputStream
+import java.math.BigInteger
 
 class DocxGeneratorServiceTest {
 
@@ -89,6 +90,20 @@ class DocxGeneratorServiceTest {
         
         // Let's verify that the document is validly parsed
         assertThat(document.paragraphs).isNotEmpty()
+    }
+
+    @Test
+    fun `generateDocx should add branded page header and footer to content pages`() {
+        val resultBytes = docxGeneratorService.generateDocx("B2-", "G5", "TEST", null, listOf("Lingoland", "CEFR", "雅思"))
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+
+        val headerText = document.headerList.joinToString("\n") { it.text }
+        val footerText = document.footerList.joinToString("\n") { it.text }
+
+        assertThat(headerText).contains("LINGOLAND 国际学校课程学习方案")
+        assertThat(headerText).contains("ENGLISH ASSESSMENT AND STUDY PLAN")
+        assertThat(document.headerList.any { it.allPictures.isNotEmpty() }).isTrue()
+        assertThat(footerText).contains("LINGOLAND 杭州市上城区钱江路 1366 号华润大厦 B 座 3204 室")
     }
 
     @Test
@@ -322,7 +337,10 @@ class DocxGeneratorServiceTest {
 
         assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("NEF-PI: 68h")
         assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("Unlock4: 40h")
-        assertThat(coursePlanTable.getRow(2).getCell(0).text).isEqualTo("预计总课时")
+        val totalRow = coursePlanTable.getRow(2)
+        assertThat(totalRow.getCell(0).text).isEqualTo("预计总课时")
+        assertThat(totalRow.tableCells).hasSize(2)
+        assertThat(totalRow.getCell(1).ctTc.tcPr.gridSpan.`val`).isEqualTo(BigInteger.valueOf(4))
         assertThat(coursePlanTable.getRow(0).ctRow.trPr.sizeOfCantSplitArray()).isGreaterThan(0)
         assertThat(coursePlanTable.getRow(1).getCell(0).paragraphs.first().ctp.pPr.isSetKeepNext).isTrue()
     }

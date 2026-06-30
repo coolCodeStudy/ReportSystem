@@ -129,7 +129,7 @@ G11,,1225L,17500,,,,,,
         addRun("黄色背景", bold = true)
         addRun("表示目标年级；")
         addRun("蓝色背景", bold = true)
-        addRun("表示听说读写的水平。")
+        addRun("表示本次测评结果。")
     }
 
     private fun buildHeaderRow(table: XWPFTable, headers: List<String>) {
