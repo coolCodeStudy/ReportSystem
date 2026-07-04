@@ -376,6 +376,7 @@
                             <label class="form-label fw-medium text-secondary">当前测评 Level</label>
                             <select class="form-select" id="step1_level">
                                 <option value="" th:selected="${record.lingolandLevel == null}">请选择...</option>
+                                <option value="Pre-A1" th:selected="${record.lingolandLevel == 'Pre-A1'}">Pre-A1</option>
                                 <option value="A1" th:selected="${record.lingolandLevel == 'A1'}">A1</option>
                                 <option value="A2-" th:selected="${record.lingolandLevel == 'A2-'}">A2-</option>
                                 <option value="A2+" th:selected="${record.lingolandLevel == 'A2+'}">A2+</option>
@@ -479,8 +480,9 @@
                                     <div class="col-md-3">
                                         <label class="form-label fw-medium">测评卷种</label>
                                         <select class="form-select border-primary bg-primary bg-opacity-10" x-model="assessments[subj.id].examType" @change="markExamTypeManual(subj.id); calculateGrade(subj.id)">
-                                            <option value="KET">KET (剑桥通用英语第一级)</option>
-                                            <option value="PET">PET (剑桥通用英语第二级)</option>
+                                            <template x-for="option in examTypeOptionsFor(subj.id)" :key="option.value">
+                                                <option :value="option.value" x-text="option.label"></option>
+                                            </template>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
@@ -921,10 +923,51 @@
                 resolveLinkedExamType(typeId) {
                     const radio = Array.from(document.querySelectorAll('.step1-type-radio'))
                         .find(r => r.dataset.typeid === typeId);
-                    const raw = `${typeId || ''} ${radio ? radio.value : ''}`.toUpperCase();
-                    if (raw.includes('PET')) return 'PET';
-                    if (raw.includes('KET')) return 'KET';
+                    const raw = `${typeId || ''} ${radio ? radio.value : ''}`.trim();
+                    const normalized = raw.toUpperCase().replace(/[_-]+/g, ' ');
+                    const knownExamTypes = [
+                        { value: 'Starters', patterns: ['STARTERS', 'STARTER'] },
+                        { value: 'Movers', patterns: ['MOVERS', 'MOVER'] },
+                        { value: 'Flyers', patterns: ['FLYERS', 'FLYER'] },
+                        { value: 'KET', patterns: ['KET'] },
+                        { value: 'PET', patterns: ['PET'] },
+                        { value: 'IELTS', patterns: ['IELTS', '雅思'] },
+                        { value: 'TOEFL Junior', patterns: ['TOEFL JUNIOR'] },
+                        { value: 'MAP', patterns: ['MAP'] },
+                        { value: '自然拼读', patterns: ['自然拼读', 'PHONICS'] }
+                    ];
+                    const matched = knownExamTypes.find(type => type.patterns.some(pattern => normalized.includes(pattern)));
+                    if (matched) return matched.value;
+                    if (radio && radio.value && radio.value.trim()) return radio.value.trim();
                     return '';
+                },
+                examTypeOptionsFor(subjId) {
+                    const linkedExamType = this.resolveLinkedExamType(this.currentAssessmentTypeId);
+                    const currentExamType = this.assessments[subjId]?.examType;
+                    const baseOptions = [
+                        { value: 'Starters', label: 'Starters' },
+                        { value: 'Movers', label: 'Movers' },
+                        { value: 'Flyers', label: 'Flyers' },
+                        { value: 'KET', label: 'KET (剑桥通用英语第一级)' },
+                        { value: 'PET', label: 'PET (剑桥通用英语第二级)' },
+                        { value: 'IELTS', label: 'IELTS / 雅思' },
+                        { value: 'TOEFL Junior', label: 'TOEFL Junior' },
+                        { value: 'MAP', label: 'MAP' },
+                        { value: '自然拼读', label: '自然拼读' }
+                    ];
+                    const options = [];
+                    [linkedExamType, currentExamType].forEach(value => {
+                        if (value && !options.some(option => option.value === value)) {
+                            const existing = baseOptions.find(option => option.value === value);
+                            options.push(existing || { value, label: value });
+                        }
+                    });
+                    baseOptions.forEach(option => {
+                        if (!options.some(existing => existing.value === option.value)) {
+                            options.push(option);
+                        }
+                    });
+                    return options;
                 },
                 syncExamTypeWithAssessmentType(subjId, linkedExamType) {
                     if (!linkedExamType || !this.assessments[subjId]) return;
