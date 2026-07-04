@@ -1,0 +1,93 @@
+name: Monthly Bug Hunt
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 1 * *"
+
+jobs:
+  bug-hunt:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: reportsystem
+          POSTGRES_USER: reportuser
+          POSTGRES_PASSWORD: reportpassword
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Gradle tests
+        run: |
+          chmod +x gradlew
+          ./gradlew test
+
+      - name: Install Playwright dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r e2e/requirements.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Install DOCX render dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libreoffice poppler-utils
+
+      - name: Start local app
+        run: |
+          mkdir -p build/bug-hunt
+          nohup ./gradlew bootRun -PlocalPort=18080 > build/bug-hunt/app.log 2>&1 &
+          echo $! > build/bug-hunt/app.pid
+          for i in {1..60}; do
+            if curl -fsS http://localhost:18080/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat build/bug-hunt/app.log
+          exit 1
+
+      - name: Run Monthly Bug Hunt
+        env:
+          BASE_URL: http://localhost:18080
+          TEMPLATE_SYNC_SOURCE_BASE_URL: http://121.41.236.44:8080
+          QA_ARTIFACT_DIR: build/bug-hunt
+        run: |
+          chmod +x scripts/qa_gate.sh scripts/monthly_bug_hunt.sh
+          scripts/monthly_bug_hunt.sh
+
+      - name: Stop local app
+        if: always()
+        run: |
+          if [ -f build/bug-hunt/app.pid ]; then
+            kill "$(cat build/bug-hunt/app.pid)" || true
+          fi
+
+      - name: Upload Bug Hunt artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bug-hunt
+          path: build/bug-hunt

@@ -1,330 +1,283 @@
 import asyncio
 import os
 import random
+import sys
+from pathlib import Path
+
 from playwright.async_api import async_playwright
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:18080")
+ROOT_DIR = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT_DIR / "scripts"))
 
-# Core Mapping Configuration — only subjects that have scores
-SCORING_CONFIG = {
-    "KET": {
-        "听力": {"calcType": "SCORE", "total": 25, "rules": [
-            {"max": 10, "level": "低于A1"},
-            {"max": 16, "level": "A1"},
-            {"max": 22, "level": "A2"},
-            {"max": 25, "level": "B1"}
-        ]},
-        "阅读理解": {"calcType": "RATE", "total": 100, "rules": [
-            {"max": 40.0, "level": "低于A1"},
-            {"max": 65.0, "level": "A1"},
-            {"max": 90.0, "level": "A2"},
-            {"max": 100.0, "level": "B1"}
-        ]},
-        "口语": {"calcType": "SCORE", "total": 45, "rules": [
-            {"max": 17, "level": "低于A1"},
-            {"max": 26, "level": "A1"},
-            {"max": 40, "level": "A2"},
-            {"max": 45, "level": "B1"}
-        ]},
-        "写作": {"calcType": "SCORE", "total": 30, "rules": [
-            {"max": 11, "level": "低于A1"},
-            {"max": 17, "level": "A1"},
-            {"max": 25, "level": "A2"},
-            {"max": 30, "level": "B1"}
-        ]}
-    },
-    "PET": {
-        "听力": {"calcType": "SCORE", "total": 25, "rules": [
-            {"max": 10, "level": "低于A2"},
-            {"max": 17, "level": "A2"},
-            {"max": 22, "level": "B1"},
-            {"max": 25, "level": "B2"}
-        ]},
-        "阅读理解": {"calcType": "RATE", "total": 100, "rules": [
-            {"max": 37.5, "level": "低于A2"},
-            {"max": 68.75, "level": "A2"},
-            {"max": 87.5, "level": "B1"},
-            {"max": 100.0, "level": "B2"}
-        ]},
-        "口语": {"calcType": "SCORE", "total": 30, "rules": [
-            {"max": 11, "level": "低于A2"},
-            {"max": 17, "level": "A2"},
-            {"max": 26, "level": "B1"},
-            {"max": 30, "level": "B2"}
-        ]},
-        "写作": {"calcType": "SCORE", "total": 40, "rules": [
-            {"max": 15, "level": "低于A2"},
-            {"max": 23, "level": "A2"},
-            {"max": 33, "level": "B1"},
-            {"max": 40, "level": "B2"}
-        ]}
-    }
+from qa_common import append_report, validate_docx  # noqa: E402
+
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:18080")
+QA_MODE = os.getenv("QA_MODE", "gate")
+ARTIFACT_DIR = Path(os.getenv("QA_ARTIFACT_DIR", "build/qa-gate"))
+DOCX_DIR = ARTIFACT_DIR / "docx"
+SCREENSHOT_DIR = ARTIFACT_DIR / "screenshots"
+TRACE_DIR = ARTIFACT_DIR / "traces"
+
+LEVEL_BY_ASSESSMENT = {
+    "Starters": "Pre-A1",
+    "Movers": "A1",
+    "Flyers": "A2-",
+    "KET": "A2+",
+    "PET": "B1-",
+    "IELTS": "B2-",
+    "TOEFL Junior": "B1+",
+    "MAP": "B1-",
 }
 
-# Subjects that are non-scored but still need paper analysis filled
-NON_SCORED_SUBJECTS = ["语言应用", "学习素养"]
-
-target_school = ["Lingoland", "Wahaha", "International School", "Kings College", "High School"]
-
-sample_comments = [
-    "该生基础知识十分扎实，整体掌握到位。",
-    "稍微落后于预期进度，但在可提升范围内。",
+TARGET_SCHOOLS = ["Lingoland", "Wahaha", "International School", "Kings College", "High School"]
+COMMENTS = [
+    "该生基础知识扎实，整体掌握到位。",
     "需要针对词汇量做大量补充。",
-    "对信息提取能力表现非常出色。",
-    "能够灵活运用所学知识进行实际交际。",
-    "在课堂上表现出较强的参与度和学习积极性。",
+    "信息提取能力表现较好。",
+    "能够在引导下完成表达任务。",
+    "课堂参与度较高，学习习惯稳定。",
 ]
 
-async def fill_paper_analysis_and_causes(pane):
-    """Fill paper analysis buttons and cause tags for a given tab pane."""
-    rows = await pane.locator(".logic-row").element_handles()
-    for row in rows:
-        btns = await row.query_selector_all(".btn-group button")
-        if len(btns) > 1:
-            btn_index = random.choice([0, 1])
-            await btns[btn_index].evaluate('node => node.click()')
 
-        textareas = await row.query_selector_all("textarea")
-        for ta in textareas:
-            await ta.evaluate(f"node => node.value = '{random.choice(sample_comments)}'")
-            await ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-
-    # Also click some cause analysis tags
-    cause_tags = await pane.locator(".cause-tag").element_handles()
-    if cause_tags:
-        num_to_select = min(random.randint(1, 3), len(cause_tags))
-        selected_indices = random.sample(range(len(cause_tags)), num_to_select)
-        for idx in selected_indices:
-            await cause_tags[idx].evaluate('node => node.click()')
+def assessment_matrix() -> list[str]:
+    raw = os.getenv("ASSESSMENT_MATRIX", "Starters,Movers,KET,PET" if QA_MODE == "gate" else "Starters,Movers,Flyers,KET,PET,IELTS,TOEFL Junior,MAP")
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
-async def run():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        # Using desktop viewport for reliable tests
-        context = await browser.new_context(viewport={'width': 1280, 'height': 800})
-        page = await context.new_page()
-        
-        # Generation param
-        rnd_id = str(random.randint(1000, 9999))
-        student_name = f"SmartTest-{rnd_id}"
-        age = random.randint(8, 15)
-        grades = ["G3", "G4", "G5", "G6", "G7", "G8"]
-        target_grade = random.choice(grades)
-        target_school_name = random.choice(target_school)
-        exam_type = random.choice(["KET", "PET"])
-        
-        print(f"🚀 [INIT] Setup complete: Student: {student_name} | Target: {target_grade} | Config: {exam_type}")
+async def click_assessment_type(frame, assessment_type: str) -> None:
+    label = frame.locator(f"label.form-check-label:has-text('{assessment_type}')").first
+    if await label.count() > 0:
+        await label.click()
+        return
 
-        # Navigate
-        print("📡 Navigating to Students Management...")
-        await page.goto(f"{BASE_URL}/")
-        await asyncio.sleep(2)
+    clicked = await frame.locator("body").evaluate(
+        """(body, assessmentType) => {
+            const labels = Array.from(body.ownerDocument.querySelectorAll('label.form-check-label'));
+            const label = labels.find(item => item.innerText.trim().includes(assessmentType));
+            if (!label) return false;
+            label.click();
+            return true;
+        }""",
+        assessment_type,
+    )
+    if not clicked:
+        raise AssertionError(f"Assessment type option not found: {assessment_type}")
 
-        # Create student 
-        print(f"👤 Creating Student {student_name}...")
-        await page.click("button[data-bs-target='#studentRecordOffcanvas']")
-        await asyncio.sleep(1)
-        await page.fill("#sname", student_name)
-        await page.fill("#sage", str(age))
-        await page.select_option("#sgender", "男" if random.randint(0,1) else "女")
-        await page.fill("#sschool", target_school_name)
-        await page.select_option("#sgrade", target_grade)
-        await page.click("button:has-text('保存建档')")
-        await asyncio.sleep(2)
 
-        # Dismiss swal just in case
-        await page.keyboard.press("Escape")
-        await asyncio.sleep(1)
+async def assert_exam_type_linkage(frame, assessment_type: str) -> None:
+    expected = assessment_type
+    if assessment_type not in {"Starters", "Movers", "Flyers", "KET", "PET", "IELTS", "TOEFL Junior", "MAP"}:
+        return
 
-        # Use fuzzy search to filter
-        await page.fill("input[name='q']", student_name)
-        await asyncio.sleep(1)
-        
-        # Open history
-        print(f"📂 Opening History space...")
-        await page.locator("button.view-history-btn").first.click()
-        await asyncio.sleep(2)
-        
-        # New record
-        print(f"➕ Creating New Assessment Record...")
-        btn_count = await page.locator("#createNewRecordBtn").count()
-        if btn_count > 0:
-            await page.locator("#createNewRecordBtn").click()
-        else:
-            await page.locator("button:has-text('为TA录入新测评')").first.click()
-        await asyncio.sleep(4)
+    subjects = await frame.locator("body").evaluate(
+        """body => {
+            const manager = body.ownerDocument.defaultView.globalWorkspaceManager;
+            if (!manager || !Array.isArray(manager.activeSubjects)) return [];
+            return manager.activeSubjects.map(subject => ({
+                name: subject.name || subject.id,
+                examType: subject.examType || '',
+                options: manager.examTypeOptionsFor(subject.id).map(option => option.value)
+            }));
+        }"""
+    )
+    bad_subjects = [
+        subject
+        for subject in subjects
+        if expected in subject.get("options", []) and subject.get("examType") != expected
+    ]
+    if bad_subjects:
+        details = "; ".join(f"{item['name']}={item['examType']}" for item in bad_subjects)
+        raise AssertionError(f"{assessment_type} did not become the default exam type for linked subjects: {details}")
 
-        # ═══════════════════════════════════════════════════════════════
-        # STEP 1: 基础信息与目标分析
-        # ═══════════════════════════════════════════════════════════════
-        print(f"📝 [Step 1] Inside Workspace for {exam_type}...")
+
+async def fill_analysis_tabs(frame) -> None:
+    tabs = frame.locator("#subjectTabs button.nav-link")
+    tab_count = await tabs.count()
+    if tab_count == 0:
+        raise AssertionError("No subject tabs were rendered after choosing the assessment type.")
+
+    for idx in range(tab_count):
+        tab = tabs.nth(idx)
+        tab_name = (await tab.inner_text()).strip()
+        await tab.evaluate("node => node.click()")
+        await asyncio.sleep(0.4)
+        pane = frame.locator(".tab-pane").nth(idx)
+
+        await pane.evaluate(
+            """pane => {
+                pane.querySelectorAll("input[type='number']").forEach((input, index) => {
+                    const max = Number(input.getAttribute('max') || input.dataset.max || 100);
+                    const value = Math.max(1, Math.round((Number.isFinite(max) ? max : 100) * (0.58 + index * 0.06)));
+                    input.value = String(value);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+                pane.querySelectorAll('textarea').forEach((textarea, index) => {
+                    if (!textarea.value.trim()) {
+                        textarea.value = ['阅读定位较稳定，需要继续扩大词汇量。', '表达能够完成基本任务，细节展开仍需练习。', '学习习惯良好，可以提高复盘频率。'][index % 3];
+                        textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+                pane.querySelectorAll('.logic-row .btn-group button').forEach((button, index) => {
+                    if (index % 2 === 0) button.click();
+                });
+                Array.from(pane.querySelectorAll('.cause-tag')).slice(0, 2).forEach(tag => tag.click());
+            }"""
+        )
+        print(f"    -> filled subject tab: {tab_name}")
+
+
+async def fill_teaching_plan(frame) -> None:
+    await frame.locator("#tab-step3").evaluate("node => node.click()")
+    await asyncio.sleep(1)
+    step3 = frame.locator("#step3-content")
+    await step3.evaluate(
+        """root => {
+            root.querySelectorAll('textarea').forEach((textarea, index) => {
+                if (!textarea.value.trim()) {
+                    textarea.value = [
+                        '阶段1：夯实基础，建立稳定学习节奏。',
+                        '围绕目标学校要求补足词汇、阅读和表达。',
+                        '每周完成课堂复盘和错题整理。',
+                        'E2E 巡检：确认长文本可以正常保存和导出。'
+                    ][index % 4];
+                    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+            const firstTextbook = root.querySelector('.dropdown-menu .form-check-input');
+            if (firstTextbook) {
+                firstTextbook.checked = true;
+                firstTextbook.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }"""
+    )
+
+
+async def save_workspace(frame, label: str) -> None:
+    print(f"    -> saving {label}")
+    await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
+    await asyncio.sleep(2)
+    await frame.locator("body").evaluate(
+        """body => {
+            const swal = body.ownerDocument.querySelector('.swal2-container');
+            if (swal) swal.remove();
+        }"""
+    )
+
+
+async def create_student_and_open_workspace(page, assessment_type: str) -> str:
+    rnd_id = random.randint(1000, 9999)
+    student_name = f"QA-{assessment_type.replace(' ', '')}-{rnd_id}"
+    age = random.randint(7, 14)
+    grade = random.choice(["G1", "G2", "G3", "G4", "G5", "G6", "G7"])
+
+    await page.goto(f"{BASE_URL}/", wait_until="networkidle")
+    await page.click("button[data-bs-target='#studentRecordOffcanvas']")
+    await page.fill("#sname", student_name)
+    await page.fill("#sage", str(age))
+    await page.select_option("#sgender", "男" if random.randint(0, 1) else "女")
+    await page.fill("#sschool", random.choice(TARGET_SCHOOLS))
+    await page.select_option("#sgrade", grade)
+    await page.click("button:has-text('保存建档')")
+    await asyncio.sleep(2)
+    await page.keyboard.press("Escape")
+
+    await page.fill("input[name='q']", student_name)
+    await asyncio.sleep(1)
+    await page.locator("button.view-history-btn").first.click()
+    await asyncio.sleep(1)
+
+    if await page.locator("#createNewRecordBtn").count() > 0:
+        await page.locator("#createNewRecordBtn").click()
+    else:
+        await page.locator("button:has-text('为TA录入新测评')").first.click()
+    await page.locator("#workspaceIframe").wait_for(timeout=30000)
+    await asyncio.sleep(2)
+    return student_name
+
+
+async def run_single_assessment(browser, assessment_type: str) -> dict[str, str]:
+    DOCX_DIR.mkdir(parents=True, exist_ok=True)
+    SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
+    TRACE_DIR.mkdir(parents=True, exist_ok=True)
+
+    context = await browser.new_context(accept_downloads=True, viewport={"width": 1440, "height": 900})
+    await context.tracing.start(screenshots=True, snapshots=True, sources=True)
+    page = await context.new_page()
+    trace_path = TRACE_DIR / f"{assessment_type.replace(' ', '_')}.zip"
+
+    try:
+        print(f"🚀 [QA:{QA_MODE}] running assessment flow: {assessment_type}")
+        student_name = await create_student_and_open_workspace(page, assessment_type)
         frame = page.locator("#workspaceIframe").content_frame
-        
-        await frame.locator(f"label.form-check-label:has-text('{exam_type}')").first.click()
+
+        await click_assessment_type(frame, assessment_type)
         await asyncio.sleep(1)
-        
-        print("🎚️ Selecting target level...")
-        levels_available = ["A1", "A2-", "A2+", "B1-", "B1+", "B2-", "B2+"]
-        await frame.locator("#step1_level").select_option(random.choice(levels_available))
-        await asyncio.sleep(0.5)
 
-        print("💾 Saving Step 1...")
-        await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
-        await asyncio.sleep(2)
-        
-        # ═══════════════════════════════════════════════════════════════
-        # STEP 2: 测评分析 — ALL subjects
-        # ═══════════════════════════════════════════════════════════════
-        print(f"🎲 [Step 2] Simulating exam interaction across ALL subjects...")
-        tabs = await frame.locator("#subjectTabs button.nav-link").element_handles()
-        
-        for i, tab in enumerate(tabs):
-            tab_name = await tab.inner_text()
-            tab_name = tab_name.strip()
-            
-            await tab.evaluate('node => node.click()')
-            await asyncio.sleep(1)
-            
-            pane = frame.locator(".tab-pane").nth(i)
-            
-            # ── Scored subjects: fill score + paper analysis + causes ──
-            if tab_name in SCORING_CONFIG.get(exam_type, {}):
-                cfg = SCORING_CONFIG[exam_type][tab_name]
-                max_score = cfg['total'] if cfg['total'] > 0 else 100
-                rnd_score = random.randint(6, max_score)
-                
-                if tab_name == '阅读理解' and cfg['calcType'] == 'RATE':
-                   rnd_score = round(random.uniform(25, 95), 1)
-                   
-                score_input = pane.locator("input[type='number']").first
-                if await score_input.count() > 0:
-                    await score_input.evaluate(f"node => node.value = '{rnd_score}'")
-                    await score_input.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-                    await asyncio.sleep(0.5)
-                    level_div = pane.locator(".auto-grade-display")
-                    actual_lvl = await level_div.inner_text()
-                    print(f"    -> [{tab_name}] Score = {rnd_score} => Level = {actual_lvl}")
+        level = LEVEL_BY_ASSESSMENT.get(assessment_type, "B1-")
+        await frame.locator("#step1_level").select_option(level)
+        await assert_exam_type_linkage(frame, assessment_type)
+        await save_workspace(frame, "step 1")
 
-            # ── Non-scored subjects (语言应用, 学习素养): only paper analysis + causes ──
-            elif tab_name in NON_SCORED_SUBJECTS:
-                print(f"    -> [{tab_name}] Non-scored subject — filling paper analysis & causes only")
+        await frame.locator("#tab-step2").evaluate("node => node.click()")
+        await asyncio.sleep(1)
+        await fill_analysis_tabs(frame)
+        await save_workspace(frame, "step 2")
 
-            else:
-                print(f"    -> [{tab_name}] Unknown subject — filling paper analysis & causes")
+        await fill_teaching_plan(frame)
+        await save_workspace(frame, "step 3")
 
-            # Fill paper analysis and cause tags for ALL subjects
-            await fill_paper_analysis_and_causes(pane)
-            await asyncio.sleep(0.3)
+        docx_path = DOCX_DIR / f"{student_name}.docx"
+        async with page.expect_download(timeout=120000) as download_info:
+            await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
+        download = await download_info.value
+        await download.save_as(str(docx_path))
+        if validate_docx(docx_path, ARTIFACT_DIR) != 0:
+            raise AssertionError(f"DOCX quick check failed for {docx_path}")
 
-        # Save workspace data before moving to step 3
-        print("💾 Saving Step 2 workspace data...")
-        await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
-        await asyncio.sleep(3)
-        # Dismiss any Swal overlay that might have appeared
+        await context.tracing.stop()
+        await context.close()
+        append_report(ARTIFACT_DIR, f"## E2E {assessment_type}\n\n- Status: PASS\n- DOCX: `{docx_path}`\n\n")
+        return {"assessment": assessment_type, "status": "PASS", "docx": str(docx_path)}
+    except Exception as exc:
+        screenshot_path = SCREENSHOT_DIR / f"{assessment_type.replace(' ', '_')}.png"
         try:
-            swal_container = frame.locator(".swal2-container")
-            if await swal_container.count() > 0:
-                await frame.locator("body").evaluate("node => { const s = node.ownerDocument.querySelector('.swal2-container'); if(s) s.remove(); }")
+            await page.screenshot(path=str(screenshot_path), full_page=True)
         except Exception:
             pass
+        try:
+            await context.tracing.stop(path=str(trace_path))
+        except Exception:
+            pass
+        await context.close()
+        append_report(
+            ARTIFACT_DIR,
+            f"## E2E {assessment_type}\n\n- Status: FAIL\n- Error: `{exc}`\n- Screenshot: `{screenshot_path}`\n- Trace: `{trace_path}`\n\n",
+        )
+        return {"assessment": assessment_type, "status": "FAIL", "error": str(exc)}
 
-        # ═══════════════════════════════════════════════════════════════
-        # STEP 3: 语言教学安排
-        # ═══════════════════════════════════════════════════════════════
-        print("📚 [Step 3] Filling 语言教学安排...")
-        
-        # Switch to Step 3 via sidebar
-        await frame.locator("#tab-step3").evaluate("node => node.click()")
-        await asyncio.sleep(2)
 
-        step3_content = frame.locator("#step3-content")
-
-        # Fill course plan rows — the default template has 2 rows
-        plan_rows = step3_content.locator("tbody tr")
-        row_count = await plan_rows.count()
-        print(f"    -> Found {row_count} course plan row(s)")
-        
-        if row_count > 0:
-            # Fill first row
-            row0 = plan_rows.nth(0)
-            phase_ta = row0.locator("textarea").first
-            if await phase_ta.count() > 0:
-                current_val = await phase_ta.input_value()
-                if not current_val.strip():
-                    await phase_ta.fill("阶段1:\n基础课程")
-            
-            # Fill goal textarea (3rd textarea in row)
-            goal_tas = row0.locator("textarea")
-            goal_count = await goal_tas.count()
-            if goal_count >= 3:
-                goal_ta = goal_tas.nth(2)
-                current_val = await goal_ta.input_value()
-                if not current_val.strip():
-                    await goal_ta.fill("1. 用轻松的方式引入，建立英语学习兴趣\n2. 拓展词汇量\n3. 基础语法学习")
-
-        # Try to select a textbook from the dropdown using JS to avoid interception
-        textbook_dropdowns = step3_content.locator("button[data-bs-toggle='dropdown']")
-        dropdown_count = await textbook_dropdowns.count()
-        if dropdown_count > 0:
-            print("    -> Selecting textbooks from dropdown...")
-            first_dropdown = textbook_dropdowns.first
-            await first_dropdown.evaluate("node => node.click()")
-            await asyncio.sleep(1)
-            
-            # Check available textbook checkboxes
-            checkboxes = step3_content.locator(".dropdown-menu .form-check-input")
-            cb_count = await checkboxes.count()
-            if cb_count > 0:
-                # Select first textbook
-                await checkboxes.first.evaluate("node => { node.checked = true; node.dispatchEvent(new Event('change', {bubbles: true})); }")
-                await asyncio.sleep(0.5)
-                print(f"    -> Selected 1 of {cb_count} available textbook(s)")
-            
-            # Close dropdown by clicking elsewhere (via JS to avoid interception)
-            await step3_content.locator("h5").first.evaluate("node => node.click()")
-            await asyncio.sleep(0.5)
-
-        # Fill new textareas for teaching strategy, checklist, frequency, and risk
-        print("    -> Filling editable config fields: Approach, Checklist, Frequency, Risk")
-        approach_ta = step3_content.locator("textarea[x-model='data.teachingApproach']")
-        if await approach_ta.count() > 0:
-            await approach_ta.fill("E2E 测试专属：针对该学生的独特教学思路。")
-            await approach_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-        
-        checklist_ta = step3_content.locator("textarea[x-model='data.teachingChecklist']")
-        if await checklist_ta.count() > 0:
-            await checklist_ta.fill("E2E 测试定制清单：\n1. 助教课定制要求\n2. E2E测试打卡任务")
-            await checklist_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-        
-        frequency_ta = step3_content.locator("textarea[x-model='data.courseFrequency']")
-        if await frequency_ta.count() > 0:
-            await frequency_ta.fill("E2E 测试定制频次：每周二次必修，一次选修。")
-            await frequency_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-            
-        risk_ta = step3_content.locator("textarea[x-model='data.planRisk']")
-        if await risk_ta.count() > 0:
-            await risk_ta.fill("E2E 测试定制风险：学生可能存在作业拖延的风险。")
-            await risk_ta.evaluate("node => node.dispatchEvent(new Event('input', { bubbles: true }))")
-
-        # Save all changes using the global action bar
-        print("💾 Saving all workspace data...")
-        await frame.locator("body").evaluate("node => node.ownerDocument.defaultView.saveWorkspaceData()")
-        await asyncio.sleep(3)
-
-        # ═══════════════════════════════════════════════════════════════
-        # EXPORT — Generate Word document
-        # ═══════════════════════════════════════════════════════════════
-        print(f"💾 Exporting Document...")
-        async with page.expect_download(timeout=120000) as download_info:
-            await frame.locator("button:has-text('导出报告')").evaluate('node => node.click()')
-        
-        download = await download_info.value
-        save_path = f"test_{student_name}_final.docx"
-        await download.save_as(save_path)
-        print(f"✅ Success! Report exported to {save_path}")
-
+async def run() -> None:
+    ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
+    async with async_playwright() as playwright:
+        browser = await playwright.chromium.launch(headless=True)
+        results = []
+        for assessment_type in assessment_matrix():
+            results.append(await run_single_assessment(browser, assessment_type))
         await browser.close()
+
+    failures = [result for result in results if result["status"] != "PASS"]
+    summary_lines = ["## E2E Matrix Summary", "", "| Assessment | Status | Detail |", "| --- | --- | --- |"]
+    for result in results:
+        detail = result.get("docx") or result.get("error", "")
+        summary_lines.append(f"| {result['assessment']} | {result['status']} | `{detail}` |")
+    append_report(ARTIFACT_DIR, "\n".join(summary_lines) + "\n\n")
+
+    if failures:
+        failed_names = ", ".join(item["assessment"] for item in failures)
+        raise SystemExit(f"E2E matrix failed for: {failed_names}")
+
 
 if __name__ == "__main__":
     asyncio.run(run())
