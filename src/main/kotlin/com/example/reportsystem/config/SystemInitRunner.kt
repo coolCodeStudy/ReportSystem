@@ -40,6 +40,26 @@ private val FIXED_COLS = listOf(
     SeedColConfig("托福") { it.toefl }, SeedColConfig("雅思") { it.ielts }
 )
 
+private val DEFAULT_COURSE_PLAN_JSON = """
+    [
+      {
+        "phase": "阶段1:\n基础课程",
+        "duration": "生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint",
+        "goal": "1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标",
+        "hours": ""
+      },
+      {
+        "phase": "阶段2:\n中高级课程/\n应试培训+面试辅导",
+        "duration": "2h",
+        "goal": "1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标",
+        "hours": ""
+      }
+    ]
+""".trimIndent()
+
+private const val DEFAULT_COURSE_PLAN_NOTE =
+    "课时浮动会根据学生基础、目标学校要求、备考时间和课堂吸收情况动态调整。"
+
 @Component
 class SystemInitRunner(
     private val studentTypeDictionaryRepository: StudentTypeDictionaryRepository,
@@ -97,6 +117,18 @@ class SystemInitRunner(
             sb.append(allCols.joinToString(",") { "\"${it.getValue(row).replace("\"", "\"\"")}\"" }).append("\n")
         }
         return sb.toString().trim()
+    }
+
+    private fun seedConfigIfBlank(configKey: String, defaultValue: String, label: String) {
+        val existing = systemConfigRepository.findByConfigKey(configKey)
+        if (existing == null) {
+            systemConfigRepository.save(SystemConfig(configKey = configKey, configValue = defaultValue))
+            println("=== Initialized $label in system config ===")
+        } else if (existing.configValue.isNullOrBlank()) {
+            existing.configValue = defaultValue
+            systemConfigRepository.save(existing)
+            println("=== Filled blank $label in system config ===")
+        }
     }
 
     override fun run(vararg args: String?) {
@@ -332,6 +364,17 @@ E. 精听打卡
             systemConfigRepository.save(SystemConfig(configKey = "GLOBAL_COURSE_FREQUENCY_TEMPLATE", configValue = defaultFrequency))
             println("=== Initialized global course frequency template ===")
         }
+
+        seedConfigIfBlank(
+            "GLOBAL_COURSE_PLAN_DEFAULT",
+            DEFAULT_COURSE_PLAN_JSON,
+            "global course plan default template"
+        )
+        seedConfigIfBlank(
+            "GLOBAL_COURSE_PLAN_NOTE_DEFAULT",
+            DEFAULT_COURSE_PLAN_NOTE,
+            "global course plan note default"
+        )
 
         // Initialize default plan risk template
         if (systemConfigRepository.findByConfigKey("GLOBAL_PLAN_RISK_TEMPLATE") == null) {

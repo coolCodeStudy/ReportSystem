@@ -1422,25 +1422,8 @@
                         if (res6.code === 200 && res6.data && res6.data.value) defaultRisk = res6.data.value;
                     } catch(e) {}
                     
-                    const fallbackDefaultPlans = [
-                        {
-                            phase: '阶段1:\n基础课程', 
-                            duration: '生活英语：2h\n学术英语：2h\n\n生活英语：NEF\n学术英语：Unlock + Sprint', 
-                            goal: '1. 用轻松的方式引入，让孩子适应国际体系的授课风格，逐渐开口运用\n2. 拓展词汇量\n3. 基础语法学习，时态、语态意识培养\n4. 欧标达到，对标', 
-                            textbook: '', 
-                            hours: ''
-                        },
-                        {
-                            phase: '阶段2:\n中高级课程/\n应试培训+面试辅导', 
-                            duration: '2h', 
-                            goal: '1. 建立学术英语阅读写作基础能力\n2. 培养批判性思维和文本分析能力\n3. 掌握学术词汇和复杂句式结构\n4. 对标', 
-                            textbook: '', 
-                            hours: ''
-                        }
-                    ];
-
-                    const defaultPlansToUse = defaultPlans.length > 0 ? defaultPlans : fallbackDefaultPlans;
-                    const defaultNoteToUse = defaultNote || '*第一阶段的课时浮动是由于...';
+                    const defaultPlansToUse = defaultPlans;
+                    const defaultNoteToUse = defaultNote;
 
                     const existingDataRaw = document.getElementById('initTeachingPlanData').value;
                     if (existingDataRaw && existingDataRaw !== '{}') {
