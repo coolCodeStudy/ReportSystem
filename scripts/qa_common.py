@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -295,6 +296,7 @@ def missing_config_severity(key: str, mode: str, required_type_config_candidates
 def validate_docx(path: Path, artifact_dir: Path) -> int:
     issues: list[str] = []
     deep_artifacts: list[Path] = []
+    visual_report = ""
     if not path.exists():
         issues.append(f"DOCX does not exist: {path}")
     elif not zipfile.is_zipfile(path):
@@ -316,43 +318,57 @@ def validate_docx(path: Path, artifact_dir: Path) -> int:
                         issues.append(f"Expected section text missing from DOCX XML: {phrase}")
 
         if os.getenv("QA_DOCX_DEEP", "0") == "1":
-            deep_errors, deep_artifacts = render_docx_for_deep_check(path, artifact_dir)
+            deep_errors, deep_artifacts, visual_report = render_docx_for_deep_check(path, artifact_dir)
             issues.extend(deep_errors)
 
     lines = ["## DOCX Quick Check", "", f"- File: `{path}`", f"- Errors: `{len(issues)}`"]
     lines.extend(f"- Rendered artifact: `{artifact}`" for artifact in deep_artifacts)
     lines.extend(f"- {issue}" for issue in issues)
-    append_report(artifact_dir, "\n".join(lines) + "\n\n")
+    report = "\n".join(lines) + "\n\n"
+    if visual_report:
+        report += visual_report + "\n\n"
+    append_report(artifact_dir, report)
     return 1 if issues else 0
 
 
-def render_docx_for_deep_check(path: Path, artifact_dir: Path) -> tuple[list[str], list[Path]]:
+def render_docx_for_deep_check(path: Path, artifact_dir: Path) -> tuple[list[str], list[Path], str]:
     errors: list[str] = []
     artifacts: list[Path] = []
+    visual_report = ""
     render_dir = artifact_dir / "docx-render"
     render_dir.mkdir(parents=True, exist_ok=True)
 
     libreoffice = shutil.which("soffice") or shutil.which("libreoffice")
     if not libreoffice:
-        return ["QA_DOCX_DEEP=1 but LibreOffice/soffice is not available."], artifacts
+        return ["QA_DOCX_DEEP=1 but LibreOffice/soffice is not available."], artifacts, visual_report
 
     try:
-        subprocess.run(
-            [libreoffice, "--headless", "--convert-to", "pdf", "--outdir", str(render_dir), str(path)],
-            check=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            timeout=120,
-        )
+        with tempfile.TemporaryDirectory(prefix="reportsystem-lo-") as profile_dir:
+            subprocess.run(
+                [
+                    libreoffice,
+                    "--headless",
+                    f"-env:UserInstallation={Path(profile_dir).resolve().as_uri()}",
+                    "--convert-to",
+                    "pdf",
+                    "--outdir",
+                    str(render_dir),
+                    str(path),
+                ],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=120,
+            )
     except subprocess.CalledProcessError as exc:
-        return [f"LibreOffice failed to render DOCX: {exc.stdout}"], artifacts
+        return [f"LibreOffice failed to render DOCX: {exc.stdout}"], artifacts, visual_report
     except subprocess.TimeoutExpired:
-        return ["LibreOffice DOCX render timed out."], artifacts
+        return ["LibreOffice DOCX render timed out."], artifacts, visual_report
 
     pdf_path = render_dir / f"{path.stem}.pdf"
     if not pdf_path.exists():
-        return [f"LibreOffice did not produce expected PDF: {pdf_path}"], artifacts
+        return [f"LibreOffice did not produce expected PDF: {pdf_path}"], artifacts, visual_report
     artifacts.append(pdf_path)
 
     pdftoppm = shutil.which("pdftoppm")
@@ -360,22 +376,209 @@ def render_docx_for_deep_check(path: Path, artifact_dir: Path) -> tuple[list[str
         png_prefix = render_dir / path.stem
         try:
             subprocess.run(
-                [pdftoppm, "-png", "-f", "1", "-singlefile", str(pdf_path), str(png_prefix)],
+                [pdftoppm, "-png", str(pdf_path), str(png_prefix)],
                 check=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
                 timeout=60,
             )
-            png_path = render_dir / f"{path.stem}.png"
-            if png_path.exists():
-                artifacts.append(png_path)
+            png_paths = rendered_png_paths(render_dir, path.stem)
+            artifacts.extend(png_paths)
+            if os.getenv("QA_VISUAL_QA", "0") == "1":
+                page_texts = extract_pdf_page_texts(pdf_path)
+                visual_errors, visual_details = run_visual_qa_checks(png_paths, page_texts)
+                errors.extend(visual_errors)
+                visual_report = format_visual_qa_report(pdf_path, png_paths, visual_errors, visual_details)
         except subprocess.CalledProcessError as exc:
             errors.append(f"pdftoppm failed to render PDF preview: {exc.stdout}")
         except subprocess.TimeoutExpired:
             errors.append("pdftoppm PDF preview render timed out.")
 
-    return errors, artifacts
+    return errors, artifacts, visual_report
+
+
+def rendered_png_paths(render_dir: Path, stem: str) -> list[Path]:
+    candidates = list(render_dir.glob(f"{stem}-*.png"))
+    if not candidates:
+        single = render_dir / f"{stem}.png"
+        if single.exists():
+            candidates = [single]
+
+    def sort_key(path: Path) -> tuple[int, str]:
+        match = re.search(r"-(\d+)\.png$", path.name)
+        return (int(match.group(1)) if match else 1, path.name)
+
+    return sorted(candidates, key=sort_key)
+
+
+def analyze_png_visual_metrics(path: Path) -> dict[str, Any]:
+    from PIL import Image
+
+    with Image.open(path) as image:
+        rgb = image.convert("RGB")
+        width, height = rgb.size
+        if max(width, height) > 900:
+            rgb.thumbnail((900, 900))
+        pixels = list(rgb.getdata())
+
+    total = max(len(pixels), 1)
+    non_white = 0
+    dark = 0
+    for red, green, blue in pixels:
+        if red < 245 or green < 245 or blue < 245:
+            non_white += 1
+        if red < 80 and green < 80 and blue < 80:
+            dark += 1
+
+    non_white_ratio = non_white / total
+    dark_ratio = dark / total
+    return {
+        "path": str(path),
+        "width": width,
+        "height": height,
+        "non_white_ratio": non_white_ratio,
+        "dark_ratio": dark_ratio,
+        "is_blank": non_white_ratio < 0.005,
+    }
+
+
+def run_visual_qa_checks(png_paths: list[Path], page_texts: dict[int, str]) -> tuple[list[str], dict[str, Any]]:
+    issues: list[str] = []
+    review_items: list[str] = []
+    metrics = []
+    keyword_pages = find_keyword_pages(page_texts, ["费用", "课程价目表", "测评分析", "语言教学", "教学计划"])
+
+    if not png_paths:
+        issues.append("No rendered PNG pages were produced for Visual QA.")
+
+    for page_number, png_path in enumerate(png_paths, start=1):
+        page_metrics = analyze_png_visual_metrics(png_path)
+        page_metrics["page"] = page_number
+        metrics.append(page_metrics)
+        if page_metrics["is_blank"]:
+            issues.append(f"Page {page_number} appears blank after rendering.")
+
+    fee_pages = set(keyword_pages.get("费用", []))
+    price_pages = set(keyword_pages.get("课程价目表", []))
+    if fee_pages and price_pages and fee_pages.isdisjoint(price_pages):
+        review_items.append(
+            f"费用 title and 课程价目表 appear on different pages: 费用={sorted(fee_pages)}, 课程价目表={sorted(price_pages)}"
+        )
+    metrics_by_page = {item["page"]: item for item in metrics}
+    if fee_pages:
+        for fee_page in sorted(fee_pages):
+            next_page = fee_page + 1
+            fee_metrics = metrics_by_page.get(fee_page)
+            next_metrics = metrics_by_page.get(next_page)
+            fee_page_already_has_visual = bool(fee_metrics and fee_metrics["non_white_ratio"] > 0.30)
+            if not price_pages and not fee_page_already_has_visual and next_metrics and next_metrics["non_white_ratio"] > 0.75:
+                review_items.append(
+                    f"费用 appears on page {fee_page}, followed by dense image page {next_page}; the fee image may be split from its title."
+                )
+
+    if len(png_paths) < 3:
+        issues.append(f"Rendered document has suspiciously few pages: {len(png_paths)}")
+
+    return issues, {
+        "page_count": len(png_paths),
+        "keyword_pages": keyword_pages,
+        "page_metrics": metrics,
+        "review_items": review_items,
+    }
+
+
+def find_keyword_pages(page_texts: dict[int, str], keywords: list[str]) -> dict[str, list[int]]:
+    result: dict[str, list[int]] = {keyword: [] for keyword in keywords}
+    for page, text in page_texts.items():
+        normalized = re.sub(r"\s+", "", text)
+        for keyword in keywords:
+            if keyword in text or keyword in normalized:
+                result[keyword].append(page)
+    return result
+
+
+def extract_pdf_page_texts(pdf_path: Path) -> dict[int, str]:
+    page_count = get_pdf_page_count(pdf_path)
+    pdftotext = shutil.which("pdftotext")
+    if not pdftotext or page_count <= 0:
+        return {}
+    texts: dict[int, str] = {}
+    for page in range(1, page_count + 1):
+        try:
+            result = subprocess.run(
+                [pdftotext, "-layout", "-f", str(page), "-l", str(page), str(pdf_path), "-"],
+                check=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                timeout=20,
+            )
+            texts[page] = result.stdout
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            texts[page] = ""
+    return texts
+
+
+def get_pdf_page_count(pdf_path: Path) -> int:
+    pdfinfo = shutil.which("pdfinfo")
+    if not pdfinfo:
+        return 0
+    try:
+        result = subprocess.run(
+            [pdfinfo, str(pdf_path)],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=20,
+        )
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return 0
+    match = re.search(r"^Pages:\s+(\d+)", result.stdout, flags=re.MULTILINE)
+    return int(match.group(1)) if match else 0
+
+
+def format_visual_qa_report(
+    pdf_path: Path,
+    png_paths: list[Path],
+    issues: list[str],
+    details: dict[str, Any],
+) -> str:
+    lines = [
+        "## DOCX Visual QA",
+        "",
+        f"- PDF: `{pdf_path}`",
+        f"- Rendered pages: `{details.get('page_count', len(png_paths))}`",
+        f"- Visual hard issues: `{len(issues)}`",
+        f"- Visual review items: `{len(details.get('review_items', []))}`",
+    ]
+    for png_path in png_paths:
+        lines.append(f"- Page PNG: `{png_path}`")
+    keyword_pages = details.get("keyword_pages", {})
+    if keyword_pages:
+        lines.append("")
+        lines.append("| Keyword | Pages |")
+        lines.append("| --- | --- |")
+        for keyword, pages in keyword_pages.items():
+            lines.append(f"| {keyword} | {pages or '-'} |")
+    metrics = details.get("page_metrics", [])
+    if metrics:
+        lines.append("")
+        lines.append("| Page | Non-white ratio | Blank? |")
+        lines.append("| --- | --- | --- |")
+        for item in metrics:
+            lines.append(f"| {item['page']} | {item['non_white_ratio']:.4f} | {item['is_blank']} |")
+    if issues:
+        lines.append("")
+        lines.append("Hard issues:")
+        lines.extend(f"- {issue}" for issue in issues)
+    review_items = details.get("review_items", [])
+    if review_items:
+        lines.append("")
+        lines.append("Review items:")
+        lines.extend(f"- {item}" for item in review_items)
+    return "\n".join(lines)
 
 
 def append_report(artifact_dir: Path, markdown: str) -> None:

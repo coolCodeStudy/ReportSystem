@@ -18,6 +18,7 @@ This file is the durable memory for real ReportSystem bugs. Every user-visible b
 | 2026-07-05 | DOCX export could leave placeholders or unreadable section breaks. | Generated reports looked broken in WPS/Word. | `scripts/qa_common.py docx` checks exported OOXML for unresolved placeholders and key sections. | QA agent rollout |
 | 2026-07-05 | DOCX cover leaked the template text `封面文案标题`. | Teachers would see unfinished template copy on the generated report cover. | `DocxExportGoldenSampleTest` and `scripts/qa_common.py docx` reject `封面文案标题`; final bug hunt verified Starters/KET/PET/etc. exports no longer contain it. | Local hotfix pending push |
 | 2026-07-05 | IELTS exists in assessment descriptions but has no subject configuration. | Selecting IELTS renders no score/analysis tabs, so teachers cannot record IELTS assessment data. | `scripts/qa_common.py validate` reports `GLOBAL_SUBJECTS_type_fn1tzj`; E2E IELTS case fails with no subject tabs. | Open config bug |
+| 2026-07-05 | Visual QA falsely flagged a readable fee page as split because `课程价目表` is image text and the following ABOUT US page is visually dense. | Monthly Bug Hunt could block or distract on a false DOCX layout issue even when WPS/Word looks acceptable. | `scripts/test_qa_common.py` keeps blank pages as hard failures, demotes fee split guesses to review items, and suppresses the hint when the fee page already contains substantial visual content. | Visual QA calibration pending push |
 
 ## Entry Template
 

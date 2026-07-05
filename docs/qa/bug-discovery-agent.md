@@ -54,6 +54,7 @@ TEMPLATE_SYNC_SOURCE_BASE_URL=http://121.41.236.44:8080
 QA_MODE=hunt
 QA_ARTIFACT_DIR=build/bug-hunt
 QA_DOCX_DEEP=1
+QA_VISUAL_QA=1
 ```
 
 What it expands:
@@ -61,7 +62,8 @@ What it expands:
 - Assessment matrix: Starters, Movers, Flyers, KET, PET, IELTS, TOEFL Junior, MAP.
 - Admin configuration patrol.
 - Broad student workflow matrix.
-- DOCX deep render through LibreOffice and optional PNG preview through Poppler.
+- DOCX deep render through LibreOffice and full-page PNG preview through Poppler.
+- Mechanical Visual QA: blank pages, page count, key section page mapping, and fee-page review hints.
 
 Artifacts:
 
@@ -70,6 +72,21 @@ Artifacts:
 - `build/bug-hunt/docx-render/`
 - `build/bug-hunt/screenshots/`
 - `build/bug-hunt/traces/`
+
+## Visual QA
+
+Visual QA is intentionally part of Monthly Bug Hunt, not Daily Gate. It is slower and produces heavier artifacts, but it catches report experience issues that ordinary unit tests miss.
+
+Current mechanical checks:
+
+- Render every DOCX page to PNG.
+- Flag blank or nearly blank rendered pages.
+- Extract PDF page text and map important sections to page numbers.
+- Add a review item when fee-page text extraction suggests `费用` and `课程价目表` may be split. This is intentionally not a hard failure because `课程价目表` often lives inside an image and PDF text extraction cannot reliably OCR it.
+- Suppress the fee split hint when the `费用` page already contains substantial visual content, which usually means the price image is already on the same readable page.
+- Save every page PNG so a human or AI reviewer can inspect the report visually.
+
+Future AI vision review can build on these artifacts by reviewing only high-risk pages such as cover, fee page, assessment analysis, and teaching plan pages.
 
 ## Template Sync
 

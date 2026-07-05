@@ -6,6 +6,7 @@ TEMPLATE_SYNC_SOURCE_BASE_URL="${TEMPLATE_SYNC_SOURCE_BASE_URL:-http://121.41.23
 QA_ARTIFACT_DIR="${QA_ARTIFACT_DIR:-build/bug-hunt}"
 QA_MODE="hunt"
 QA_DOCX_DEEP="${QA_DOCX_DEEP:-1}"
+QA_VISUAL_QA="${QA_VISUAL_QA:-1}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 
 if [[ -x ".venv/bin/python" ]]; then
@@ -44,6 +45,7 @@ if [[ "${QA_SKIP_E2E:-0}" != "1" ]]; then
   echo "[bug-hunt] running broad student e2e matrix"
   QA_MODE="$QA_MODE" \
   QA_DOCX_DEEP="$QA_DOCX_DEEP" \
+  QA_VISUAL_QA="$QA_VISUAL_QA" \
   QA_ARTIFACT_DIR="$QA_ARTIFACT_DIR" \
   ASSESSMENT_MATRIX="${ASSESSMENT_MATRIX:-Starters,Movers,Flyers,KET,PET,IELTS,TOEFL Junior,MAP}" \
   BASE_URL="$BASE_URL" \
