@@ -214,6 +214,7 @@ class DocxExportGoldenSampleTest {
         assertThat(allText).doesNotContain("{assessment_introduction}")
         assertThat(allText).doesNotContain("{assessment_analysis}")
         assertThat(allText).doesNotContain("{course_schedule}")
+        assertThat(allText).doesNotContain("封面文案标题")
     }
 
     private fun coursePlanTable(document: XWPFDocument): XWPFTable {

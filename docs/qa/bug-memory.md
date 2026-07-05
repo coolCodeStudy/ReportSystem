@@ -16,6 +16,8 @@ This file is the durable memory for real ReportSystem bugs. Every user-visible b
 | 2026-07-05 | Starters/Movers/Flyers assessment selection could fall back to KET/PET score templates. | Teachers could not reliably record scores for non-KET/PET assessment systems. | `e2e/c_end/test_student_flow.py` asserts selected assessment type becomes the linked default exam type for scored subjects. | QA agent rollout |
 | 2026-07-05 | Deploy workflow skipped tests. | Regression bugs could reach production before teacher/user discovery. | `.github/workflows/deploy.yml` now runs Gradle tests and Daily Gate before `bootJar` and deploy. | QA agent rollout |
 | 2026-07-05 | DOCX export could leave placeholders or unreadable section breaks. | Generated reports looked broken in WPS/Word. | `scripts/qa_common.py docx` checks exported OOXML for unresolved placeholders and key sections. | QA agent rollout |
+| 2026-07-05 | DOCX cover leaked the template text `封面文案标题`. | Teachers would see unfinished template copy on the generated report cover. | `DocxExportGoldenSampleTest` and `scripts/qa_common.py docx` reject `封面文案标题`; final bug hunt verified Starters/KET/PET/etc. exports no longer contain it. | Local hotfix pending push |
+| 2026-07-05 | IELTS exists in assessment descriptions but has no subject configuration. | Selecting IELTS renders no score/analysis tabs, so teachers cannot record IELTS assessment data. | `scripts/qa_common.py validate` reports `GLOBAL_SUBJECTS_type_fn1tzj`; E2E IELTS case fails with no subject tabs. | Open config bug |
 
 ## Entry Template
 

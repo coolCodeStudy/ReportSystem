@@ -166,6 +166,22 @@ async def save_workspace(frame, label: str) -> None:
     )
 
 
+async def export_report(page, frame, docx_path: Path) -> None:
+    await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
+    await asyncio.sleep(0.8)
+
+    confirm_button = frame.locator("button:has-text('确认导出')").last
+    if await confirm_button.count() > 0 and await confirm_button.is_visible():
+        async with page.expect_download(timeout=120000) as download_info:
+            await confirm_button.click()
+    else:
+        async with page.expect_download(timeout=120000) as download_info:
+            await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
+
+    download = await download_info.value
+    await download.save_as(str(docx_path))
+
+
 async def create_student_and_open_workspace(page, assessment_type: str) -> str:
     rnd_id = random.randint(1000, 9999)
     student_name = f"QA-{assessment_type.replace(' ', '')}-{rnd_id}"
@@ -229,10 +245,7 @@ async def run_single_assessment(browser, assessment_type: str) -> dict[str, str]
         await save_workspace(frame, "step 3")
 
         docx_path = DOCX_DIR / f"{student_name}.docx"
-        async with page.expect_download(timeout=120000) as download_info:
-            await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
-        download = await download_info.value
-        await download.save_as(str(docx_path))
+        await export_report(page, frame, docx_path)
         if validate_docx(docx_path, ARTIFACT_DIR) != 0:
             raise AssertionError(f"DOCX quick check failed for {docx_path}")
 

@@ -10,8 +10,12 @@ import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVParser
 import org.springframework.core.io.ClassPathResource
 import org.springframework.stereotype.Service
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.math.BigInteger
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
@@ -184,12 +188,69 @@ G11,,1225L,17500,,,,,,
         )
 
         com.example.reportsystem.service.docx.DocxPageBrandRenderer.render(document)
+        replaceLiteralText(document, "封面文案标题", "英语测评与学习方案")
         com.example.reportsystem.service.docx.DocxStyleUtils.applyDocumentFont(document)
 
         val out = ByteArrayOutputStream()
         document.write(out)
         val bytes = out.toByteArray()
         document.close()
-        return bytes
+        return replaceDocxXmlLiteral(bytes, "封面文案标题", "英语测评与学习方案")
+    }
+
+    private fun replaceDocxXmlLiteral(bytes: ByteArray, placeholder: String, replacement: String): ByteArray {
+        val patched = ByteArrayOutputStream()
+        ZipInputStream(ByteArrayInputStream(bytes)).use { input ->
+            ZipOutputStream(patched).use { output ->
+                var entry = input.nextEntry
+                while (entry != null) {
+                    output.putNextEntry(ZipEntry(entry.name))
+                    val entryBytes = input.readBytes()
+                    if (entry.name == "word/document.xml") {
+                        val xml = entryBytes.toString(Charsets.UTF_8).replace(placeholder, replacement)
+                        output.write(xml.toByteArray(Charsets.UTF_8))
+                    } else {
+                        output.write(entryBytes)
+                    }
+                    output.closeEntry()
+                    input.closeEntry()
+                    entry = input.nextEntry
+                }
+            }
+        }
+        return patched.toByteArray()
+    }
+
+    private fun replaceLiteralText(document: XWPFDocument, placeholder: String, replacement: String) {
+        document.paragraphs.forEach { replaceLiteralText(it, placeholder, replacement) }
+        document.tables.forEach { table ->
+            table.rows.forEach { row ->
+                row.tableCells.forEach { cell ->
+                    cell.paragraphs.forEach { replaceLiteralText(it, placeholder, replacement) }
+                    cell.tables.forEach { nested ->
+                        nested.rows.forEach { nestedRow ->
+                            nestedRow.tableCells.forEach { nestedCell ->
+                                nestedCell.paragraphs.forEach { replaceLiteralText(it, placeholder, replacement) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        document.headerList.forEach { header ->
+            header.paragraphs.forEach { replaceLiteralText(it, placeholder, replacement) }
+        }
+        document.footerList.forEach { footer ->
+            footer.paragraphs.forEach { replaceLiteralText(it, placeholder, replacement) }
+        }
+    }
+
+    private fun replaceLiteralText(paragraph: XWPFParagraph, placeholder: String, replacement: String) {
+        paragraph.runs.forEach { run ->
+            val text = run.text()
+            if (text.contains(placeholder)) {
+                run.setText(text.replace(placeholder, replacement), 0)
+            }
+        }
     }
 }

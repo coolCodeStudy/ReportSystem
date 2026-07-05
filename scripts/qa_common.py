@@ -225,10 +225,15 @@ def validate_configs(base_url: str, artifact_dir: Path, mode: str) -> int:
 
     descriptions = parse_json(configs.get("GLOBAL_ASSESSMENT_DESCRIPTIONS", ""), "GLOBAL_ASSESSMENT_DESCRIPTIONS", issues)
     available_types: set[str] = set()
+    required_type_config_candidates: set[str] = set()
     if isinstance(descriptions, list):
         for item in descriptions:
             if isinstance(item, dict):
-                available_types.update(candidate.lower() for candidate in type_candidates(item))
+                candidates = type_candidates(item)
+                available_types.update(candidate.lower() for candidate in candidates)
+                item_names = {candidate.lower() for candidate in candidates}
+                if any(candidate.lower() in {value.lower() for value in item_names} for expected in required_types for candidate in type_candidates(expected)):
+                    required_type_config_candidates.update(candidates)
 
     for expected in required_types:
         if not any(candidate.lower() in available_types for candidate in type_candidates(expected)):
@@ -252,7 +257,7 @@ def validate_configs(base_url: str, artifact_dir: Path, mode: str) -> int:
             parse_json(value, key, issues)
 
     for key in missing:
-        severity = "ERROR" if key.startswith(("GLOBAL_SUBJECTS_", "GLOBAL_ANALYSIS_CONFIG_", "GLOBAL_CAUSE_ANALYSIS_", "GLOBAL_SCORE_RULE_")) else "WARNING"
+        severity = missing_config_severity(key, mode, required_type_config_candidates)
         issues.append({"severity": severity, "key": key, "message": f"Missing or empty config: {key}"})
 
     errors = [issue for issue in issues if issue["severity"] == "ERROR"]
@@ -278,6 +283,15 @@ def validate_configs(base_url: str, artifact_dir: Path, mode: str) -> int:
     return 1 if errors else 0
 
 
+def missing_config_severity(key: str, mode: str, required_type_config_candidates: set[str]) -> str:
+    dynamic_prefixes = ("GLOBAL_SUBJECTS_", "GLOBAL_ANALYSIS_CONFIG_", "GLOBAL_CAUSE_ANALYSIS_", "GLOBAL_SCORE_RULE_")
+    if not key.startswith(dynamic_prefixes):
+        return "WARNING"
+    if mode != "gate":
+        return "ERROR"
+    return "ERROR" if any(candidate and candidate in key for candidate in required_type_config_candidates) else "WARNING"
+
+
 def validate_docx(path: Path, artifact_dir: Path) -> int:
     issues: list[str] = []
     deep_artifacts: list[Path] = []
@@ -294,6 +308,9 @@ def validate_docx(path: Path, artifact_dir: Path) -> int:
                 xml = zf.read("word/document.xml").decode("utf-8", errors="ignore")
                 if re.search(r"\{[A-Za-z0-9_]+\}", xml):
                     issues.append("Unresolved placeholder token remains in document.xml")
+                for placeholder_text in ("封面文案标题", "请输入", "TODO"):
+                    if placeholder_text in xml:
+                        issues.append(f"Template placeholder text remains in document.xml: {placeholder_text}")
                 for phrase in ("测评", "语言教学", "费用"):
                     if phrase not in xml:
                         issues.append(f"Expected section text missing from DOCX XML: {phrase}")
