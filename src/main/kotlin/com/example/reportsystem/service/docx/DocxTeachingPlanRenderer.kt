@@ -154,9 +154,8 @@ object DocxTeachingPlanRenderer {
                 validRowData.forEach { rowNode ->
                     val phaseName = rowNode.path("phase").asText()
                     val hoursStr = rowNode.path("hours").asText()
-                    
-                    val regex = Regex("\\d+(\\.\\d+)?")
-                    val sum = regex.findAll(hoursStr).map { it.value.toDouble() }.sum()
+
+                    val sum = sumExplicitCourseHours(hoursStr)
                     if (sum > 0) {
                         val sumStr = if (sum % 1 == 0.0) sum.toInt().toString() else sum.toString()
                         phaseTotals.add("$phaseName: ${sumStr}h")
@@ -532,6 +531,13 @@ object DocxTeachingPlanRenderer {
             .replace("\r\n", "\n")
             .replace("\r", "\n")
             .replace(Regex("(?<=h)(?=\\S+?:)"), "\n")
+    }
+
+    private fun sumExplicitCourseHours(hoursText: String): Double {
+        val hourValueRegex = Regex("""(\d+(?:\.\d+)?)\s*(?:h|H|小时|课时)""")
+        return hourValueRegex.findAll(hoursText)
+            .mapNotNull { it.groupValues.getOrNull(1)?.toDoubleOrNull() }
+            .sum()
     }
 
     private data class SyllabusGroup(

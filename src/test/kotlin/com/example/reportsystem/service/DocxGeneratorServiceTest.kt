@@ -339,10 +339,46 @@ class DocxGeneratorServiceTest {
         assertThat(coursePlanTable.getRow(1).getCell(4).text).contains("Unlock4: 40h")
         val totalRow = coursePlanTable.getRow(2)
         assertThat(totalRow.getCell(0).text).isEqualTo("预计总课时")
+        assertThat(totalRow.getCell(1).text).contains("基础课程: 108h")
         assertThat(totalRow.tableCells).hasSize(2)
         assertThat(totalRow.getCell(1).ctTc.tcPr.gridSpan.`val`).isEqualTo(BigInteger.valueOf(4))
         assertThat(coursePlanTable.getRow(0).ctRow.trPr.sizeOfCantSplitArray()).isGreaterThan(0)
         assertThat(coursePlanTable.getRow(1).getCell(0).paragraphs.first().ctp.pPr.isSetKeepNext).isTrue()
+    }
+
+    @Test
+    fun `generateDocx should ignore textbook digits when summing course plan total hours`() {
+        val teachingPlanDataJson = """
+            {
+              "coursePlans": [
+                {
+                  "phase": "阶段 2",
+                  "duration": "2h",
+                  "goal": "强化阅读写作",
+                  "textbook": "NEF-UI, Unlock4",
+                  "hours": "NEF-UI: 32h\nUnlock4: 40h"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            teachingPlanDataJson = teachingPlanDataJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val coursePlanTable = document.tables.first { table ->
+            table.getRow(0).tableCells.map { it.text }.containsAll(listOf("阶段", "时长", "目标", "教材", "预计课时"))
+        }
+
+        val totalRow = coursePlanTable.getRow(2)
+        assertThat(totalRow.getCell(0).text).isEqualTo("预计总课时")
+        assertThat(totalRow.getCell(1).text).contains("阶段 2: 72h")
     }
 
     @Test
