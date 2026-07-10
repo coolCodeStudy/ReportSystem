@@ -110,6 +110,35 @@ jobs:
         password: ${{ secrets.ECS_PASSWORD }}
         command_timeout: 5m
         script: |
+          # 0. Provision and verify the headless PDF runtime before touching the running service.
+          PDF_EXECUTABLE="$(command -v libreoffice || command -v soffice || true)"
+          if [ -z "$PDF_EXECUTABLE" ]; then
+            if command -v apt-get >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                libreoffice-writer fonts-noto-cjk fonts-noto-color-emoji fontconfig
+            elif command -v dnf >/dev/null 2>&1; then
+              sudo dnf install -y \
+                libreoffice-headless libreoffice-writer \
+                google-noto-sans-cjk-fonts google-noto-color-emoji-fonts fontconfig
+            elif command -v yum >/dev/null 2>&1; then
+              sudo yum install -y \
+                libreoffice-headless libreoffice-writer \
+                google-noto-sans-cjk-fonts google-noto-color-emoji-fonts fontconfig
+            else
+              echo "No supported package manager found for LibreOffice PDF runtime." >&2
+              exit 1
+            fi
+            PDF_EXECUTABLE="$(command -v libreoffice || command -v soffice || true)"
+          fi
+
+          if [ -z "$PDF_EXECUTABLE" ]; then
+            echo "LibreOffice installation completed without an executable on PATH." >&2
+            exit 1
+          fi
+          fc-cache -f
+          "$PDF_EXECUTABLE" --headless --version
+
           # 1. Move file to target location
           sudo mv /tmp/report-system-0.0.1-SNAPSHOT.jar /opt/
           sudo chown root:root /opt/report-system-0.0.1-SNAPSHOT.jar
@@ -123,6 +152,10 @@ jobs:
           [Service]
           Type=simple
           # Full path to java with memory limits
+          Environment=REPORT_PDF_ENABLED=true
+          Environment=REPORT_PDF_EXECUTABLE=$PDF_EXECUTABLE
+          Environment=REPORT_PDF_TIMEOUT_SECONDS=120
+          Environment=REPORT_PDF_MAX_CONCURRENT=1
           ExecStart=/usr/bin/java -Xmx512M -Xms512M -jar /opt/report-system-0.0.1-SNAPSHOT.jar
           WorkingDirectory=/opt
           Restart=on-failure
