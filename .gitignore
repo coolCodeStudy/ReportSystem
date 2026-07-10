@@ -7,4 +7,6 @@
 *.iml
 out/
 *.log
+*.pyc
+__pycache__/
 bin/
