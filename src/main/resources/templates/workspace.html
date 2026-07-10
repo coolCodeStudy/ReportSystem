@@ -1086,16 +1086,7 @@
                     const payload = {};
                     for (const subj in this.assessments) {
                         const src = this.assessments[subj];
-                        
-                        let hasPaper = false;
-                        src.paperAnalysis.forEach(row => {
-                            if ((row.status !== 'NA' && row.status !== 'N/A') || row.text.trim() !== '') {
-                                hasPaper = true;
-                            }
-                        });
-                        
-                        let hasCause = src.causeAnalysis && src.causeAnalysis.length > 0;
-                        
+
                         const subjData = {
                             testType: src.examType,
                             score: src.score === null || src.score === '' ? null : (parseFloat(src.score) || 0),
@@ -1107,9 +1098,7 @@
                             paperAnalysis: {}
                         };
                         src.paperAnalysis.forEach(row => {
-                            if ((row.status !== 'NA' && row.status !== 'N/A') || row.text.trim() !== '') {
-                                subjData.paperAnalysis[row.dimension] = { status: row.status, text: row.text.trim() };
-                            }
+                            subjData.paperAnalysis[row.dimension] = { status: row.status, text: row.text.trim() };
                         });
                         payload[subj] = subjData;
                     }
