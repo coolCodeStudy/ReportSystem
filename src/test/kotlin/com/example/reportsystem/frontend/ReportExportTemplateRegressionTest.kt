@@ -25,4 +25,15 @@ class ReportExportTemplateRegressionTest {
             "exportPdfReportBtn"
         )
     }
+
+    @Test
+    fun `report export script references should bust browser cache`() {
+        val index = Files.readString(Paths.get("src/main/resources/templates/index.html"))
+        val workspace = Files.readString(Paths.get("src/main/resources/templates/workspace.html"))
+
+        assertThat(index).contains("""/js/report-export.js?v=""")
+        assertThat(workspace).contains("""/js/report-export.js?v=""")
+        assertThat(index).doesNotContain("""src="/js/report-export.js"""")
+        assertThat(workspace).doesNotContain("""src="/js/report-export.js"""")
+    }
 }

@@ -120,6 +120,10 @@ jobs:
               fi
             fi
 
+            sudo "$package_manager" install -y google-noto-serif-cjk-fonts \
+              || sudo "$package_manager" install -y google-noto-serif-cjk-ttc-fonts \
+              || echo "Serif CJK Noto font package not available from $package_manager; continuing with installed fonts."
+
             sudo "$package_manager" install -y google-noto-cjk-fonts \
               || sudo "$package_manager" install -y google-noto-sans-cjk-fonts \
               || sudo "$package_manager" install -y google-noto-sans-cjk-ttc-fonts \
@@ -135,7 +139,7 @@ jobs:
             if command -v apt-get >/dev/null 2>&1; then
               sudo apt-get update
               sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
-                libreoffice-writer fonts-noto-cjk fonts-noto-color-emoji fontconfig
+                libreoffice-writer fonts-noto-cjk fonts-noto-serif-cjk fonts-noto-color-emoji fontconfig
             elif command -v dnf >/dev/null 2>&1; then
               install_rpm_pdf_runtime dnf
             elif command -v yum >/dev/null 2>&1; then
@@ -151,6 +155,37 @@ jobs:
             echo "LibreOffice installation completed without an executable on PATH." >&2
             exit 1
           fi
+          sudo mkdir -p /etc/fonts/conf.d
+          sudo tee /etc/fonts/conf.d/30-report-system-fonts.conf > /dev/null <<'FONTCONF'
+          <?xml version="1.0"?>
+          <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+          <fontconfig>
+            <alias binding="strong">
+              <family>华文宋体</family>
+              <prefer>
+                <family>Noto Serif CJK SC</family>
+                <family>Noto Serif CJK JP</family>
+                <family>Noto Serif CJK</family>
+              </prefer>
+            </alias>
+            <alias binding="strong">
+              <family>STSong</family>
+              <prefer>
+                <family>Noto Serif CJK SC</family>
+                <family>Noto Serif CJK JP</family>
+                <family>Noto Serif CJK</family>
+              </prefer>
+            </alias>
+            <alias binding="strong">
+              <family>Songti SC</family>
+              <prefer>
+                <family>Noto Serif CJK SC</family>
+                <family>Noto Serif CJK JP</family>
+                <family>Noto Serif CJK</family>
+              </prefer>
+            </alias>
+          </fontconfig>
+          FONTCONF
           fc-cache -f
           "$PDF_EXECUTABLE" --headless --version
 
