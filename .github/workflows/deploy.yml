@@ -111,14 +111,8 @@ jobs:
         command_timeout: 5m
         script: |
           # 0. Provision and verify the headless PDF runtime before touching the running service.
-          install_rpm_pdf_runtime() {
+          install_rpm_pdf_fonts() {
             package_manager="$1"
-
-            if ! sudo "$package_manager" install -y libreoffice-headless libreoffice-writer fontconfig; then
-              if ! sudo "$package_manager" install -y libreoffice-writer fontconfig; then
-                sudo "$package_manager" install -y libreoffice fontconfig
-              fi
-            fi
 
             sudo "$package_manager" install -y google-noto-serif-cjk-fonts \
               || sudo "$package_manager" install -y google-noto-serif-cjk-ttc-fonts \
@@ -132,6 +126,30 @@ jobs:
             sudo "$package_manager" install -y google-noto-color-emoji-fonts \
               || sudo "$package_manager" install -y google-noto-emoji-color-fonts \
               || echo "Color emoji font package not available from $package_manager; continuing with installed fonts."
+          }
+
+          install_rpm_pdf_runtime() {
+            package_manager="$1"
+
+            if ! sudo "$package_manager" install -y libreoffice-headless libreoffice-writer fontconfig; then
+              if ! sudo "$package_manager" install -y libreoffice-writer fontconfig; then
+                sudo "$package_manager" install -y libreoffice fontconfig
+              fi
+            fi
+          }
+
+          ensure_pdf_fonts() {
+            if command -v apt-get >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                fonts-noto-cjk fonts-noto-serif-cjk fonts-noto-color-emoji fontconfig
+            elif command -v dnf >/dev/null 2>&1; then
+              install_rpm_pdf_fonts dnf
+            elif command -v yum >/dev/null 2>&1; then
+              install_rpm_pdf_fonts yum
+            else
+              echo "No supported package manager found for PDF fonts; continuing with installed fonts." >&2
+            fi
           }
 
           PDF_EXECUTABLE="$(command -v libreoffice || command -v soffice || true)"
@@ -150,6 +168,7 @@ jobs:
             fi
             PDF_EXECUTABLE="$(command -v libreoffice || command -v soffice || true)"
           fi
+          ensure_pdf_fonts
 
           if [ -z "$PDF_EXECUTABLE" ]; then
             echo "LibreOffice installation completed without an executable on PATH." >&2

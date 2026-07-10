@@ -25,6 +25,16 @@ class DeployWorkflowTest(unittest.TestCase):
         self.assertIn("<family>Noto Serif CJK SC</family>", workflow)
         self.assertIn("fc-cache -f", workflow)
 
+    def test_pdf_fonts_are_refreshed_even_when_libreoffice_already_exists(self):
+        workflow = Path(".github/workflows/deploy.yml").read_text()
+
+        self.assertIn("install_rpm_pdf_fonts()", workflow)
+        self.assertIn("ensure_pdf_fonts", workflow)
+        self.assertLess(
+            workflow.index("if [ -z \"$PDF_EXECUTABLE\" ]; then"),
+            workflow.index("\n          ensure_pdf_fonts\n"),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
