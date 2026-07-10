@@ -8,17 +8,21 @@ import java.nio.file.Paths
 class ReportExportTemplateRegressionTest {
 
     @Test
-    fun `report export modal should offer separate Word and PDF commands`() {
+    fun `report export modal should choose a format before one export command`() {
         val script = Files.readString(Paths.get("src/main/resources/static/js/report-export.js"))
 
         assertThat(script).contains(
-            "exportWordReportBtn",
-            "exportPdfReportBtn",
-            "导出 Word",
-            "导出 PDF",
+            "reportExportFormatWord",
+            "reportExportFormatPdf",
+            "name=\"reportExportFormat\"",
+            "value=\"word\" checked",
+            "confirmReportExportBtn",
+            "导出报告",
             "/student/history/${'$'}{recordId}/export/pdf"
         )
-        assertThat(script).doesNotContain("id=\"confirmReportExportSettingsBtn\"")
+        assertThat(script).doesNotContain(
+            "exportWordReportBtn",
+            "exportPdfReportBtn"
+        )
     }
 }
-

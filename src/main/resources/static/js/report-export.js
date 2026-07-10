@@ -1,8 +1,8 @@
 (function () {
     const modalId = 'reportExportSettingsModal';
     const optionsContainerId = 'reportOutlineBookOptions';
-    const wordButtonId = 'exportWordReportBtn';
-    const pdfButtonId = 'exportPdfReportBtn';
+    const exportButtonId = 'confirmReportExportBtn';
+    const formatName = 'reportExportFormat';
     const styleId = 'reportExportSettingsStyle';
 
     function escapeHtml(value) {
@@ -100,17 +100,27 @@
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body bg-light">
+                            <fieldset class="mb-4">
+                                <legend class="fw-bold fs-6 mb-2">导出格式</legend>
+                                <div class="btn-group w-100" role="group" aria-label="导出格式">
+                                    <input type="radio" class="btn-check" name="reportExportFormat" id="reportExportFormatWord" value="word" checked>
+                                    <label class="btn btn-outline-primary" for="reportExportFormatWord">
+                                        <i class="bi bi-file-earmark-word me-1"></i>Word
+                                    </label>
+                                    <input type="radio" class="btn-check" name="reportExportFormat" id="reportExportFormatPdf" value="pdf">
+                                    <label class="btn btn-outline-primary" for="reportExportFormatPdf">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+                                    </label>
+                                </div>
+                            </fieldset>
                             <div class="fw-bold mb-1">教学计划大纲</div>
                             <p class="text-muted small mb-3">选择哪些教材打印大纲明细；课时规划表仍会完整导出。</p>
                             <div id="${optionsContainerId}" class="d-grid gap-2"></div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                            <button type="button" class="btn btn-outline-primary px-4" id="${wordButtonId}">
-                                <i class="bi bi-file-earmark-word me-1"></i>导出 Word
-                            </button>
-                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="${pdfButtonId}">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>导出 PDF
+                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="${exportButtonId}">
+                                <i class="bi bi-download me-1"></i>导出报告
                             </button>
                         </div>
                     </div>
@@ -189,16 +199,18 @@
         const data = parseTeachingPlanData(
             options.getTeachingPlanData ? options.getTeachingPlanData() : options.teachingPlanData
         );
-        const wordButton = document.getElementById(wordButtonId);
-        const pdfButton = document.getElementById(pdfButtonId);
+        const exportButton = document.getElementById(exportButtonId);
+        const wordFormat = document.getElementById('reportExportFormatWord');
         const modalEl = document.getElementById(modalId);
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
+        wordFormat.checked = true;
         renderBookOptions(data);
-        async function exportReport(format, button) {
+        async function exportReport() {
+            const format = document.querySelector(`input[name="${formatName}"]:checked`)?.value || 'word';
             applySelection(data);
 
-            const originalButtonHtml = setLoading(button, true, '正在生成...');
+            const originalButtonHtml = setLoading(exportButton, true, '正在生成...');
 
             try {
                 modal.hide();
@@ -218,15 +230,14 @@
                     alert('导出设置保存失败，请稍后重试。');
                 }
             } finally {
-                if (button && originalButtonHtml !== null) {
-                    button.disabled = false;
-                    button.innerHTML = originalButtonHtml;
+                if (exportButton && originalButtonHtml !== null) {
+                    exportButton.disabled = false;
+                    exportButton.innerHTML = originalButtonHtml;
                 }
             }
         }
 
-        wordButton.onclick = () => exportReport('word', wordButton);
-        pdfButton.onclick = () => exportReport('pdf', pdfButton);
+        exportButton.onclick = exportReport;
 
         modal.show();
     }
