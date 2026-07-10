@@ -153,7 +153,7 @@ class StudentController(
         val modifiedBytes = generateHistoricReportDocx(record, columns)
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
-    
+
         val headers = HttpHeaders()
         headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=${java.net.URLEncoder.encode("${record.student?.name ?: "Student"}_历史记录测评报告.docx", "UTF-8")}")
 

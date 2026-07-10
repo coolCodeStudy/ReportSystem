@@ -1,7 +1,8 @@
 (function () {
     const modalId = 'reportExportSettingsModal';
     const optionsContainerId = 'reportOutlineBookOptions';
-    const confirmButtonId = 'confirmReportExportSettingsBtn';
+    const wordButtonId = 'exportWordReportBtn';
+    const pdfButtonId = 'exportPdfReportBtn';
     const styleId = 'reportExportSettingsStyle';
 
     function escapeHtml(value) {
@@ -105,8 +106,11 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="${confirmButtonId}">
-                                确认导出
+                            <button type="button" class="btn btn-outline-primary px-4" id="${wordButtonId}">
+                                <i class="bi bi-file-earmark-word me-1"></i>导出 Word
+                            </button>
+                            <button type="button" class="btn btn-primary px-4 shadow-sm" id="${pdfButtonId}">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>导出 PDF
                             </button>
                         </div>
                     </div>
@@ -182,20 +186,19 @@
         ensureModal();
 
         const recordId = options.recordId;
-        const triggerButton = options.triggerButton || null;
         const data = parseTeachingPlanData(
             options.getTeachingPlanData ? options.getTeachingPlanData() : options.teachingPlanData
         );
-        const confirmButton = document.getElementById(confirmButtonId);
+        const wordButton = document.getElementById(wordButtonId);
+        const pdfButton = document.getElementById(pdfButtonId);
         const modalEl = document.getElementById(modalId);
         const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
 
         renderBookOptions(data);
-        confirmButton.onclick = async function () {
+        async function exportReport(format, button) {
             applySelection(data);
 
-            const originalTriggerHtml = setLoading(triggerButton, true, '正在生成...');
-            const originalConfirmHtml = setLoading(confirmButton, true, '正在生成...');
+            const originalButtonHtml = setLoading(button, true, '正在生成...');
 
             try {
                 modal.hide();
@@ -205,7 +208,9 @@
                 if (options.afterSave) {
                     options.afterSave(data);
                 }
-                window.location.href = options.downloadUrl || `/student/history/${recordId}/export`;
+                window.location.href = format === 'pdf'
+                    ? (options.pdfDownloadUrl || `/student/history/${recordId}/export/pdf`)
+                    : (options.wordDownloadUrl || options.downloadUrl || `/student/history/${recordId}/export`);
             } catch (e) {
                 if (window.Swal) {
                     Swal.fire('错误', '导出设置保存失败，请稍后重试。', 'error');
@@ -213,16 +218,15 @@
                     alert('导出设置保存失败，请稍后重试。');
                 }
             } finally {
-                if (triggerButton && originalTriggerHtml !== null) {
-                    triggerButton.disabled = false;
-                    triggerButton.innerHTML = originalTriggerHtml;
-                }
-                if (confirmButton && originalConfirmHtml !== null) {
-                    confirmButton.disabled = false;
-                    confirmButton.innerHTML = originalConfirmHtml;
+                if (button && originalButtonHtml !== null) {
+                    button.disabled = false;
+                    button.innerHTML = originalButtonHtml;
                 }
             }
-        };
+        }
+
+        wordButton.onclick = () => exportReport('word', wordButton);
+        pdfButton.onclick = () => exportReport('pdf', pdfButton);
 
         modal.show();
     }
