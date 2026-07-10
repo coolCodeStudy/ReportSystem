@@ -187,6 +187,7 @@ G11,,1225L,17500,,,,,,
             systemConfigRepository
         )
 
+        com.example.reportsystem.service.docx.DocxFeePageRenderer.render(document)
         com.example.reportsystem.service.docx.DocxPageBrandRenderer.render(document)
         replaceLiteralText(document, "封面文案标题", "英语测评与学习方案")
         com.example.reportsystem.service.docx.DocxStyleUtils.applyDocumentFont(document)

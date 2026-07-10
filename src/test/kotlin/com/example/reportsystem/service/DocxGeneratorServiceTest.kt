@@ -107,6 +107,33 @@ class DocxGeneratorServiceTest {
     }
 
     @Test
+    fun `generateDocx should keep the fee image small enough to remain with its heading`() {
+        val resultBytes = docxGeneratorService.generateDocx(
+            "B2-",
+            "G5",
+            "TEST",
+            null,
+            listOf("Lingoland", "CEFR", "雅思")
+        )
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val feeHeadingIndex = document.bodyElements.indexOfFirst { element ->
+            element is org.apache.poi.xwpf.usermodel.XWPFParagraph && element.text == "费用"
+        }
+
+        assertThat(feeHeadingIndex).isGreaterThanOrEqualTo(0)
+        val feeHeading = document.bodyElements[feeHeadingIndex] as org.apache.poi.xwpf.usermodel.XWPFParagraph
+        val feeImageParagraph = document.bodyElements[feeHeadingIndex + 1] as org.apache.poi.xwpf.usermodel.XWPFParagraph
+        val feeImageExtent = feeImageParagraph.runs
+            .flatMap { it.ctr.drawingList }
+            .flatMap { it.inlineList }
+            .first()
+            .extent
+
+        assertThat(feeHeading.ctp.pPr.isSetKeepNext).isTrue()
+        assertThat(feeImageExtent.cy).isLessThanOrEqualTo(7_200_000L)
+    }
+
+    @Test
     fun `generateDocx should apply export table color and font`() {
         val resultBytes = docxGeneratorService.generateDocx("B2-", "G5", "TEST", null, listOf("Lingoland", "CEFR", "雅思"))
         val document = XWPFDocument(ByteArrayInputStream(resultBytes))
