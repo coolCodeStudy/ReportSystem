@@ -167,16 +167,17 @@ async def save_workspace(frame, label: str) -> None:
 
 
 async def export_report(page, frame, docx_path: Path) -> None:
-    await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
+    await frame.locator("#exportReportBtn").evaluate("node => node.click()")
     await asyncio.sleep(0.8)
 
-    confirm_button = frame.locator("button:has-text('确认导出')").last
-    if await confirm_button.count() > 0 and await confirm_button.is_visible():
-        async with page.expect_download(timeout=120000) as download_info:
-            await confirm_button.click()
-    else:
-        async with page.expect_download(timeout=120000) as download_info:
-            await frame.locator("button:has-text('导出报告')").evaluate("node => node.click()")
+    word_format = frame.locator("#reportExportFormatWord")
+    if await word_format.count() > 0:
+        await word_format.evaluate("node => { node.checked = true; node.dispatchEvent(new Event('change', { bubbles: true })); }")
+
+    confirm_button = frame.locator("#confirmReportExportBtn")
+    await confirm_button.wait_for(state="visible", timeout=30000)
+    async with page.expect_download(timeout=120000) as download_info:
+        await confirm_button.click()
 
     download = await download_info.value
     await download.save_as(str(docx_path))

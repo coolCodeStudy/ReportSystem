@@ -19,6 +19,11 @@ echo "- Target: \`$BASE_URL\`" >> "$QA_ARTIFACT_DIR/report.md"
 echo "- Template source: \`$TEMPLATE_SYNC_SOURCE_BASE_URL\`" >> "$QA_ARTIFACT_DIR/report.md"
 echo "" >> "$QA_ARTIFACT_DIR/report.md"
 
+echo "[qa-gate] running QA harness contract tests"
+"$PYTHON_BIN" -m unittest \
+  scripts/test_qa_common.py \
+  scripts/test_e2e_student_flow_contract.py
+
 echo "[qa-gate] checking application health at $BASE_URL"
 curl -fsS "$BASE_URL/" >/dev/null
 
