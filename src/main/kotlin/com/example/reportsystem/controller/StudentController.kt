@@ -16,6 +16,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import com.example.reportsystem.repository.AssessmentRecordRepository
 import com.example.reportsystem.service.DocxGeneratorService
+import com.example.reportsystem.service.ReportPdfConversionException
+import com.example.reportsystem.service.ReportPdfConversionService
 import com.example.reportsystem.service.StudentArchiveService
 import java.time.format.DateTimeFormatter
 
@@ -48,6 +50,7 @@ class StudentController(
     private val studentRepository: StudentRepository,
     private val assessmentRecordRepository: AssessmentRecordRepository,
     private val docxGeneratorService: DocxGeneratorService,
+    private val reportPdfConversionService: ReportPdfConversionService,
     private val studentArchiveService: StudentArchiveService
 ) {
 
@@ -147,26 +150,7 @@ class StudentController(
         }
 
         val record = recordOpt.get()
-        
-        // Use the saved params to regenerate the docx
-        val assessmentTypeList = record.assessmentType
-            ?.split(",")
-            ?.map { it.trim() }
-            ?.filter { it.isNotEmpty() }
-
-        val columnsSource = columns ?: record.selectedExportColumns
-        val selectedColumns = columnsSource?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
-
-        val modifiedBytes = docxGeneratorService.generateDocx(
-            record.lingolandLevel,
-            record.targetGrade ?: record.student?.grade,
-            record.student?.studentType,
-            assessmentTypeList,
-            selectedColumns,
-            record.otherAssessment,
-            record.assessmentResults,
-            record.teachingPlanData
-        )
+        val modifiedBytes = generateHistoricReportDocx(record, columns)
 
         val mediaType = MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     
@@ -178,5 +162,57 @@ class StudentController(
             .header(HttpHeaders.CONTENT_LENGTH, modifiedBytes.size.toString())
             .contentType(mediaType)
             .body(modifiedBytes)
+    }
+
+    @GetMapping("/history/{recordId}/export/pdf")
+    fun exportHistoricReportPdf(
+        @PathVariable recordId: Long,
+        @RequestParam(required = false) columns: String?
+    ): ResponseEntity<ByteArray> {
+        val recordOpt = assessmentRecordRepository.findById(recordId)
+        if (!recordOpt.isPresent) {
+            return ResponseEntity.notFound().build()
+        }
+
+        val record = recordOpt.get()
+        return try {
+            val pdfBytes = reportPdfConversionService.convert(generateHistoricReportDocx(record, columns))
+            val headers = HttpHeaders()
+            headers.add(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=${java.net.URLEncoder.encode("${record.student?.name ?: "Student"}_历史记录测评报告.pdf", "UTF-8")}"
+            )
+
+            ResponseEntity.ok()
+                .headers(headers)
+                .header(HttpHeaders.CONTENT_LENGTH, pdfBytes.size.toString())
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes)
+        } catch (exception: ReportPdfConversionException) {
+            ResponseEntity.status(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("PDF 导出暂时不可用，请先使用 Word 导出。".toByteArray(Charsets.UTF_8))
+        }
+    }
+
+    private fun generateHistoricReportDocx(record: com.example.reportsystem.entity.AssessmentRecord, columns: String?): ByteArray {
+        val assessmentTypeList = record.assessmentType
+            ?.split(",")
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+
+        val columnsSource = columns ?: record.selectedExportColumns
+        val selectedColumns = columnsSource?.split(",")?.map { it.trim() }?.filter { it.isNotEmpty() }
+
+        return docxGeneratorService.generateDocx(
+            record.lingolandLevel,
+            record.targetGrade ?: record.student?.grade,
+            record.student?.studentType,
+            assessmentTypeList,
+            selectedColumns,
+            record.otherAssessment,
+            record.assessmentResults,
+            record.teachingPlanData
+        )
     }
 }
