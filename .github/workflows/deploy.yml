@@ -111,6 +111,25 @@ jobs:
         command_timeout: 5m
         script: |
           # 0. Provision and verify the headless PDF runtime before touching the running service.
+          install_rpm_pdf_runtime() {
+            package_manager="$1"
+
+            if ! sudo "$package_manager" install -y libreoffice-headless libreoffice-writer fontconfig; then
+              if ! sudo "$package_manager" install -y libreoffice-writer fontconfig; then
+                sudo "$package_manager" install -y libreoffice fontconfig
+              fi
+            fi
+
+            sudo "$package_manager" install -y google-noto-cjk-fonts \
+              || sudo "$package_manager" install -y google-noto-sans-cjk-fonts \
+              || sudo "$package_manager" install -y google-noto-sans-cjk-ttc-fonts \
+              || echo "CJK Noto font package not available from $package_manager; continuing with installed fonts."
+
+            sudo "$package_manager" install -y google-noto-color-emoji-fonts \
+              || sudo "$package_manager" install -y google-noto-emoji-color-fonts \
+              || echo "Color emoji font package not available from $package_manager; continuing with installed fonts."
+          }
+
           PDF_EXECUTABLE="$(command -v libreoffice || command -v soffice || true)"
           if [ -z "$PDF_EXECUTABLE" ]; then
             if command -v apt-get >/dev/null 2>&1; then
@@ -118,13 +137,9 @@ jobs:
               sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y \
                 libreoffice-writer fonts-noto-cjk fonts-noto-color-emoji fontconfig
             elif command -v dnf >/dev/null 2>&1; then
-              sudo dnf install -y \
-                libreoffice-headless libreoffice-writer \
-                google-noto-sans-cjk-fonts google-noto-color-emoji-fonts fontconfig
+              install_rpm_pdf_runtime dnf
             elif command -v yum >/dev/null 2>&1; then
-              sudo yum install -y \
-                libreoffice-headless libreoffice-writer \
-                google-noto-sans-cjk-fonts google-noto-color-emoji-fonts fontconfig
+              install_rpm_pdf_runtime yum
             else
               echo "No supported package manager found for LibreOffice PDF runtime." >&2
               exit 1
