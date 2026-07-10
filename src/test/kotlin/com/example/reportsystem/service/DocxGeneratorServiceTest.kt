@@ -15,6 +15,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblLayoutType
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STTblWidth
 import java.io.ByteArrayInputStream
 import java.math.BigInteger
 
@@ -197,6 +199,52 @@ class DocxGeneratorServiceTest {
         assertThat(allText).contains("信息理解")
         assertThat(allText).contains("理解主旨和关键信息。")
         assertThat(allText).doesNotContain("暂无测评分析数据")
+    }
+
+    @Test
+    fun `generateDocx should lock assessment analysis columns for PDF conversion`() {
+        val assessmentResultsJson = """
+            {
+              "reading": {
+                "score": 18,
+                "total": 30,
+                "level": "A2",
+                "paperAnalysis": {
+                  "信息理解": { "status": "✅", "text": "理解主旨和关键信息。" }
+                },
+                "causeAnalysis": []
+              }
+            }
+        """.trimIndent()
+
+        val resultBytes = docxGeneratorService.generateDocx(
+            targetLevel = "B1-",
+            targetGrade = "G5",
+            studentType = "TEST",
+            assessmentTypes = listOf("KET"),
+            selectedColumns = null,
+            assessmentResultsJson = assessmentResultsJson
+        )
+
+        val document = XWPFDocument(ByteArrayInputStream(resultBytes))
+        val analysisTable = document.tables.first { table ->
+            table.rows.any { row -> row.tableCells.any { it.text == "卷面分析" } }
+        }
+
+        assertThat(analysisTable.ctTbl.tblPr.tblW.type).isEqualTo(STTblWidth.DXA)
+        assertThat((analysisTable.ctTbl.tblPr.tblW.w as BigInteger).toLong()).isEqualTo(8306L)
+        assertThat(analysisTable.ctTbl.tblPr.tblLayout).isNotNull
+        assertThat(analysisTable.ctTbl.tblPr.tblLayout.type).isEqualTo(STTblLayoutType.FIXED)
+        assertThat(analysisTable.ctTbl.tblGrid).isNotNull
+        assertThat(analysisTable.ctTbl.tblGrid.gridColList.map { (it.w as BigInteger).toLong() })
+            .containsExactly(1661L, 6645L)
+
+        val analysisRow = analysisTable.rows.first { row ->
+            row.tableCells.any { it.text == "卷面分析" }
+        }
+        assertThat((analysisRow.getCell(0).ctTc.tcPr.tcW.w as BigInteger).toLong()).isEqualTo(1661L)
+        assertThat((analysisRow.getCell(1).ctTc.tcPr.tcW.w as BigInteger).toLong()).isEqualTo(6645L)
+        assertThat(analysisTable.getRow(0).getCell(0).ctTc.tcPr.gridSpan.`val`.toInt()).isEqualTo(2)
     }
 
     @Test

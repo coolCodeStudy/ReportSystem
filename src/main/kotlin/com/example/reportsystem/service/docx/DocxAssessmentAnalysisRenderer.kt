@@ -9,6 +9,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 object DocxAssessmentAnalysisRenderer {
+    private const val ANALYSIS_TABLE_WIDTH = 8306L
+    private const val ANALYSIS_LABEL_COL_WIDTH = 1661L
+    private const val ANALYSIS_CONTENT_COL_WIDTH = ANALYSIS_TABLE_WIDTH - ANALYSIS_LABEL_COL_WIDTH
+
     private enum class SubjectKind(val displayName: String, val scorePrefix: String) {
         READING("阅读", "正确率"),
         LISTENING("听力", "正确率"),
@@ -185,10 +189,8 @@ object DocxAssessmentAnalysisRenderer {
 
                 val table = createTableWrappen(1, 2)
                 table.removeBorders()
-                val tblPr = table.ctTbl.tblPr ?: table.ctTbl.addNewTblPr()
-                val tblW = tblPr.tblW ?: tblPr.addNewTblW()
-                tblW.type = STTblWidth.PCT
-                tblW.w = BigInteger.valueOf(5000)
+                configureAnalysisTableGeometry(table)
+                val tblPr = table.ctTbl.tblPr
 
                 // 显式设置极其紧凑的单元格内边距 (2pt)
                 val cellMar = tblPr.tblCellMar ?: tblPr.addNewTblCellMar()
@@ -202,6 +204,7 @@ object DocxAssessmentAnalysisRenderer {
                 val tcPr0 = c00.ctTc.tcPr ?: c00.ctTc.addNewTcPr()
                 tcPr0.addNewGridSpan().`val` = BigInteger.valueOf(2)
                 if (r0.tableCells.size > 1) r0.removeCell(1)
+                DocxStyleUtils.setCellWidth(c00, ANALYSIS_TABLE_WIDTH)
 
                 DocxStyleUtils.setCellText(c00, headerText, bold = true, color = "FFFFFF", fontSize = 11)
                 DocxStyleUtils.setCellShading(c00, DocxStyleUtils.THEME_PRIMARY)
@@ -218,8 +221,8 @@ object DocxAssessmentAnalysisRenderer {
 
                     c10.ctTc.tcPr?.let { c10.ctTc.unsetTcPr() }
                     c11.ctTc.tcPr?.let { c11.ctTc.unsetTcPr() }
-                    c10.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(1000); type = STTblWidth.PCT }
-                    c11.ctTc.addNewTcPr().addNewTcW().apply { w = BigInteger.valueOf(4000); type = STTblWidth.PCT }
+                    DocxStyleUtils.setCellWidth(c10, ANALYSIS_LABEL_COL_WIDTH)
+                    DocxStyleUtils.setCellWidth(c11, ANALYSIS_CONTENT_COL_WIDTH)
                     
                     c10.setVerticalAlignment(XWPFTableCell.XWPFVertAlign.CENTER)
                     c11.setVerticalAlignment(XWPFTableCell.XWPFVertAlign.TOP)
@@ -350,6 +353,24 @@ object DocxAssessmentAnalysisRenderer {
         } catch (e: Exception) {
             System.err.println("Failed to parse assessment results for docx: ${e.message}")
             clearPlaceholder()
+        }
+    }
+
+    private fun configureAnalysisTableGeometry(table: XWPFTable) {
+        val tblPr = table.ctTbl.tblPr ?: table.ctTbl.addNewTblPr()
+        val tblW = tblPr.tblW ?: tblPr.addNewTblW()
+        tblW.type = STTblWidth.DXA
+        tblW.w = BigInteger.valueOf(ANALYSIS_TABLE_WIDTH)
+
+        val tblLayout = tblPr.tblLayout ?: tblPr.addNewTblLayout()
+        tblLayout.type = STTblLayoutType.FIXED
+
+        val tblGrid = table.ctTbl.tblGrid ?: table.ctTbl.addNewTblGrid()
+        while (tblGrid.sizeOfGridColArray() > 0) {
+            tblGrid.removeGridCol(0)
+        }
+        listOf(ANALYSIS_LABEL_COL_WIDTH, ANALYSIS_CONTENT_COL_WIDTH).forEach { width ->
+            tblGrid.addNewGridCol().w = BigInteger.valueOf(width)
         }
     }
 
