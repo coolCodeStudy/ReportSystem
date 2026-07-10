@@ -443,10 +443,36 @@ def analyze_png_visual_metrics(path: Path) -> dict[str, Any]:
     }
 
 
+def analyze_status_icon_pixels(path: Path) -> dict[str, int]:
+    from PIL import Image
+
+    with Image.open(path) as image:
+        rgb = image.convert("RGB")
+        width, height = rgb.size
+        content = rgb.crop((int(width * 0.30), int(height * 0.18), int(width * 0.90), int(height * 0.92)))
+        if max(content.size) > 900:
+            content.thumbnail((900, 900))
+        pixels = list(content.getdata())
+
+    green_pixels = sum(
+        1 for red, green, blue in pixels
+        if green > 120 and green > red * 1.25 and green > blue * 1.25
+    )
+    red_pixels = sum(
+        1 for red, green, blue in pixels
+        if red > 180 and green < 105 and blue < 105
+    )
+    return {
+        "green_pixels": green_pixels,
+        "red_pixels": red_pixels,
+    }
+
+
 def run_visual_qa_checks(png_paths: list[Path], page_texts: dict[int, str]) -> tuple[list[str], dict[str, Any]]:
     issues: list[str] = []
     review_items: list[str] = []
     metrics = []
+    status_icon_metrics = []
     keyword_pages = find_keyword_pages(page_texts, ["费用", "课程价目表", "测评分析", "语言教学", "教学计划"])
 
     if not png_paths:
@@ -458,6 +484,28 @@ def run_visual_qa_checks(png_paths: list[Path], page_texts: dict[int, str]) -> t
         metrics.append(page_metrics)
         if page_metrics["is_blank"]:
             issues.append(f"Page {page_number} appears blank after rendering.")
+
+        page_text = page_texts.get(page_number, "")
+        expected_positive = "✅" in page_text
+        expected_negative = "❗" in page_text
+        if expected_positive or expected_negative:
+            icon_metrics = analyze_status_icon_pixels(png_path)
+            icon_metrics.update({
+                "page": page_number,
+                "expected_positive": expected_positive,
+                "expected_negative": expected_negative,
+            })
+            status_icon_metrics.append(icon_metrics)
+
+            missing_icons = []
+            if expected_positive and icon_metrics["green_pixels"] < 20:
+                missing_icons.append("✅")
+            if expected_negative and icon_metrics["red_pixels"] < 20:
+                missing_icons.append("❗")
+            if missing_icons:
+                issues.append(
+                    f"Page {page_number} status icons may be invisible after rendering: missing {', '.join(missing_icons)}."
+                )
 
     fee_pages = set(keyword_pages.get("费用", []))
     price_pages = set(keyword_pages.get("课程价目表", []))
@@ -484,6 +532,7 @@ def run_visual_qa_checks(png_paths: list[Path], page_texts: dict[int, str]) -> t
         "page_count": len(png_paths),
         "keyword_pages": keyword_pages,
         "page_metrics": metrics,
+        "status_icon_metrics": status_icon_metrics,
         "review_items": review_items,
     }
 
@@ -569,6 +618,13 @@ def format_visual_qa_report(
         lines.append("| --- | --- | --- |")
         for item in metrics:
             lines.append(f"| {item['page']} | {item['non_white_ratio']:.4f} | {item['is_blank']} |")
+    status_metrics = details.get("status_icon_metrics", [])
+    if status_metrics:
+        lines.append("")
+        lines.append("| Status page | Green pixels | Red pixels |")
+        lines.append("| --- | --- | --- |")
+        for item in status_metrics:
+            lines.append(f"| {item['page']} | {item['green_pixels']} | {item['red_pixels']} |")
     if issues:
         lines.append("")
         lines.append("Hard issues:")

@@ -117,6 +117,41 @@ class QaCommonVisualQaTest(unittest.TestCase):
             self.assertEqual(issues, [])
             self.assertEqual(details["review_items"], [])
 
+    def test_visual_qa_flags_status_characters_that_are_invisible_in_rendered_page(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            page = Path(tmp) / "page-1.png"
+            image = Image.new("RGB", (200, 200), "white")
+            ImageDraw.Draw(image).rectangle((60, 50, 170, 160), fill=(40, 40, 40))
+            image.save(page)
+
+            issues, details = qa_common.run_visual_qa_checks(
+                [page],
+                {1: "词汇 ........ ✅  专注力 ........ ❗"},
+            )
+
+            self.assertTrue(any("status icons may be invisible" in issue for issue in issues))
+            self.assertEqual(details["status_icon_metrics"][0]["green_pixels"], 0)
+            self.assertEqual(details["status_icon_metrics"][0]["red_pixels"], 0)
+
+    def test_visual_qa_accepts_visible_green_and_red_status_icons(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            page = Path(tmp) / "page-1.png"
+            image = Image.new("RGB", (200, 200), "white")
+            draw = ImageDraw.Draw(image)
+            draw.rectangle((60, 50, 170, 160), fill=(40, 40, 40))
+            draw.rectangle((120, 70, 130, 80), fill=(85, 175, 70))
+            draw.rectangle((145, 95, 150, 110), fill=(235, 60, 60))
+            image.save(page)
+
+            issues, details = qa_common.run_visual_qa_checks(
+                [page],
+                {1: "词汇 ........ ✅  专注力 ........ ❗"},
+            )
+
+            self.assertFalse(any("status icons may be invisible" in issue for issue in issues))
+            self.assertGreater(details["status_icon_metrics"][0]["green_pixels"], 20)
+            self.assertGreater(details["status_icon_metrics"][0]["red_pixels"], 20)
+
 
 if __name__ == "__main__":
     unittest.main()
